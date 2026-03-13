@@ -1,8 +1,12 @@
 export interface User {
   id: string;
+  username: string;
   name: string;
   email: string;
+  password: string;
   avatar: string;
+  avatarUrl?: string;
+  bio: string;
   targetCareer: string;
   totalScore: number;
   rankPosition: number;
@@ -11,6 +15,7 @@ export interface User {
   averageGrade: number;
   streak: number;
   badges: Badge[];
+  createdAt: string;
 }
 
 export interface Badge {
@@ -89,70 +94,159 @@ export interface RankingEntry {
   userId: string;
   name: string;
   avatar: string;
+  avatarUrl?: string;
   score: number;
   position: number;
+}
+
+// ========== DB ENTITIES (mock) ==========
+
+export interface DbDiscursiveAnswer {
+  id: string;
+  userId: string;
+  questionId: string;
+  answerText: string;
+  score: number;
+  feedback: string;
+  createdAt: string;
+}
+
+export interface DbWeeklyRanking {
+  userId: string;
+  totalScore: number;
+  updatedAt: string;
+}
+
+export interface DbAchievement {
+  id: string;
+  title: string;
+  description: string;
+  icon: string;
+}
+
+export interface DbUserAchievement {
+  userId: string;
+  achievementId: string;
+  unlockedAt: string;
 }
 
 // ========== BADGES ==========
 
 export const badges: Badge[] = [
-  // Discursivas
-  { id: "b1", name: "Primeira Discursiva Enviada", description: "Enviou sua primeira resposta discursiva", icon: "✍️", earned: true, earnedAt: "2026-02-10", category: "discursivas" },
-  { id: "b2", name: "5 Discursivas Respondidas", description: "Respondeu 5 questões discursivas", icon: "📝", earned: true, earnedAt: "2026-02-15", category: "discursivas" },
-  { id: "b3", name: "10 Discursivas Respondidas", description: "Respondeu 10 questões discursivas", icon: "🔥", earned: true, earnedAt: "2026-02-20", category: "discursivas" },
-  // Notas
-  { id: "b4", name: "Nota 8+", description: "Tirou nota 8 ou mais em uma discursiva", icon: "🎯", earned: true, earnedAt: "2026-02-22", category: "notas" },
+  { id: "b1", name: "Primeira Discursiva Enviada", description: "Enviou sua primeira resposta discursiva", icon: "✍️", earned: false, category: "discursivas" },
+  { id: "b2", name: "5 Discursivas Respondidas", description: "Respondeu 5 questões discursivas", icon: "📝", earned: false, category: "discursivas" },
+  { id: "b3", name: "10 Discursivas Respondidas", description: "Respondeu 10 questões discursivas", icon: "🔥", earned: false, category: "discursivas" },
+  { id: "b4", name: "Nota 8+", description: "Tirou nota 8 ou mais em uma discursiva", icon: "🎯", earned: false, category: "notas" },
   { id: "b5", name: "Nota 9+", description: "Tirou nota 9 ou mais em uma discursiva", icon: "⭐", earned: false, category: "notas" },
-  // Ranking
-  { id: "b6", name: "Top 10 do Ranking", description: "Entrou no top 10 do ranking geral", icon: "🏅", earned: true, earnedAt: "2026-02-25", category: "ranking" },
-  { id: "b7", name: "Top 3 da Semana", description: "Ficou entre os 3 melhores da semana", icon: "🏆", earned: true, earnedAt: "2026-03-01", category: "ranking" },
+  { id: "b6", name: "Top 10 do Ranking", description: "Entrou no top 10 do ranking geral", icon: "🏅", earned: false, category: "ranking" },
+  { id: "b7", name: "Top 3 da Semana", description: "Ficou entre os 3 melhores da semana", icon: "🏆", earned: false, category: "ranking" },
   { id: "b8", name: "Elite da Salinha", description: "Alcançou o 1º lugar do ranking geral", icon: "👑", earned: false, category: "ranking" },
-  // Estudo
-  { id: "b9", name: "10 Horas de Estudo", description: "Acumulou 10 horas de estudo", icon: "📖", earned: true, earnedAt: "2026-02-12", category: "estudo" },
-  { id: "b10", name: "50 Horas de Estudo", description: "Acumulou 50 horas de estudo", icon: "📚", earned: true, earnedAt: "2026-03-02", category: "estudo" },
+  { id: "b9", name: "10 Horas de Estudo", description: "Acumulou 10 horas de estudo", icon: "📖", earned: false, category: "estudo" },
+  { id: "b10", name: "50 Horas de Estudo", description: "Acumulou 50 horas de estudo", icon: "📚", earned: false, category: "estudo" },
   { id: "b11", name: "100 Horas de Estudo", description: "Acumulou 100 horas de estudo", icon: "🧠", earned: false, category: "estudo" },
-  // Sequência
-  { id: "b12", name: "7 Dias de Sequência", description: "Estudou 7 dias seguidos", icon: "🏃", earned: true, earnedAt: "2026-02-28", category: "constância" },
+  { id: "b12", name: "7 Dias de Sequência", description: "Estudou 7 dias seguidos", icon: "🏃", earned: false, category: "constância" },
   { id: "b13", name: "30 Dias de Sequência", description: "Estudou 30 dias seguidos", icon: "💎", earned: false, category: "constância" },
   { id: "b14", name: "Mestre da Constância", description: "Manteve estudo diário por 60 dias", icon: "🔱", earned: false, category: "constância" },
-  // Semana
-  { id: "b15", name: "Participou da Questão da Semana", description: "Respondeu o desafio semanal", icon: "📅", earned: true, earnedAt: "2026-03-03", category: "semanal" },
-  // Evolução
+  { id: "b15", name: "Participou da Questão da Semana", description: "Respondeu o desafio semanal", icon: "📅", earned: false, category: "semanal" },
   { id: "b16", name: "Evolução Rápida", description: "Melhorou sua nota média em 1 ponto em 7 dias", icon: "🚀", earned: false, category: "evolução" },
 ];
 
-export const currentUser: User = {
-  id: "u1",
-  name: "Carlos Silva",
-  email: "carlos@email.com",
-  avatar: "CS",
-  targetCareer: "Delegado",
-  totalScore: 2450,
-  rankPosition: 4,
-  weeklyHours: 23.5,
-  totalEssays: 18,
-  averageGrade: 7.8,
-  streak: 12,
-  badges: badges.filter(b => b.earned),
-};
+// ========== MOCK USERS DB ==========
 
-export const mockUsers: RankingEntry[] = [
-  { userId: "u10", name: "Ana Beatriz", avatar: "AB", score: 3200, position: 1 },
-  { userId: "u11", name: "Pedro Henrique", avatar: "PH", score: 3050, position: 2 },
-  { userId: "u12", name: "Marina Costa", avatar: "MC", score: 2800, position: 3 },
-  { userId: "u1", name: "Carlos Silva", avatar: "CS", score: 2450, position: 4 },
-  { userId: "u13", name: "Lucas Oliveira", avatar: "LO", score: 2300, position: 5 },
-  { userId: "u14", name: "Juliana Santos", avatar: "JS", score: 2150, position: 6 },
-  { userId: "u15", name: "Rafael Mendes", avatar: "RM", score: 2000, position: 7 },
-  { userId: "u16", name: "Fernanda Lima", avatar: "FL", score: 1850, position: 8 },
-  { userId: "u17", name: "Gustavo Rocha", avatar: "GR", score: 1700, position: 9 },
-  { userId: "u18", name: "Isabela Ferreira", avatar: "IF", score: 1550, position: 10 },
-  { userId: "u19", name: "Thiago Alves", avatar: "TA", score: 1400, position: 11 },
-  { userId: "u20", name: "Camila Ramos", avatar: "CR", score: 1250, position: 12 },
-  { userId: "u21", name: "Diego Martins", avatar: "DM", score: 1100, position: 13 },
-  { userId: "u22", name: "Larissa Nunes", avatar: "LN", score: 950, position: 14 },
-  { userId: "u23", name: "Bruno Cardoso", avatar: "BC", score: 800, position: 15 },
+export const registeredUsers: User[] = [
+  {
+    id: "u1", username: "carlos_silva", name: "Carlos Silva", email: "carlos@email.com", password: "12345678",
+    avatar: "CS", bio: "Concurseiro focado em Delegado. Estudando há 2 anos.", targetCareer: "Delegado",
+    totalScore: 0, rankPosition: 0, weeklyHours: 0, totalEssays: 0, averageGrade: 0, streak: 0,
+    badges: [], createdAt: "2026-01-15",
+  },
 ];
+
+// Current user starts null (must login)
+export let currentUser: User | null = null;
+
+export function setCurrentUser(user: User | null) {
+  currentUser = user;
+}
+
+export function registerUser(username: string, email: string, password: string): User {
+  const initials = username.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2) || "U";
+  const newUser: User = {
+    id: `u${Date.now()}`, username, name: username, email, password,
+    avatar: initials, bio: "", targetCareer: "", totalScore: 0, rankPosition: 0,
+    weeklyHours: 0, totalEssays: 0, averageGrade: 0, streak: 0,
+    badges: [...badges], createdAt: new Date().toISOString().split("T")[0],
+  };
+  registeredUsers.push(newUser);
+  return newUser;
+}
+
+export function loginUser(email: string, password: string): User | null {
+  return registeredUsers.find(u => u.email === email && u.password === password) || null;
+}
+
+export function updateUserProfile(userId: string, updates: Partial<Pick<User, "name" | "bio" | "avatarUrl" | "targetCareer">>): User | null {
+  const user = registeredUsers.find(u => u.id === userId);
+  if (!user) return null;
+  Object.assign(user, updates);
+  return user;
+}
+
+// ========== DEMO RANKING (landing page only) ==========
+
+export const demoRanking: RankingEntry[] = [
+  { userId: "demo1", name: "Ana Beatriz", avatar: "AB", score: 87, position: 1 },
+  { userId: "demo2", name: "Pedro Henrique", avatar: "PH", score: 72, position: 2 },
+  { userId: "demo3", name: "Marina Costa", avatar: "MC", score: 65, position: 3 },
+  { userId: "demo4", name: "Lucas Oliveira", avatar: "LO", score: 53, position: 4 },
+  { userId: "demo5", name: "Juliana Santos", avatar: "JS", score: 41, position: 5 },
+];
+
+// ========== REAL RANKINGS (zeroed, based on weekly scores) ==========
+
+export const weeklyScores: DbDiscursiveAnswer[] = [];
+
+export function getWeeklyRanking(): RankingEntry[] {
+  const scoreMap = new Map<string, number>();
+  for (const answer of weeklyScores) {
+    scoreMap.set(answer.userId, (scoreMap.get(answer.userId) || 0) + answer.score);
+  }
+  const entries: RankingEntry[] = [];
+  for (const user of registeredUsers) {
+    entries.push({
+      userId: user.id,
+      name: user.name,
+      avatar: user.avatar,
+      avatarUrl: user.avatarUrl,
+      score: scoreMap.get(user.id) || 0,
+      position: 0,
+    });
+  }
+  entries.sort((a, b) => b.score - a.score);
+  entries.forEach((e, i) => { e.position = i + 1; });
+  return entries;
+}
+
+export function addWeeklyScore(userId: string, questionId: string, score: number, answerText: string, feedback: string) {
+  weeklyScores.push({
+    id: `da-${Date.now()}`,
+    userId,
+    questionId,
+    answerText,
+    score,
+    feedback,
+    createdAt: new Date().toISOString(),
+  });
+  // Update user stats
+  const user = registeredUsers.find(u => u.id === userId);
+  if (user) {
+    user.totalEssays += 1;
+    const userScores = weeklyScores.filter(s => s.userId === userId);
+    user.totalScore = userScores.reduce((sum, s) => sum + s.score, 0);
+    user.averageGrade = userScores.length > 0 ? Math.round((user.totalScore / userScores.length) * 10) / 10 : 0;
+    user.rankPosition = getWeeklyRanking().find(e => e.userId === userId)?.position || 0;
+  }
+}
 
 // ========== QUESTÃO ÚNICA ==========
 
@@ -235,7 +329,7 @@ export const weeklyQuestion: Question = {
   title: "Desafio Semanal: Provas Ilícitas e Serendipidade",
   isWeekly: true,
   deadline: "2026-03-15T23:59:59",
-  participants: 28,
+  participants: 0,
 };
 
 // ========== CORRECTION ENGINE ==========
@@ -285,7 +379,6 @@ export function evaluateAnswer(answer: string, barema: BaremaItem[]): Correction
 
   totalEarned = Math.round(totalEarned * 10) / 10;
 
-  // Generate feedback
   let feedback: string;
   if (totalEarned >= 8) {
     feedback = "Excelente desempenho! Sua resposta demonstra domínio do conteúdo. Continue aperfeiçoando os pontos indicados para alcançar nota máxima.";
@@ -300,7 +393,7 @@ export function evaluateAnswer(answer: string, barema: BaremaItem[]): Correction
   return {
     id: `corr-${Date.now()}`,
     questionId: "q1",
-    userId: "u1",
+    userId: currentUser?.id || "",
     answer,
     grade: totalEarned,
     maxGrade: 10,
@@ -321,30 +414,19 @@ d) Sim, é possível reconhecer a licitude das provas da busca e apreensão. A t
   };
 }
 
-export const recentCorrections: { questionTitle: string; grade: number; maxGrade: number; date: string; career: string }[] = [
-  { questionTitle: "Provas Ilícitas e Serendipidade", grade: 7.5, maxGrade: 10, date: "2026-03-05", career: "Delegado" },
-  { questionTitle: "Princípio da Insignificância", grade: 8.2, maxGrade: 10, date: "2026-03-03", career: "Magistratura" },
-  { questionTitle: "Inquérito Policial", grade: 9.0, maxGrade: 10, date: "2026-03-01", career: "Delegado" },
-  { questionTitle: "Lei Maria da Penha", grade: 6.8, maxGrade: 10, date: "2026-02-27", career: "Delegado" },
-  { questionTitle: "Crimes contra a Adm. Pública", grade: 7.0, maxGrade: 10, date: "2026-02-25", career: "Promotoria" },
-];
+export const recentCorrections: { questionTitle: string; grade: number; maxGrade: number; date: string; career: string }[] = [];
 
 export const weeklyStudyData = [
-  { day: "Seg", hours: 4.5 },
-  { day: "Ter", hours: 3.0 },
-  { day: "Qua", hours: 5.2 },
-  { day: "Qui", hours: 2.8 },
-  { day: "Sex", hours: 4.0 },
-  { day: "Sáb", hours: 2.5 },
-  { day: "Dom", hours: 1.5 },
+  { day: "Seg", hours: 0 },
+  { day: "Ter", hours: 0 },
+  { day: "Qua", hours: 0 },
+  { day: "Qui", hours: 0 },
+  { day: "Sex", hours: 0 },
+  { day: "Sáb", hours: 0 },
+  { day: "Dom", hours: 0 },
 ];
 
-export const studySessions: StudySession[] = [
-  { id: "s1", userId: "u1", discipline: "Processo Penal", startTime: "08:00", endTime: "10:30", duration: 150, date: "2026-03-06" },
-  { id: "s2", userId: "u1", discipline: "Direito Constitucional", startTime: "14:00", endTime: "16:00", duration: 120, date: "2026-03-06" },
-  { id: "s3", userId: "u1", discipline: "Direito Penal", startTime: "19:00", endTime: "20:30", duration: 90, date: "2026-03-05" },
-  { id: "s4", userId: "u1", discipline: "Direito Administrativo", startTime: "08:00", endTime: "11:00", duration: 180, date: "2026-03-05" },
-];
+export const studySessions: StudySession[] = [];
 
 export const disciplines = [
   "Processo Penal",
@@ -359,15 +441,4 @@ export const disciplines = [
   "Medicina Legal",
 ];
 
-export const hoursRanking: RankingEntry[] = [
-  { userId: "u12", name: "Marina Costa", avatar: "MC", score: 42, position: 1 },
-  { userId: "u10", name: "Ana Beatriz", avatar: "AB", score: 38, position: 2 },
-  { userId: "u11", name: "Pedro Henrique", avatar: "PH", score: 35, position: 3 },
-  { userId: "u1", name: "Carlos Silva", avatar: "CS", score: 23.5, position: 4 },
-  { userId: "u14", name: "Juliana Santos", avatar: "JS", score: 22, position: 5 },
-  { userId: "u13", name: "Lucas Oliveira", avatar: "LO", score: 20, position: 6 },
-  { userId: "u16", name: "Fernanda Lima", avatar: "FL", score: 18, position: 7 },
-  { userId: "u15", name: "Rafael Mendes", avatar: "RM", score: 16, position: 8 },
-  { userId: "u17", name: "Gustavo Rocha", avatar: "GR", score: 14, position: 9 },
-  { userId: "u18", name: "Isabela Ferreira", avatar: "IF", score: 12, position: 10 },
-];
+export const hoursRanking: RankingEntry[] = [];
