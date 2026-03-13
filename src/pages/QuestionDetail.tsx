@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { questions, weeklyQuestion, evaluateAnswer, type CorrectionResult } from "@/data/mockData";
+import { questions, weeklyQuestion, evaluateAnswer, addWeeklyScore, type CorrectionResult } from "@/data/mockData";
+import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,6 +14,7 @@ import { motion } from "framer-motion";
 export default function QuestionDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [answer, setAnswer] = useState("");
   const [correction, setCorrection] = useState<CorrectionResult | null>(null);
 
@@ -24,6 +26,11 @@ export default function QuestionDetail() {
     if (!question.barema) return;
     const result = evaluateAnswer(answer, question.barema);
     setCorrection(result);
+
+    // If it's a weekly question, add score to ranking
+    if (question.isWeekly && user) {
+      addWeeklyScore(user.id, question.id, result.grade, answer, result.feedback);
+    }
   };
 
   const getGradeColor = (grade: number) => {
@@ -47,7 +54,7 @@ export default function QuestionDetail() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      <Button variant="ghost" onClick={() => navigate("/discursivas")} className="text-muted-foreground hover:text-foreground">
+      <Button variant="ghost" onClick={() => navigate(-1)} className="text-muted-foreground hover:text-foreground">
         <ArrowLeft className="h-4 w-4 mr-2" /> Voltar
       </Button>
 
@@ -56,6 +63,7 @@ export default function QuestionDetail() {
           <div className="flex flex-wrap gap-2 mb-2">
             <Badge variant="outline" className="text-primary border-primary/20 bg-primary/10 text-[10px]">{question.career}</Badge>
             <Badge variant="outline" className="text-muted-foreground border-border text-[10px]">{question.discipline}</Badge>
+            {question.isWeekly && <Badge className="bg-gold/10 text-gold border-gold/20 text-[10px]">🏆 Questão da Semana</Badge>}
           </div>
           <CardTitle className="font-display text-xl">{question.title}</CardTitle>
         </CardHeader>
@@ -95,6 +103,9 @@ export default function QuestionDetail() {
               <p className={cn("text-5xl font-display font-bold", getGradeColor(correction.grade))}>{correction.grade.toFixed(1)}</p>
               <p className="text-sm text-muted-foreground">de {correction.maxGrade}</p>
               <Progress value={(correction.grade / correction.maxGrade) * 100} className="h-2 mt-4 max-w-xs mx-auto" />
+              {question.isWeekly && (
+                <p className="text-xs text-gold mt-3">🏆 Pontuação adicionada ao ranking semanal!</p>
+              )}
             </CardContent>
           </Card>
 
@@ -188,7 +199,7 @@ export default function QuestionDetail() {
             </Card>
           )}
 
-          {/* No points scored */}
+          {/* No points */}
           {correction.positives.length === 1 && correction.positives[0] === "Nenhum ponto do espelho foi adequadamente abordado." && (
             <Card className="gradient-card border-destructive/20">
               <CardContent className="p-6 text-center">

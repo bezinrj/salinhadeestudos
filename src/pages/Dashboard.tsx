@@ -1,12 +1,12 @@
 import { StatCard } from "@/components/StatCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { Trophy, FileText, Timer, TrendingUp, Flame, Target } from "lucide-react";
 import { recentCorrections, weeklyStudyData } from "@/data/mockData";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
+import { Progress } from "@/components/ui/progress";
 import { motion } from "framer-motion";
 
 export default function Dashboard() {
@@ -27,9 +27,9 @@ export default function Dashboard() {
       {/* Stat Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         <StatCard title="Pontuação" value={user.totalScore.toLocaleString("pt-BR")} icon={TrendingUp} variant="electric" />
-        <StatCard title="Ranking" value={`#${user.rankPosition}`} icon={Trophy} variant="gold" />
+        <StatCard title="Ranking" value={user.rankPosition > 0 ? `#${user.rankPosition}` : "—"} icon={Trophy} variant="gold" />
         <StatCard title="Horas/Semana" value={`${user.weeklyHours}h`} icon={Timer} variant="purple" />
-        <StatCard title="Discursivas" value={user.totalEssays} subtitle={`Média: ${user.averageGrade}`} icon={FileText} variant="default" />
+        <StatCard title="Discursivas" value={user.totalEssays} subtitle={user.averageGrade > 0 ? `Média: ${user.averageGrade}` : undefined} icon={FileText} variant="default" />
       </div>
 
       {/* Streak + Quick Actions */}
@@ -97,7 +97,7 @@ export default function Dashboard() {
             <CardTitle className="text-sm font-medium text-muted-foreground">Últimas Correções</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {recentCorrections.slice(0, 4).map((c, i) => (
+            {recentCorrections.length > 0 ? recentCorrections.slice(0, 4).map((c, i) => (
               <div key={i} className="flex items-center gap-3">
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{c.questionTitle}</p>
@@ -108,7 +108,9 @@ export default function Dashboard() {
                   <Progress value={(c.grade / c.maxGrade) * 100} className="h-1 w-16 mt-1" />
                 </div>
               </div>
-            ))}
+            )) : (
+              <p className="text-center py-4 text-muted-foreground text-sm">Nenhuma correção ainda. Responda uma discursiva!</p>
+            )}
           </CardContent>
         </Card>
       </div>

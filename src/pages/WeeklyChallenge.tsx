@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { weeklyQuestion, mockUsers } from "@/data/mockData";
+import { weeklyQuestion, getWeeklyRanking } from "@/data/mockData";
 import { RankingTable } from "@/components/RankingTable";
 import { useNavigate } from "react-router-dom";
 import { Clock, Users, Trophy } from "lucide-react";
@@ -17,12 +17,13 @@ function getTimeRemaining(deadline: string) {
 
 export default function WeeklyChallenge() {
   const navigate = useNavigate();
+  const ranking = getWeeklyRanking().filter(r => r.score > 0);
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
       <div>
         <h1 className="text-2xl font-display font-bold">Questões da Semana</h1>
-        <p className="text-sm text-muted-foreground mt-1">Desafios semanais para testar seu conhecimento</p>
+        <p className="text-sm text-muted-foreground mt-1">Desafios semanais que geram pontuação para o ranking</p>
       </div>
 
       {/* Current Challenge */}
@@ -37,7 +38,7 @@ export default function WeeklyChallenge() {
             <CardTitle className="font-display text-xl">{weeklyQuestion.title}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <p className="text-sm text-foreground/85 leading-relaxed">{weeklyQuestion.statement}</p>
+            <p className="text-sm text-foreground/85 leading-relaxed line-clamp-6">{weeklyQuestion.statement}</p>
 
             <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
               <div className="flex items-center gap-1.5">
@@ -46,7 +47,7 @@ export default function WeeklyChallenge() {
               </div>
               <div className="flex items-center gap-1.5">
                 <Users className="h-4 w-4" />
-                <span>{weeklyQuestion.participants} participantes</span>
+                <span>{ranking.length} participantes</span>
               </div>
             </div>
 
@@ -65,7 +66,11 @@ export default function WeeklyChallenge() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <RankingTable entries={mockUsers.slice(0, 10)} />
+          {ranking.length > 0 ? (
+            <RankingTable entries={ranking.slice(0, 10)} />
+          ) : (
+            <p className="text-center py-8 text-muted-foreground text-sm">Nenhuma resposta enviada ainda. Seja o primeiro!</p>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -1,33 +1,53 @@
 import React, { createContext, useContext, useState, ReactNode } from "react";
-import { currentUser, type User } from "@/data/mockData";
+import { type User, loginUser, registerUser, setCurrentUser, updateUserProfile, registeredUsers } from "@/data/mockData";
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  register: (username: string, email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
+  updateProfile: (updates: Partial<Pick<User, "name" | "bio" | "avatarUrl" | "targetCareer">>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(currentUser);
+  const [user, setUser] = useState<User | null>(null);
   const isAuthenticated = !!user;
 
-  const login = async (_email: string, _password: string) => {
-    // Mock login - will be replaced with Supabase
-    setUser(currentUser);
+  const login = async (email: string, password: string) => {
+    const found = loginUser(email, password);
+    if (found) {
+      setCurrentUser(found);
+      setUser({ ...found });
+      return { success: true };
+    }
+    return { success: false, error: "E-mail ou senha incorretos." };
   };
 
-  const register = async (name: string, email: string, _password: string) => {
-    setUser({ ...currentUser, name, email });
+  const register = async (username: string, email: string, password: string) => {
+    const exists = registeredUsers.find(u => u.email === email);
+    if (exists) return { success: false, error: "E-mail já cadastrado." };
+    const newUser = registerUser(username, email, password);
+    setCurrentUser(newUser);
+    setUser({ ...newUser });
+    return { success: true };
   };
 
-  const logout = () => setUser(null);
+  const logout = () => {
+    setCurrentUser(null);
+    setUser(null);
+  };
+
+  const updateProfile = (updates: Partial<Pick<User, "name" | "bio" | "avatarUrl" | "targetCareer">>) => {
+    if (!user) return;
+    const updated = updateUserProfile(user.id, updates);
+    if (updated) setUser({ ...updated });
+  };
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, login, register, logout }}>
+    <AuthContext.Provider value={{ user, isAuthenticated, login, register, logout, updateProfile }}>
       {children}
     </AuthContext.Provider>
   );

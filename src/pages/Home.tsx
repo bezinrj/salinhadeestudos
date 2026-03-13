@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Scale, FileText, Trophy, Timer, Target, TrendingUp, Users, ChevronRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { mockUsers } from "@/data/mockData";
+import { demoRanking } from "@/data/mockData";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 const features = [
@@ -106,14 +106,14 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Rankings Preview */}
+      {/* Rankings Preview - demo only */}
       <section className="container mx-auto px-4 py-16 md:py-24">
         <div className="text-center mb-10">
           <h2 className="text-3xl font-display font-bold mb-3">Ranking em <span className="text-gold">destaque</span></h2>
           <p className="text-muted-foreground">Os melhores estudantes desta semana</p>
         </div>
         <div className="max-w-md mx-auto space-y-3">
-          {mockUsers.slice(0, 5).map((u) => (
+          {demoRanking.map((u) => (
             <div key={u.userId} className="flex items-center gap-3 rounded-lg bg-card border border-border px-4 py-3">
               <span className={`text-sm font-bold ${u.position <= 3 ? "text-gold" : "text-muted-foreground"}`}>
                 #{u.position}
@@ -122,7 +122,7 @@ export default function Home() {
                 <AvatarFallback className="bg-secondary text-xs font-semibold">{u.avatar}</AvatarFallback>
               </Avatar>
               <span className="flex-1 text-sm font-medium">{u.name}</span>
-              <span className="text-sm font-bold text-primary">{u.score.toLocaleString("pt-BR")} pts</span>
+              <span className="text-sm font-bold text-primary">{u.score} pts</span>
             </div>
           ))}
         </div>
