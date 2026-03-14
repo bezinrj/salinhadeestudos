@@ -7,7 +7,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   register: (username: string, email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
-  updateProfile: (updates: Partial<Pick<User, "name" | "bio" | "avatarUrl" | "targetCareer">>) => void;
+  updateProfile: (updates: Partial<Pick<User, "name" | "bio" | "avatarUrl" | "targetCareer" | "username">>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
