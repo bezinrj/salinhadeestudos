@@ -17,7 +17,9 @@ export default function Profile() {
   const [editing, setEditing] = useState(false);
   const [bio, setBio] = useState(user?.bio || "");
   const [name, setName] = useState(user?.name || "");
+  const [username, setUsername] = useState(user?.username || "");
   const [career, setCareer] = useState(user?.targetCareer || "");
+  const [profileError, setProfileError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
   if (!user) return null;
