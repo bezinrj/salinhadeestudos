@@ -169,6 +169,10 @@ export function setCurrentUser(user: User | null) {
   currentUser = user;
 }
 
+export function isUsernameTaken(username: string, excludeUserId?: string): boolean {
+  return registeredUsers.some(u => u.username.toLowerCase() === username.toLowerCase() && u.id !== excludeUserId);
+}
+
 export function registerUser(username: string, email: string, password: string): User {
   const initials = username.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2) || "U";
   const newUser: User = {

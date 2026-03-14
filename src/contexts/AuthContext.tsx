@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from "react";
-import { type User, loginUser, registerUser, setCurrentUser, updateUserProfile, registeredUsers } from "@/data/mockData";
+import { type User, loginUser, registerUser, setCurrentUser, updateUserProfile, registeredUsers, isUsernameTaken } from "@/data/mockData";
 
 interface AuthContextType {
   user: User | null;
