@@ -76,12 +76,18 @@ export default function Profile() {
               <div className="flex-1 text-center sm:text-left">
                 {editing ? (
                   <div className="space-y-2">
+                    {profileError && (
+                      <div className="rounded-lg bg-destructive/10 border border-destructive/20 px-3 py-2 text-sm text-destructive">
+                        {profileError}
+                      </div>
+                    )}
                     <Input value={name} onChange={e => setName(e.target.value)} placeholder="Nome" className="bg-secondary border-border" />
+                    <Input value={username} onChange={e => setUsername(e.target.value)} placeholder="Nome de usuário" className="bg-secondary border-border" />
                     <Input value={career} onChange={e => setCareer(e.target.value)} placeholder="Carreira alvo (ex: Delegado)" className="bg-secondary border-border" />
                     <Textarea value={bio} onChange={e => setBio(e.target.value)} placeholder="Escreva algo sobre você..." className="bg-secondary border-border min-h-[80px]" />
                     <div className="flex gap-2">
                       <Button size="sm" onClick={handleSave} className="gradient-electric text-white"><Save className="h-3.5 w-3.5 mr-1" /> Salvar</Button>
-                      <Button size="sm" variant="outline" onClick={() => setEditing(false)} className="border-border"><X className="h-3.5 w-3.5 mr-1" /> Cancelar</Button>
+                      <Button size="sm" variant="outline" onClick={() => { setEditing(false); setProfileError(""); }} className="border-border"><X className="h-3.5 w-3.5 mr-1" /> Cancelar</Button>
                     </div>
                   </div>
                 ) : (
