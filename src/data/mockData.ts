@@ -169,6 +169,10 @@ export function setCurrentUser(user: User | null) {
   currentUser = user;
 }
 
+export function isUsernameTaken(username: string, excludeUserId?: string): boolean {
+  return registeredUsers.some(u => u.username.toLowerCase() === username.toLowerCase() && u.id !== excludeUserId);
+}
+
 export function registerUser(username: string, email: string, password: string): User {
   const initials = username.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2) || "U";
   const newUser: User = {
@@ -185,7 +189,7 @@ export function loginUser(email: string, password: string): User | null {
   return registeredUsers.find(u => u.email === email && u.password === password) || null;
 }
 
-export function updateUserProfile(userId: string, updates: Partial<Pick<User, "name" | "bio" | "avatarUrl" | "targetCareer">>): User | null {
+export function updateUserProfile(userId: string, updates: Partial<Pick<User, "name" | "bio" | "avatarUrl" | "targetCareer" | "username">>): User | null {
   const user = registeredUsers.find(u => u.id === userId);
   if (!user) return null;
   Object.assign(user, updates);

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
-import { badges } from "@/data/mockData";
+import { badges, isUsernameTaken } from "@/data/mockData";
 import { BadgeDisplay } from "@/components/BadgeDisplay";
 import { StatCard } from "@/components/StatCard";
 import { Trophy, FileText, Timer, TrendingUp, Target, Camera, Pencil, Save, X } from "lucide-react";
@@ -17,7 +17,9 @@ export default function Profile() {
   const [editing, setEditing] = useState(false);
   const [bio, setBio] = useState(user?.bio || "");
   const [name, setName] = useState(user?.name || "");
+  const [username, setUsername] = useState(user?.username || "");
   const [career, setCareer] = useState(user?.targetCareer || "");
+  const [profileError, setProfileError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
   if (!user) return null;
@@ -33,7 +35,17 @@ export default function Profile() {
   };
 
   const handleSave = () => {
-    updateProfile({ name, bio, targetCareer: career });
+    setProfileError("");
+    const trimmedUsername = username.trim();
+    if (!trimmedUsername) {
+      setProfileError("Nome de usuário não pode estar vazio.");
+      return;
+    }
+    if (trimmedUsername !== user.username && isUsernameTaken(trimmedUsername, user.id)) {
+      setProfileError("Nome de usuário já está em uso.");
+      return;
+    }
+    updateProfile({ name, bio, targetCareer: career, username: trimmedUsername });
     setEditing(false);
   };
 
@@ -64,19 +76,25 @@ export default function Profile() {
               <div className="flex-1 text-center sm:text-left">
                 {editing ? (
                   <div className="space-y-2">
+                    {profileError && (
+                      <div className="rounded-lg bg-destructive/10 border border-destructive/20 px-3 py-2 text-sm text-destructive">
+                        {profileError}
+                      </div>
+                    )}
                     <Input value={name} onChange={e => setName(e.target.value)} placeholder="Nome" className="bg-secondary border-border" />
+                    <Input value={username} onChange={e => setUsername(e.target.value)} placeholder="Nome de usuário" className="bg-secondary border-border" />
                     <Input value={career} onChange={e => setCareer(e.target.value)} placeholder="Carreira alvo (ex: Delegado)" className="bg-secondary border-border" />
                     <Textarea value={bio} onChange={e => setBio(e.target.value)} placeholder="Escreva algo sobre você..." className="bg-secondary border-border min-h-[80px]" />
                     <div className="flex gap-2">
                       <Button size="sm" onClick={handleSave} className="gradient-electric text-white"><Save className="h-3.5 w-3.5 mr-1" /> Salvar</Button>
-                      <Button size="sm" variant="outline" onClick={() => setEditing(false)} className="border-border"><X className="h-3.5 w-3.5 mr-1" /> Cancelar</Button>
+                      <Button size="sm" variant="outline" onClick={() => { setEditing(false); setProfileError(""); }} className="border-border"><X className="h-3.5 w-3.5 mr-1" /> Cancelar</Button>
                     </div>
                   </div>
                 ) : (
                   <>
                     <div className="flex items-center gap-2 justify-center sm:justify-start">
                       <h1 className="text-xl font-display font-bold">{user.name}</h1>
-                      <button onClick={() => { setEditing(true); setBio(user.bio); setName(user.name); setCareer(user.targetCareer); }} className="text-muted-foreground hover:text-foreground">
+                      <button onClick={() => { setEditing(true); setBio(user.bio); setName(user.name); setUsername(user.username); setCareer(user.targetCareer); setProfileError(""); }} className="text-muted-foreground hover:text-foreground">
                         <Pencil className="h-3.5 w-3.5" />
                       </button>
                     </div>

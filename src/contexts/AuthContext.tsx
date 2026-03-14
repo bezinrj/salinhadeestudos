@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from "react";
-import { type User, loginUser, registerUser, setCurrentUser, updateUserProfile, registeredUsers } from "@/data/mockData";
+import { type User, loginUser, registerUser, setCurrentUser, updateUserProfile, registeredUsers, isUsernameTaken } from "@/data/mockData";
 
 interface AuthContextType {
   user: User | null;
@@ -7,7 +7,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   register: (username: string, email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
-  updateProfile: (updates: Partial<Pick<User, "name" | "bio" | "avatarUrl" | "targetCareer">>) => void;
+  updateProfile: (updates: Partial<Pick<User, "name" | "bio" | "avatarUrl" | "targetCareer" | "username">>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -27,8 +27,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const register = async (username: string, email: string, password: string) => {
-    const exists = registeredUsers.find(u => u.email === email);
-    if (exists) return { success: false, error: "E-mail já cadastrado." };
+    const existsEmail = registeredUsers.find(u => u.email === email);
+    if (existsEmail) return { success: false, error: "E-mail já cadastrado." };
+    if (isUsernameTaken(username)) return { success: false, error: "Nome de usuário já está em uso." };
     const newUser = registerUser(username, email, password);
     setCurrentUser(newUser);
     setUser({ ...newUser });
@@ -40,7 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   };
 
-  const updateProfile = (updates: Partial<Pick<User, "name" | "bio" | "avatarUrl" | "targetCareer">>) => {
+  const updateProfile = (updates: Partial<Pick<User, "name" | "bio" | "avatarUrl" | "targetCareer" | "username">>) => {
     if (!user) return;
     const updated = updateUserProfile(user.id, updates);
     if (updated) setUser({ ...updated });
