@@ -35,7 +35,17 @@ export default function Profile() {
   };
 
   const handleSave = () => {
-    updateProfile({ name, bio, targetCareer: career });
+    setProfileError("");
+    const trimmedUsername = username.trim();
+    if (!trimmedUsername) {
+      setProfileError("Nome de usuário não pode estar vazio.");
+      return;
+    }
+    if (trimmedUsername !== user.username && isUsernameTaken(trimmedUsername, user.id)) {
+      setProfileError("Nome de usuário já está em uso.");
+      return;
+    }
+    updateProfile({ name, bio, targetCareer: career, username: trimmedUsername });
     setEditing(false);
   };
 
