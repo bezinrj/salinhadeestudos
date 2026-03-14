@@ -41,7 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   };
 
-  const updateProfile = (updates: Partial<Pick<User, "name" | "bio" | "avatarUrl" | "targetCareer">>) => {
+  const updateProfile = (updates: Partial<Pick<User, "name" | "bio" | "avatarUrl" | "targetCareer" | "username">>) => {
     if (!user) return;
     const updated = updateUserProfile(user.id, updates);
     if (updated) setUser({ ...updated });

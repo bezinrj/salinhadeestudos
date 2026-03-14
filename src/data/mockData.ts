@@ -189,7 +189,7 @@ export function loginUser(email: string, password: string): User | null {
   return registeredUsers.find(u => u.email === email && u.password === password) || null;
 }
 
-export function updateUserProfile(userId: string, updates: Partial<Pick<User, "name" | "bio" | "avatarUrl" | "targetCareer">>): User | null {
+export function updateUserProfile(userId: string, updates: Partial<Pick<User, "name" | "bio" | "avatarUrl" | "targetCareer" | "username">>): User | null {
   const user = registeredUsers.find(u => u.id === userId);
   if (!user) return null;
   Object.assign(user, updates);
