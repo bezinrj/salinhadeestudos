@@ -94,7 +94,7 @@ export default function Profile() {
                   <>
                     <div className="flex items-center gap-2 justify-center sm:justify-start">
                       <h1 className="text-xl font-display font-bold">{user.name}</h1>
-                      <button onClick={() => { setEditing(true); setBio(user.bio); setName(user.name); setCareer(user.targetCareer); }} className="text-muted-foreground hover:text-foreground">
+                      <button onClick={() => { setEditing(true); setBio(user.bio); setName(user.name); setUsername(user.username); setCareer(user.targetCareer); setProfileError(""); }} className="text-muted-foreground hover:text-foreground">
                         <Pencil className="h-3.5 w-3.5" />
                       </button>
                     </div>
