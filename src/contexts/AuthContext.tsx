@@ -27,8 +27,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const register = async (username: string, email: string, password: string) => {
-    const exists = registeredUsers.find(u => u.email === email);
-    if (exists) return { success: false, error: "E-mail já cadastrado." };
+    const existsEmail = registeredUsers.find(u => u.email === email);
+    if (existsEmail) return { success: false, error: "E-mail já cadastrado." };
+    if (isUsernameTaken(username)) return { success: false, error: "Nome de usuário já está em uso." };
     const newUser = registerUser(username, email, password);
     setCurrentUser(newUser);
     setUser({ ...newUser });
