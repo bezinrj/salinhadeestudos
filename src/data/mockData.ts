@@ -430,7 +430,78 @@ export const weeklyStudyData = [
   { day: "Dom", hours: 0 },
 ];
 
-export const studySessions: StudySession[] = [];
+// Seed some mock study sessions for the current user
+const today = new Date();
+const fmt = (d: Date) => d.toISOString().split("T")[0];
+const seedSessions: StudySession[] = [
+  { id: "ss1", userId: "u1", discipline: "Processo Penal", startTime: "08:00", endTime: "09:30", duration: 90, date: fmt(today) },
+  { id: "ss2", userId: "u1", discipline: "Direito Penal", startTime: "10:00", endTime: "11:15", duration: 75, date: fmt(today) },
+  { id: "ss3", userId: "u1", discipline: "Direito Constitucional", startTime: "14:00", endTime: "15:00", duration: 60, date: fmt(new Date(today.getTime() - 86400000)) },
+  { id: "ss4", userId: "u1", discipline: "Processo Penal", startTime: "09:00", endTime: "11:00", duration: 120, date: fmt(new Date(today.getTime() - 2 * 86400000)) },
+  { id: "ss5", userId: "u1", discipline: "Direito Administrativo", startTime: "15:00", endTime: "16:30", duration: 90, date: fmt(new Date(today.getTime() - 3 * 86400000)) },
+  { id: "ss6", userId: "u1", discipline: "Direito Civil", startTime: "08:00", endTime: "09:00", duration: 60, date: fmt(new Date(today.getTime() - 4 * 86400000)) },
+  { id: "ss7", userId: "u1", discipline: "Direito Penal", startTime: "10:00", endTime: "12:00", duration: 120, date: fmt(new Date(today.getTime() - 5 * 86400000)) },
+  { id: "ss8", userId: "u1", discipline: "Legislação Penal Especial", startTime: "14:00", endTime: "15:30", duration: 90, date: fmt(new Date(today.getTime() - 6 * 86400000)) },
+];
+
+export const studySessions: StudySession[] = [...seedSessions];
+
+export function addStudySession(session: StudySession) {
+  studySessions.push(session);
+}
+
+export function getUserStudyStats(userId: string) {
+  const now = new Date();
+  const todayStr = fmt(now);
+  const userSessions = studySessions.filter(s => s.userId === userId);
+
+  // Hours today
+  const todayMinutes = userSessions.filter(s => s.date === todayStr).reduce((sum, s) => sum + s.duration, 0);
+
+  // Hours this week (Mon-Sun)
+  const dayOfWeek = now.getDay() === 0 ? 6 : now.getDay() - 1; // 0=Mon
+  const mondayMs = now.getTime() - dayOfWeek * 86400000;
+  const mondayStr = fmt(new Date(mondayMs));
+  const weekMinutes = userSessions.filter(s => s.date >= mondayStr && s.date <= todayStr).reduce((sum, s) => sum + s.duration, 0);
+
+  // Hours this month
+  const monthStart = todayStr.slice(0, 8) + "01";
+  const monthMinutes = userSessions.filter(s => s.date >= monthStart && s.date <= todayStr).reduce((sum, s) => sum + s.duration, 0);
+
+  // Streak: consecutive days with sessions ending today
+  const datesWithSessions = new Set(userSessions.map(s => s.date));
+  let streak = 0;
+  for (let i = 0; i < 365; i++) {
+    const checkDate = fmt(new Date(now.getTime() - i * 86400000));
+    if (datesWithSessions.has(checkDate)) {
+      streak++;
+    } else {
+      break;
+    }
+  }
+
+  return {
+    todayHours: todayMinutes / 60,
+    weekHours: weekMinutes / 60,
+    monthHours: monthMinutes / 60,
+    streak,
+  };
+}
+
+export function getWeeklyChartData(userId: string) {
+  const now = new Date();
+  const dayNames = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+  const dayOfWeek = now.getDay() === 0 ? 6 : now.getDay() - 1;
+  const mondayMs = now.getTime() - dayOfWeek * 86400000;
+  const userSessions = studySessions.filter(s => s.userId === userId);
+
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(mondayMs + i * 86400000);
+    const dateStr = fmt(d);
+    const mins = userSessions.filter(s => s.date === dateStr).reduce((sum, s) => sum + s.duration, 0);
+    return { day: dayNames[d.getDay()], hours: +(mins / 60).toFixed(1) };
+  });
+}
 
 export const disciplines = [
   "Processo Penal",
