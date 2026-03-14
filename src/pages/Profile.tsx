@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
-import { badges } from "@/data/mockData";
+import { badges, isUsernameTaken } from "@/data/mockData";
 import { BadgeDisplay } from "@/components/BadgeDisplay";
 import { StatCard } from "@/components/StatCard";
 import { Trophy, FileText, Timer, TrendingUp, Target, Camera, Pencil, Save, X } from "lucide-react";
