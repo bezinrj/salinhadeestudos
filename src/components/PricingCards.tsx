@@ -1,23 +1,60 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
-import { Check, Crown, Star } from "lucide-react";
+import { Check, Crown, Star, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { plans } from "@/data/mockData";
+import { STRIPE_PLANS_LIST } from "@/lib/stripe";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface PricingCardsProps {
-  currentPlanId?: string;
-  onSelect?: (planId: string) => void;
-  ctaLabel?: string;
+  currentPriceId?: string | null;
+  onSelectUnauthenticated?: () => void;
+  isAuthenticated?: boolean;
 }
 
-export function PricingCards({ currentPlanId, onSelect, ctaLabel = "Assinar" }: PricingCardsProps) {
+export function PricingCards({
+  currentPriceId,
+  onSelectUnauthenticated,
+  isAuthenticated = false,
+}: PricingCardsProps) {
+  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const { toast } = useToast();
+
+  const handleSelect = async (priceId: string) => {
+    if (!isAuthenticated) {
+      onSelectUnauthenticated?.();
+      return;
+    }
+
+    setLoadingPlan(priceId);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-checkout", {
+        body: { priceId },
+      });
+
+      if (error) throw error;
+      if (data?.url) {
+        window.open(data.url, "_blank");
+      } else {
+        throw new Error("No checkout URL returned");
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Erro ao iniciar checkout";
+      toast({ title: "Erro", description: msg, variant: "destructive" });
+    } finally {
+      setLoadingPlan(null);
+    }
+  };
+
   return (
     <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-      {plans.map((plan, i) => {
-        const isCurrent = currentPlanId === plan.id;
+      {STRIPE_PLANS_LIST.map((plan, i) => {
+        const isCurrent = currentPriceId === plan.priceId;
         const isPopular = "popular" in plan && plan.popular;
+        const isLoading = loadingPlan === plan.priceId;
 
         return (
           <motion.div
@@ -36,7 +73,7 @@ export function PricingCards({ currentPlanId, onSelect, ctaLabel = "Assinar" }: 
                 isCurrent && "ring-2 ring-gold"
               )}
             >
-              {isPopular && (
+              {isPopular && !isCurrent && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                   <Badge className="gradient-electric text-primary-foreground border-0 gap-1">
                     <Star className="h-3 w-3" /> Mais popular
@@ -85,8 +122,8 @@ export function PricingCards({ currentPlanId, onSelect, ctaLabel = "Assinar" }: 
                 </ul>
 
                 <Button
-                  onClick={() => onSelect?.(plan.id)}
-                  disabled={isCurrent}
+                  onClick={() => handleSelect(plan.priceId)}
+                  disabled={isCurrent || isLoading}
                   className={cn(
                     "w-full font-semibold",
                     isPopular && !isCurrent ? "gradient-electric text-primary-foreground" : "",
@@ -94,7 +131,15 @@ export function PricingCards({ currentPlanId, onSelect, ctaLabel = "Assinar" }: 
                   )}
                   variant={isPopular ? "default" : "outline"}
                 >
-                  {isCurrent ? "Plano atual" : ctaLabel}
+                  {isLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : isCurrent ? (
+                    "Plano atual"
+                  ) : isAuthenticated ? (
+                    "Assinar"
+                  ) : (
+                    "Começar agora"
+                  )}
                 </Button>
               </CardContent>
             </Card>

@@ -15,6 +15,7 @@ import Ranking from "./pages/Ranking";
 import StudyTimerPage from "./pages/StudyTimerPage";
 import Profile from "./pages/Profile";
 import MyPlan from "./pages/MyPlan";
+import CheckoutSuccess from "./pages/CheckoutSuccess";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -35,6 +36,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/checkout-success" element={<CheckoutSuccess />} />
             <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/discursivas" element={<Discursivas />} />
