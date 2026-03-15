@@ -13,7 +13,7 @@ import { badges } from "@/data/mockData";
 import { BadgeDisplay } from "@/components/BadgeDisplay";
 import { StatCard } from "@/components/StatCard";
 import { ProfileLikeButton } from "@/components/ProfileLikeButton";
-import { Trophy, FileText, Timer, TrendingUp, Target, Camera, Pencil, Save, X, Heart } from "lucide-react";
+import { Trophy, FileText, Timer, TrendingUp, Target, Camera, Pencil, Save, X, Heart, MessageSquare } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function Profile() {
