@@ -94,6 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (session?.user) {
         setUser(session.user);
         fetchProfile(session.user.id);
+        checkSubscription();
       }
       setLoading(false);
     });
