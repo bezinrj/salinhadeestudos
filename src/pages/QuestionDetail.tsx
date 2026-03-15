@@ -127,7 +127,7 @@ export default function QuestionDetail() {
           </CardContent>
         </Card>
         )
-      ) : (
+        ) : (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
           {/* Grade Card */}
           <Card className="gradient-card border-primary/20 glow-electric">
