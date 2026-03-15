@@ -10,10 +10,10 @@ import { Progress } from "@/components/ui/progress";
 import { motion } from "framer-motion";
 
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { profile } = useAuth();
   const navigate = useNavigate();
 
-  if (!user) return null;
+  if (!profile) return null;
 
   return (
     <div className="space-y-6">
