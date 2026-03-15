@@ -16,6 +16,7 @@ const categoryLabels: Record<string, string> = {
   constância: "🔥 Constância",
   semanal: "📅 Semanal",
   evolução: "🚀 Evolução",
+  assinatura: "💎 Assinatura",
 };
 
 export function BadgeDisplay({ badges, size = "md" }: BadgeDisplayProps) {
