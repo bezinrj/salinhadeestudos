@@ -19,7 +19,7 @@ export default function Dashboard() {
     <div className="space-y-6">
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-2xl md:text-3xl font-display font-bold">
-          Olá, <span className="text-primary">{user.name.split(" ")[0]}</span> 👋
+          Olá, <span className="text-primary">{(profile.name || profile.username).split(" ")[0]}</span> 👋
         </h1>
         <p className="text-muted-foreground text-sm mt-1">Continue evoluindo. Seu progresso está sendo registrado!</p>
       </motion.div>
