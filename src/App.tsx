@@ -14,6 +14,7 @@ import WeeklyChallenge from "./pages/WeeklyChallenge";
 import Ranking from "./pages/Ranking";
 import StudyTimerPage from "./pages/StudyTimerPage";
 import Profile from "./pages/Profile";
+import MyPlan from "./pages/MyPlan";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
