@@ -6,6 +6,7 @@ import { Scale, FileText, Trophy, Timer, Target, TrendingUp, Users, ChevronRight
 import { FeatureTour } from "@/components/FeatureTour";
 import { Card, CardContent } from "@/components/ui/card";
 import { PricingCards } from "@/components/PricingCards";
+import { demoRanking } from "@/data/mockData";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 const features = [
