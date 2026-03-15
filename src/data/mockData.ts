@@ -38,6 +38,7 @@ export interface Question {
   difficulty: "Fácil" | "Médio" | "Difícil";
   participants: number;
   isWeekly?: boolean;
+  isPremium?: boolean;
   deadline?: string;
   barema?: BaremaItem[];
 }
