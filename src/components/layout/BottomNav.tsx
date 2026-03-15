@@ -9,6 +9,7 @@ const navItems = [
   { path: "/cronometro", icon: Timer, label: "Timer" },
   { path: "/ranking", icon: Trophy, label: "Ranking" },
   { path: "/perfil", icon: User, label: "Perfil" },
+  { path: "/meu-plano", icon: CreditCard, label: "Plano" },
 ];
 
 export function BottomNav() {

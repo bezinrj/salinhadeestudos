@@ -131,6 +131,18 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Pricing */}
+      <section className="container mx-auto px-4 py-16 md:py-24">
+        <div className="text-center mb-10">
+          <h2 className="text-3xl md:text-4xl font-display font-bold mb-3">
+            Escolha seu <span className="text-primary">plano</span>
+          </h2>
+          <p className="text-muted-foreground max-w-xl mx-auto">
+            Invista na sua aprovação. Comece hoje e evolua suas discursivas com correção inteligente.
+          </p>
+        </div>
+        <PricingCards onSelect={() => navigate("/login")} ctaLabel="Começar agora" />
+      </section>
       {/* CTA */}
       <section className="container mx-auto px-4 py-16 md:py-24">
         <Card className="gradient-electric border-0 text-center">

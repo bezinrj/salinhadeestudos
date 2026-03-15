@@ -22,6 +22,7 @@ const mainItems = [
   { title: "Ranking", url: "/ranking", icon: Trophy },
   { title: "Cronômetro", url: "/cronometro", icon: Timer },
   { title: "Perfil", url: "/perfil", icon: User },
+  { title: "Meu Plano", url: "/meu-plano", icon: CreditCard },
 ];
 
 export function AppSidebar() {
