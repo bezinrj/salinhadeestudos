@@ -41,7 +41,7 @@ export default function Dashboard() {
                 <Flame className="h-5 w-5 text-gold" />
               </div>
               <div>
-                <p className="font-display font-bold text-lg">{user.streak} dias</p>
+                <p className="font-display font-bold text-lg">{profile.streak} dias</p>
                 <p className="text-xs text-muted-foreground">Sequência de estudos 🔥</p>
               </div>
             </div>
