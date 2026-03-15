@@ -23,7 +23,7 @@ const benefits = [
 
 export default function Home() {
   const navigate = useNavigate();
-
+  const [tourOpen, setTourOpen] = useState(false);
   return (
     <div className="min-h-screen bg-background">
       {/* Hero */}
