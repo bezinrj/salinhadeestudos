@@ -14,7 +14,9 @@ export default function Discursivas() {
   const [career, setCareer] = useState<string>("Todas");
   const [type, setType] = useState<string>("Todas");
 
-  const filtered = questions.filter(q => {
+  const allQuestions = [...questions, ...getExpiredWeeklyQuestions()];
+
+  const filtered = allQuestions.filter(q => {
     if (difficulty !== "Todas" && q.difficulty !== difficulty) return false;
     if (career !== "Todas" && q.career !== career) return false;
     const isPremium = q.isPremium || q.isWeekly;
