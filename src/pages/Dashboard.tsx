@@ -26,10 +26,10 @@ export default function Dashboard() {
 
       {/* Stat Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-        <StatCard title="Pontuação" value={user.totalScore.toLocaleString("pt-BR")} icon={TrendingUp} variant="electric" />
-        <StatCard title="Ranking" value={user.rankPosition > 0 ? `#${user.rankPosition}` : "—"} icon={Trophy} variant="gold" />
-        <StatCard title="Horas/Semana" value={`${user.weeklyHours}h`} icon={Timer} variant="purple" />
-        <StatCard title="Discursivas" value={user.totalEssays} subtitle={user.averageGrade > 0 ? `Média: ${user.averageGrade}` : undefined} icon={FileText} variant="default" />
+        <StatCard title="Pontuação" value={profile.total_score.toLocaleString("pt-BR")} icon={TrendingUp} variant="electric" />
+        <StatCard title="Ranking" value={profile.rank_position > 0 ? `#${profile.rank_position}` : "—"} icon={Trophy} variant="gold" />
+        <StatCard title="Horas/Semana" value={`${profile.weekly_hours}h`} icon={Timer} variant="purple" />
+        <StatCard title="Discursivas" value={profile.total_essays} subtitle={profile.average_grade > 0 ? `Média: ${profile.average_grade}` : undefined} icon={FileText} variant="default" />
       </div>
 
       {/* Streak + Quick Actions */}
