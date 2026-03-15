@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { questions } from "@/data/mockData";
+import { questions, getExpiredWeeklyQuestions } from "@/data/mockData";
 import { QuestionCard } from "@/components/QuestionCard";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
