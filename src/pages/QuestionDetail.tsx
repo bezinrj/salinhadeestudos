@@ -261,6 +261,9 @@ export default function QuestionDetail() {
           </Button>
         </motion.div>
       )}
+
+      {/* Comments section - always visible */}
+      {id && <QuestionComments questionId={id} />}
     </div>
   );
 }

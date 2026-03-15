@@ -1,24 +1,48 @@
 import { useState, useRef } from "react";
+import { useParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth, type Profile as ProfileType } from "@/contexts/AuthContext";
 import { badges } from "@/data/mockData";
 import { BadgeDisplay } from "@/components/BadgeDisplay";
 import { StatCard } from "@/components/StatCard";
-import { Trophy, FileText, Timer, TrendingUp, Target, Camera, Pencil, Save, X } from "lucide-react";
+import { ProfileLikeButton } from "@/components/ProfileLikeButton";
+import { Trophy, FileText, Timer, TrendingUp, Target, Camera, Pencil, Save, X, Heart } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function Profile() {
-  const { profile, updateProfile } = useAuth();
+  const { userId } = useParams();
+  const { user, profile: myProfile, updateProfile } = useAuth();
+  const isOwnProfile = !userId || userId === user?.id;
+
+  // Fetch other user's profile
+  const { data: otherProfile } = useQuery({
+    queryKey: ["public-profile", userId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", userId!)
+        .single();
+      if (error) throw error;
+      return data as ProfileType;
+    },
+    enabled: !isOwnProfile && !!userId,
+  });
+
+  const profile = isOwnProfile ? myProfile : otherProfile;
+
   const [editing, setEditing] = useState(false);
-  const [bio, setBio] = useState(profile?.bio || "");
-  const [name, setName] = useState(profile?.name || "");
-  const [username, setUsername] = useState(profile?.username || "");
-  const [career, setCareer] = useState(profile?.target_career || "");
+  const [bio, setBio] = useState(myProfile?.bio || "");
+  const [name, setName] = useState(myProfile?.name || "");
+  const [username, setUsername] = useState(myProfile?.username || "");
+  const [career, setCareer] = useState(myProfile?.target_career || "");
   const [profileError, setProfileError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -60,16 +84,20 @@ export default function Profile() {
                   ) : null}
                   <AvatarFallback className="bg-primary/10 text-primary text-2xl font-bold font-display">{initials}</AvatarFallback>
                 </Avatar>
-                <button
-                  onClick={() => fileRef.current?.click()}
-                  className="absolute inset-0 flex items-center justify-center bg-background/60 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <Camera className="h-5 w-5 text-foreground" />
-                </button>
-                <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
+                {isOwnProfile && (
+                  <>
+                    <button
+                      onClick={() => fileRef.current?.click()}
+                      className="absolute inset-0 flex items-center justify-center bg-background/60 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <Camera className="h-5 w-5 text-foreground" />
+                    </button>
+                    <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
+                  </>
+                )}
               </div>
               <div className="flex-1 text-center sm:text-left">
-                {editing ? (
+                {isOwnProfile && editing ? (
                   <div className="space-y-2">
                     {profileError && (
                       <div className="rounded-lg bg-destructive/10 border border-destructive/20 px-3 py-2 text-sm text-destructive">
@@ -89,17 +117,22 @@ export default function Profile() {
                   <>
                     <div className="flex items-center gap-2 justify-center sm:justify-start">
                       <h1 className="text-xl font-display font-bold">{profile.name || profile.username}</h1>
-                      <button onClick={() => { setEditing(true); setBio(profile.bio); setName(profile.name); setUsername(profile.username); setCareer(profile.target_career); setProfileError(""); }} className="text-muted-foreground hover:text-foreground">
-                        <Pencil className="h-3.5 w-3.5" />
-                      </button>
+                      {isOwnProfile && (
+                        <button onClick={() => { setEditing(true); setBio(myProfile!.bio); setName(myProfile!.name); setUsername(myProfile!.username); setCareer(myProfile!.target_career); setProfileError(""); }} className="text-muted-foreground hover:text-foreground">
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
+                      )}
                     </div>
                     <p className="text-sm text-muted-foreground">@{profile.username}</p>
                     {profile.bio && <p className="text-sm text-foreground/80 mt-2">{profile.bio}</p>}
-                    {profile.target_career && (
-                      <Badge variant="outline" className="mt-2 text-primary border-primary/20 bg-primary/10 text-xs">
-                        <Target className="h-3 w-3 mr-1" /> {profile.target_career}
-                      </Badge>
-                    )}
+                    <div className="flex items-center gap-2 mt-2 flex-wrap justify-center sm:justify-start">
+                      {profile.target_career && (
+                        <Badge variant="outline" className="text-primary border-primary/20 bg-primary/10 text-xs">
+                          <Target className="h-3 w-3 mr-1" /> {profile.target_career}
+                        </Badge>
+                      )}
+                      {!isOwnProfile && userId && <ProfileLikeButton profileId={userId} />}
+                    </div>
                   </>
                 )}
               </div>
@@ -115,14 +148,16 @@ export default function Profile() {
         <StatCard title="Nota Média" value={profile.average_grade > 0 ? Number(profile.average_grade).toFixed(1) : "—"} icon={Target} variant="purple" />
       </div>
 
-      <Card className="gradient-card border-border">
-        <CardHeader>
-          <CardTitle className="text-base font-display">🏅 Conquistas</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <BadgeDisplay badges={badges} />
-        </CardContent>
-      </Card>
+      {isOwnProfile && (
+        <Card className="gradient-card border-border">
+          <CardHeader>
+            <CardTitle className="text-base font-display">🏅 Conquistas</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <BadgeDisplay badges={badges} />
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

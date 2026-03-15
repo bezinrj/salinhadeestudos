@@ -46,6 +46,7 @@ const App = () => (
               <Route path="/ranking" element={<Ranking />} />
               <Route path="/cronometro" element={<StudyTimerPage />} />
               <Route path="/perfil" element={<Profile />} />
+              <Route path="/perfil/:userId" element={<Profile />} />
               <Route path="/meu-plano" element={<MyPlan />} />
             </Route>
             <Route path="*" element={<NotFound />} />
