@@ -10,26 +10,26 @@ import { Progress } from "@/components/ui/progress";
 import { motion } from "framer-motion";
 
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { profile } = useAuth();
   const navigate = useNavigate();
 
-  if (!user) return null;
+  if (!profile) return null;
 
   return (
     <div className="space-y-6">
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-2xl md:text-3xl font-display font-bold">
-          Olá, <span className="text-primary">{user.name.split(" ")[0]}</span> 👋
+          Olá, <span className="text-primary">{(profile.name || profile.username).split(" ")[0]}</span> 👋
         </h1>
         <p className="text-muted-foreground text-sm mt-1">Continue evoluindo. Seu progresso está sendo registrado!</p>
       </motion.div>
 
       {/* Stat Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-        <StatCard title="Pontuação" value={user.totalScore.toLocaleString("pt-BR")} icon={TrendingUp} variant="electric" />
-        <StatCard title="Ranking" value={user.rankPosition > 0 ? `#${user.rankPosition}` : "—"} icon={Trophy} variant="gold" />
-        <StatCard title="Horas/Semana" value={`${user.weeklyHours}h`} icon={Timer} variant="purple" />
-        <StatCard title="Discursivas" value={user.totalEssays} subtitle={user.averageGrade > 0 ? `Média: ${user.averageGrade}` : undefined} icon={FileText} variant="default" />
+        <StatCard title="Pontuação" value={profile.total_score.toLocaleString("pt-BR")} icon={TrendingUp} variant="electric" />
+        <StatCard title="Ranking" value={profile.rank_position > 0 ? `#${profile.rank_position}` : "—"} icon={Trophy} variant="gold" />
+        <StatCard title="Horas/Semana" value={`${profile.weekly_hours}h`} icon={Timer} variant="purple" />
+        <StatCard title="Discursivas" value={profile.total_essays} subtitle={profile.average_grade > 0 ? `Média: ${profile.average_grade}` : undefined} icon={FileText} variant="default" />
       </div>
 
       {/* Streak + Quick Actions */}
@@ -41,13 +41,13 @@ export default function Dashboard() {
                 <Flame className="h-5 w-5 text-gold" />
               </div>
               <div>
-                <p className="font-display font-bold text-lg">{user.streak} dias</p>
+                <p className="font-display font-bold text-lg">{profile.streak} dias</p>
                 <p className="text-xs text-muted-foreground">Sequência de estudos 🔥</p>
               </div>
             </div>
             <div className="flex gap-1">
               {Array.from({ length: 7 }).map((_, i) => (
-                <div key={i} className={`h-2 flex-1 rounded-full ${i < Math.min(user.streak, 7) ? "bg-gold" : "bg-secondary"}`} />
+                <div key={i} className={`h-2 flex-1 rounded-full ${i < Math.min(profile.streak, 7) ? "bg-gold" : "bg-secondary"}`} />
               ))}
             </div>
           </CardContent>

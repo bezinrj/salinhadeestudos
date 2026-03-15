@@ -13,13 +13,17 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
   const [error, setError] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const { login, register } = useAuth();
   const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setIsLoading(true);
     const result = await login(email, password);
+    setIsLoading(false);
     if (result.success) {
       navigate("/dashboard");
     } else {
@@ -34,7 +38,13 @@ export default function Login() {
       setError("A senha deve ter pelo menos 6 caracteres.");
       return;
     }
-    const result = await register(username, email, password);
+    if (!username.trim()) {
+      setError("Nome de usuário é obrigatório.");
+      return;
+    }
+    setIsLoading(true);
+    const result = await register(username.trim(), email, password);
+    setIsLoading(false);
     if (result.success) {
       navigate("/dashboard");
     } else {
@@ -61,6 +71,11 @@ export default function Login() {
                 {error}
               </div>
             )}
+            {successMsg && (
+              <div className="mb-4 rounded-lg bg-primary/10 border border-primary/20 px-3 py-2 text-sm text-primary">
+                {successMsg}
+              </div>
+            )}
             <Tabs defaultValue="login" className="w-full">
               <TabsList className="grid w-full grid-cols-2 bg-secondary">
                 <TabsTrigger value="login">Entrar</TabsTrigger>
@@ -77,8 +92,9 @@ export default function Login() {
                     <Label htmlFor="login-password">Senha</Label>
                     <Input id="login-password" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} className="bg-secondary border-border" required />
                   </div>
-                  <button type="button" className="text-xs text-primary hover:underline">Esqueci minha senha</button>
-                  <Button type="submit" className="w-full gradient-electric text-white font-semibold">Entrar</Button>
+                  <Button type="submit" className="w-full gradient-electric text-white font-semibold" disabled={isLoading}>
+                    {isLoading ? "Entrando..." : "Entrar"}
+                  </Button>
                 </form>
               </TabsContent>
 
@@ -96,13 +112,12 @@ export default function Login() {
                     <Label htmlFor="reg-password">Senha</Label>
                     <Input id="reg-password" type="password" placeholder="Mínimo 6 caracteres" value={password} onChange={e => setPassword(e.target.value)} className="bg-secondary border-border" required />
                   </div>
-                  <Button type="submit" className="w-full gradient-electric text-white font-semibold">Criar conta</Button>
+                  <Button type="submit" className="w-full gradient-electric text-white font-semibold" disabled={isLoading}>
+                    {isLoading ? "Criando conta..." : "Criar conta"}
+                  </Button>
                 </form>
               </TabsContent>
             </Tabs>
-            <p className="text-xs text-muted-foreground mt-4 text-center">
-              Teste: carlos@email.com / 12345678
-            </p>
           </CardContent>
         </Card>
       </div>

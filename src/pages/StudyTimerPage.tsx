@@ -10,7 +10,7 @@ import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recha
 import { motion } from "framer-motion";
 
 export default function StudyTimerPage() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [isRunning, setIsRunning] = useState(false);
   const [seconds, setSeconds] = useState(0);
   const [selectedDiscipline, setSelectedDiscipline] = useState("");

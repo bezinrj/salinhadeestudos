@@ -6,64 +6,59 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
-import { badges, isUsernameTaken } from "@/data/mockData";
+import { badges } from "@/data/mockData";
 import { BadgeDisplay } from "@/components/BadgeDisplay";
 import { StatCard } from "@/components/StatCard";
 import { Trophy, FileText, Timer, TrendingUp, Target, Camera, Pencil, Save, X } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function Profile() {
-  const { user, updateProfile } = useAuth();
+  const { profile, updateProfile } = useAuth();
   const [editing, setEditing] = useState(false);
-  const [bio, setBio] = useState(user?.bio || "");
-  const [name, setName] = useState(user?.name || "");
-  const [username, setUsername] = useState(user?.username || "");
-  const [career, setCareer] = useState(user?.targetCareer || "");
+  const [bio, setBio] = useState(profile?.bio || "");
+  const [name, setName] = useState(profile?.name || "");
+  const [username, setUsername] = useState(profile?.username || "");
+  const [career, setCareer] = useState(profile?.target_career || "");
   const [profileError, setProfileError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
-  if (!user) return null;
+  if (!profile) return null;
+
+  const initials = (profile.name || profile.username || "U").split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2);
 
   const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
-      updateProfile({ avatarUrl: reader.result as string });
+      updateProfile({ avatar_url: reader.result as string });
     };
     reader.readAsDataURL(file);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setProfileError("");
     const trimmedUsername = username.trim();
     if (!trimmedUsername) {
       setProfileError("Nome de usuário não pode estar vazio.");
       return;
     }
-    if (trimmedUsername !== user.username && isUsernameTaken(trimmedUsername, user.id)) {
-      setProfileError("Nome de usuário já está em uso.");
-      return;
-    }
-    updateProfile({ name, bio, targetCareer: career, username: trimmedUsername });
+    await updateProfile({ name, bio, target_career: career, username: trimmedUsername });
     setEditing(false);
   };
 
-  const userBadges = user.badges.length > 0 ? user.badges : badges;
-
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
-      {/* Profile Header */}
       <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}>
         <Card className="gradient-card border-border">
           <CardContent className="p-6">
             <div className="flex flex-col sm:flex-row items-center gap-4">
               <div className="relative group">
                 <Avatar className="h-20 w-20 border-2 border-primary/30">
-                  {user.avatarUrl ? (
-                    <AvatarImage src={user.avatarUrl} alt={user.name} />
+                  {profile.avatar_url ? (
+                    <AvatarImage src={profile.avatar_url} alt={profile.name} />
                   ) : null}
-                  <AvatarFallback className="bg-primary/10 text-primary text-2xl font-bold font-display">{user.avatar}</AvatarFallback>
+                  <AvatarFallback className="bg-primary/10 text-primary text-2xl font-bold font-display">{initials}</AvatarFallback>
                 </Avatar>
                 <button
                   onClick={() => fileRef.current?.click()}
@@ -93,16 +88,16 @@ export default function Profile() {
                 ) : (
                   <>
                     <div className="flex items-center gap-2 justify-center sm:justify-start">
-                      <h1 className="text-xl font-display font-bold">{user.name}</h1>
-                      <button onClick={() => { setEditing(true); setBio(user.bio); setName(user.name); setUsername(user.username); setCareer(user.targetCareer); setProfileError(""); }} className="text-muted-foreground hover:text-foreground">
+                      <h1 className="text-xl font-display font-bold">{profile.name || profile.username}</h1>
+                      <button onClick={() => { setEditing(true); setBio(profile.bio); setName(profile.name); setUsername(profile.username); setCareer(profile.target_career); setProfileError(""); }} className="text-muted-foreground hover:text-foreground">
                         <Pencil className="h-3.5 w-3.5" />
                       </button>
                     </div>
-                    <p className="text-sm text-muted-foreground">@{user.username}</p>
-                    {user.bio && <p className="text-sm text-foreground/80 mt-2">{user.bio}</p>}
-                    {user.targetCareer && (
+                    <p className="text-sm text-muted-foreground">@{profile.username}</p>
+                    {profile.bio && <p className="text-sm text-foreground/80 mt-2">{profile.bio}</p>}
+                    {profile.target_career && (
                       <Badge variant="outline" className="mt-2 text-primary border-primary/20 bg-primary/10 text-xs">
-                        <Target className="h-3 w-3 mr-1" /> {user.targetCareer}
+                        <Target className="h-3 w-3 mr-1" /> {profile.target_career}
                       </Badge>
                     )}
                   </>
@@ -113,21 +108,19 @@ export default function Profile() {
         </Card>
       </motion.div>
 
-      {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard title="Pontuação" value={user.totalScore.toLocaleString("pt-BR")} icon={TrendingUp} variant="electric" />
-        <StatCard title="Ranking" value={user.rankPosition > 0 ? `#${user.rankPosition}` : "—"} icon={Trophy} variant="gold" />
-        <StatCard title="Discursivas" value={user.totalEssays} icon={FileText} variant="default" />
-        <StatCard title="Nota Média" value={user.averageGrade > 0 ? user.averageGrade.toFixed(1) : "—"} icon={Target} variant="purple" />
+        <StatCard title="Pontuação" value={profile.total_score.toLocaleString("pt-BR")} icon={TrendingUp} variant="electric" />
+        <StatCard title="Ranking" value={profile.rank_position > 0 ? `#${profile.rank_position}` : "—"} icon={Trophy} variant="gold" />
+        <StatCard title="Discursivas" value={profile.total_essays} icon={FileText} variant="default" />
+        <StatCard title="Nota Média" value={profile.average_grade > 0 ? Number(profile.average_grade).toFixed(1) : "—"} icon={Target} variant="purple" />
       </div>
 
-      {/* Badges */}
       <Card className="gradient-card border-border">
         <CardHeader>
           <CardTitle className="text-base font-display">🏅 Conquistas</CardTitle>
         </CardHeader>
         <CardContent>
-          <BadgeDisplay badges={userBadges} />
+          <BadgeDisplay badges={badges} />
         </CardContent>
       </Card>
     </div>
