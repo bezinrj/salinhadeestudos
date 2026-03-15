@@ -44,6 +44,13 @@ export type Database = {
             referencedRelation: "question_comments"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "comment_votes_user_id_profiles_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       profile_likes: {
@@ -143,7 +150,15 @@ export type Database = {
           question_id?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "question_comments_user_id_profiles_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
