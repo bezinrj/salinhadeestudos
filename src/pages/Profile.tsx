@@ -146,6 +146,7 @@ export default function Profile() {
         <StatCard title="Ranking" value={profile.rank_position > 0 ? `#${profile.rank_position}` : "—"} icon={Trophy} variant="gold" />
         <StatCard title="Discursivas" value={profile.total_essays} icon={FileText} variant="default" />
         <StatCard title="Nota Média" value={profile.average_grade > 0 ? Number(profile.average_grade).toFixed(1) : "—"} icon={Target} variant="purple" />
+        <StatCard title="Reputação" value={profile.comment_score !== null && profile.comment_score !== undefined ? (profile.comment_score > 0 ? `+${profile.comment_score}` : String(profile.comment_score)) : "0"} icon={MessageSquare} variant="default" />
       </div>
 
       {isOwnProfile && (
