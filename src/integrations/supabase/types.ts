@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      profile_likes: {
+        Row: {
+          created_at: string | null
+          id: string
+          liked_id: string
+          liker_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          liked_id: string
+          liker_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          liked_id?: string
+          liker_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -21,6 +42,7 @@ export type Database = {
           bio: string | null
           created_at: string | null
           id: string
+          likes_count: number | null
           name: string | null
           rank_position: number | null
           streak: number | null
@@ -36,6 +58,7 @@ export type Database = {
           bio?: string | null
           created_at?: string | null
           id: string
+          likes_count?: number | null
           name?: string | null
           rank_position?: number | null
           streak?: number | null
@@ -51,6 +74,7 @@ export type Database = {
           bio?: string | null
           created_at?: string | null
           id?: string
+          likes_count?: number | null
           name?: string | null
           rank_position?: number | null
           streak?: number | null
@@ -59,6 +83,30 @@ export type Database = {
           total_score?: number | null
           username?: string
           weekly_hours?: number | null
+        }
+        Relationships: []
+      }
+      question_comments: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          question_id: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          question_id: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          question_id?: string
+          user_id?: string
         }
         Relationships: []
       }
