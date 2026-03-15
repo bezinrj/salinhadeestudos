@@ -387,6 +387,7 @@ export const weeklyQuestion: Question = {
   id: "qw1",
   title: "Desafio Semanal: Provas Ilícitas e Serendipidade",
   isWeekly: true,
+  isPremium: true,
   deadline: "2026-03-15T23:59:59",
   participants: 0,
 };

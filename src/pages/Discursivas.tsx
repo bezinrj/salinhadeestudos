@@ -72,6 +72,26 @@ export default function Discursivas() {
             ))}
           </div>
         </div>
+        <div>
+          <p className="text-xs text-muted-foreground mb-2 uppercase tracking-wider">Tipo</p>
+          <div className="flex flex-wrap gap-2">
+            {types.map(t => (
+              <Badge
+                key={t}
+                variant="outline"
+                className={cn(
+                  "cursor-pointer transition-colors text-xs px-3 py-1",
+                  type === t
+                    ? "bg-primary/10 text-primary border-primary/30"
+                    : "border-border text-muted-foreground hover:border-primary/20 hover:text-foreground"
+                )}
+                onClick={() => setType(t)}
+              >
+                {t}
+              </Badge>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Questions Grid */}
