@@ -7,14 +7,19 @@ import { cn } from "@/lib/utils";
 
 const difficulties = ["Todas", "Fácil", "Médio", "Difícil"] as const;
 const careers = ["Todas", "Delegado", "Magistratura", "Promotoria"] as const;
+const types = ["Todas", "Gratuitas", "Premium"] as const;
 
 export default function Discursivas() {
   const [difficulty, setDifficulty] = useState<string>("Todas");
   const [career, setCareer] = useState<string>("Todas");
+  const [type, setType] = useState<string>("Todas");
 
   const filtered = questions.filter(q => {
     if (difficulty !== "Todas" && q.difficulty !== difficulty) return false;
     if (career !== "Todas" && q.career !== career) return false;
+    const isPremium = q.isPremium || q.isWeekly;
+    if (type === "Gratuitas" && isPremium) return false;
+    if (type === "Premium" && !isPremium) return false;
     return true;
   });
 
