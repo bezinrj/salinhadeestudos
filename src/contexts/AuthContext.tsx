@@ -23,11 +23,13 @@ interface AuthContextType {
   profile: Profile | null;
   isAuthenticated: boolean;
   loading: boolean;
+  subscribed: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   register: (username: string, email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   updateProfile: (updates: Partial<Pick<Profile, "name" | "bio" | "avatar_url" | "target_career" | "username">>) => Promise<void>;
   refreshProfile: () => Promise<void>;
+  checkSubscription: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -36,7 +38,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [subscribed, setSubscribed] = useState(false);
   const isAuthenticated = !!user;
+
+  const checkSubscription = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { setSubscribed(false); return; }
+      const { data, error } = await supabase.functions.invoke("check-subscription", {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (!error && data?.subscribed) {
+        setSubscribed(true);
+      } else {
+        setSubscribed(false);
+      }
+    } catch {
+      setSubscribed(false);
+    }
+  };
 
   const fetchProfile = async (userId: string) => {
     const { data, error } = await supabase
@@ -58,8 +78,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
         setUser(session.user);
-        // Use setTimeout to avoid potential deadlock with Supabase client
-        setTimeout(() => fetchProfile(session.user.id), 0);
+        setTimeout(() => {
+          fetchProfile(session.user.id);
+          checkSubscription();
+        }, 0);
       } else {
         setUser(null);
         setProfile(null);
@@ -72,6 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (session?.user) {
         setUser(session.user);
         fetchProfile(session.user.id);
+        checkSubscription();
       }
       setLoading(false);
     });
@@ -113,7 +136,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, profile, isAuthenticated, loading, login, register, logout, updateProfile, refreshProfile }}>
+    <AuthContext.Provider value={{ user, profile, isAuthenticated, loading, subscribed, login, register, logout, updateProfile, refreshProfile, checkSubscription }}>
       {children}
     </AuthContext.Provider>
   );

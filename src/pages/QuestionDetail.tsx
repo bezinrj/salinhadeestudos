@@ -7,19 +7,22 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, CheckCircle2, XCircle, AlertTriangle, Lightbulb, FileText, Send } from "lucide-react";
+import { ArrowLeft, CheckCircle2, XCircle, AlertTriangle, Lightbulb, FileText, Send, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 
 export default function QuestionDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user, profile } = useAuth();
+  const { user, profile, subscribed } = useAuth();
   const [answer, setAnswer] = useState("");
   const [correction, setCorrection] = useState<CorrectionResult | null>(null);
 
   const question = [...questions, weeklyQuestion].find(q => q.id === id);
   if (!question) return <div className="text-center py-16 text-muted-foreground">Questão não encontrada.</div>;
+
+  const isPremium = question.isPremium || question.isWeekly;
+  const canAnswer = !isPremium || subscribed;
 
   const handleSubmit = () => {
     if (answer.trim().length < 50) return;
@@ -73,6 +76,7 @@ export default function QuestionDetail() {
       </Card>
 
       {!correction ? (
+        canAnswer ? (
         <Card className="gradient-card border-border">
           <CardHeader>
             <CardTitle className="text-base font-display flex items-center gap-2">
@@ -94,6 +98,18 @@ export default function QuestionDetail() {
             </div>
           </CardContent>
         </Card>
+        ) : (
+        <Card className="gradient-card border-gold/20">
+          <CardContent className="p-8 text-center space-y-4">
+            <Lock className="h-10 w-10 text-gold mx-auto" />
+            <p className="text-lg font-display font-bold">Questão exclusiva para assinantes</p>
+            <p className="text-sm text-muted-foreground">Assine um plano para responder questões premium e participar dos desafios semanais.</p>
+            <Button onClick={() => navigate("/meu-plano")} className="gradient-electric text-white font-semibold">
+              Ver planos
+            </Button>
+          </CardContent>
+        </Card>
+        )
       ) : (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
           {/* Grade Card */}
