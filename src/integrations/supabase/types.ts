@@ -14,6 +14,38 @@ export type Database = {
   }
   public: {
     Tables: {
+      comment_votes: {
+        Row: {
+          comment_id: string
+          created_at: string | null
+          id: string
+          user_id: string
+          vote_type: string
+        }
+        Insert: {
+          comment_id: string
+          created_at?: string | null
+          id?: string
+          user_id: string
+          vote_type: string
+        }
+        Update: {
+          comment_id?: string
+          created_at?: string | null
+          id?: string
+          user_id?: string
+          vote_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comment_votes_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "question_comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profile_likes: {
         Row: {
           created_at: string | null
@@ -40,6 +72,7 @@ export type Database = {
           avatar_url: string | null
           average_grade: number | null
           bio: string | null
+          comment_score: number | null
           created_at: string | null
           id: string
           likes_count: number | null
@@ -56,6 +89,7 @@ export type Database = {
           avatar_url?: string | null
           average_grade?: number | null
           bio?: string | null
+          comment_score?: number | null
           created_at?: string | null
           id: string
           likes_count?: number | null
@@ -72,6 +106,7 @@ export type Database = {
           avatar_url?: string | null
           average_grade?: number | null
           bio?: string | null
+          comment_score?: number | null
           created_at?: string | null
           id?: string
           likes_count?: number | null
