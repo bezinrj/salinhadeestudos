@@ -38,7 +38,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [subscribed, setSubscribed] = useState(false);
   const isAuthenticated = !!user;
+
+  const checkSubscription = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { setSubscribed(false); return; }
+      const { data, error } = await supabase.functions.invoke("check-subscription", {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (!error && data?.subscribed) {
+        setSubscribed(true);
+      } else {
+        setSubscribed(false);
+      }
+    } catch {
+      setSubscribed(false);
+    }
+  };
 
   const fetchProfile = async (userId: string) => {
     const { data, error } = await supabase
