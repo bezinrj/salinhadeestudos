@@ -14,7 +14,7 @@ import { motion } from "framer-motion";
 export default function QuestionDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user, profile } = useAuth();
+  const { user, profile, subscribed } = useAuth();
   const [answer, setAnswer] = useState("");
   const [correction, setCorrection] = useState<CorrectionResult | null>(null);
 
