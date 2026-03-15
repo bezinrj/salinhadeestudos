@@ -21,6 +21,9 @@ export default function QuestionDetail() {
   const question = [...questions, weeklyQuestion].find(q => q.id === id);
   if (!question) return <div className="text-center py-16 text-muted-foreground">Questão não encontrada.</div>;
 
+  const isPremium = question.isPremium || question.isWeekly;
+  const canAnswer = !isPremium || subscribed;
+
   const handleSubmit = () => {
     if (answer.trim().length < 50) return;
     if (!question.barema) return;
