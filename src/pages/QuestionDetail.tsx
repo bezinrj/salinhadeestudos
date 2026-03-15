@@ -76,6 +76,7 @@ export default function QuestionDetail() {
       </Card>
 
       {!correction ? (
+        canAnswer ? (
         <Card className="gradient-card border-border">
           <CardHeader>
             <CardTitle className="text-base font-display flex items-center gap-2">
@@ -97,6 +98,18 @@ export default function QuestionDetail() {
             </div>
           </CardContent>
         </Card>
+        ) : (
+        <Card className="gradient-card border-gold/20">
+          <CardContent className="p-8 text-center space-y-4">
+            <Lock className="h-10 w-10 text-gold mx-auto" />
+            <p className="text-lg font-display font-bold">Questão exclusiva para assinantes</p>
+            <p className="text-sm text-muted-foreground">Assine um plano para responder questões premium e participar dos desafios semanais.</p>
+            <Button onClick={() => navigate("/meu-plano")} className="gradient-electric text-white font-semibold">
+              Ver planos
+            </Button>
+          </CardContent>
+        </Card>
+        )
       ) : (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
           {/* Grade Card */}
