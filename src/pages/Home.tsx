@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { Scale, FileText, Trophy, Timer, Target, TrendingUp, Users, ChevronRight } from "lucide-react";
 import { FeatureTour } from "@/components/FeatureTour";
 import { Card, CardContent } from "@/components/ui/card";
-import { demoRanking } from "@/data/mockData";
+import { PricingCards } from "@/components/PricingCards";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 const features = [
