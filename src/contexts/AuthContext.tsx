@@ -15,6 +15,8 @@ export interface Profile {
   total_essays: number;
   average_grade: number;
   streak: number;
+  likes_count: number;
+  comment_score: number;
   created_at: string;
 }
 

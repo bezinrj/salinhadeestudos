@@ -13,7 +13,7 @@ import { badges } from "@/data/mockData";
 import { BadgeDisplay } from "@/components/BadgeDisplay";
 import { StatCard } from "@/components/StatCard";
 import { ProfileLikeButton } from "@/components/ProfileLikeButton";
-import { Trophy, FileText, Timer, TrendingUp, Target, Camera, Pencil, Save, X, Heart } from "lucide-react";
+import { Trophy, FileText, Timer, TrendingUp, Target, Camera, Pencil, Save, X, Heart, MessageSquare } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function Profile() {
@@ -141,11 +141,12 @@ export default function Profile() {
         </Card>
       </motion.div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
         <StatCard title="Pontuação" value={profile.total_score.toLocaleString("pt-BR")} icon={TrendingUp} variant="electric" />
         <StatCard title="Ranking" value={profile.rank_position > 0 ? `#${profile.rank_position}` : "—"} icon={Trophy} variant="gold" />
         <StatCard title="Discursivas" value={profile.total_essays} icon={FileText} variant="default" />
         <StatCard title="Nota Média" value={profile.average_grade > 0 ? Number(profile.average_grade).toFixed(1) : "—"} icon={Target} variant="purple" />
+        <StatCard title="Reputação" value={profile.comment_score !== null && profile.comment_score !== undefined ? (profile.comment_score > 0 ? `+${profile.comment_score}` : String(profile.comment_score)) : "0"} icon={MessageSquare} variant="default" />
       </div>
 
       {isOwnProfile && (
