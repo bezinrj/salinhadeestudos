@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { questions, weeklyQuestion, evaluateAnswer, addWeeklyScore, type CorrectionResult } from "@/data/mockData";
+import { questions, weeklyQuestion, evaluateAnswer, addWeeklyScore, addRegularAnswer, hasAnsweredWeekly, getWeeklyAnswerScore, type CorrectionResult } from "@/data/mockData";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,15 +24,21 @@ export default function QuestionDetail() {
   const isPremium = question.isPremium || question.isWeekly;
   const canAnswer = !isPremium || subscribed;
 
+  const alreadyAnsweredWeekly = question.isWeekly && user ? hasAnsweredWeekly(user.id, question.id) : false;
+  const previousWeeklyScore = question.isWeekly && user ? getWeeklyAnswerScore(user.id, question.id) : null;
+
   const handleSubmit = () => {
     if (answer.trim().length < 50) return;
     if (!question.barema) return;
     const result = evaluateAnswer(answer, question.barema);
     setCorrection(result);
 
-    // If it's a weekly question, add score to ranking
     if (question.isWeekly && user) {
+      // Weekly: adds to ranking (only once, enforced in addWeeklyScore)
       addWeeklyScore(user.id, question.id, result.grade, answer, result.feedback);
+    } else if (user) {
+      // Regular: only counts for badges/totalEssays, NOT ranking
+      addRegularAnswer(user.id, question.id, result.grade);
     }
   };
 
@@ -76,7 +82,18 @@ export default function QuestionDetail() {
       </Card>
 
       {!correction ? (
-        canAnswer ? (
+        alreadyAnsweredWeekly ? (
+        <Card className="gradient-card border-gold/20">
+          <CardContent className="p-8 text-center space-y-4">
+            <CheckCircle2 className="h-10 w-10 text-gold mx-auto" />
+            <p className="text-lg font-display font-bold">Você já respondeu esta questão da semana</p>
+            {previousWeeklyScore !== null && (
+              <p className="text-2xl font-display font-bold text-primary">{previousWeeklyScore.toFixed(1)} / 10</p>
+            )}
+            <p className="text-sm text-muted-foreground">Questões da semana só podem ser respondidas uma vez. Sua nota foi adicionada ao ranking.</p>
+          </CardContent>
+        </Card>
+        ) : canAnswer ? (
         <Card className="gradient-card border-border">
           <CardHeader>
             <CardTitle className="text-base font-display flex items-center gap-2">
@@ -110,7 +127,7 @@ export default function QuestionDetail() {
           </CardContent>
         </Card>
         )
-      ) : (
+        ) : (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
           {/* Grade Card */}
           <Card className="gradient-card border-primary/20 glow-electric">

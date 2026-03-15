@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { questions } from "@/data/mockData";
+import { questions, getExpiredWeeklyQuestions } from "@/data/mockData";
 import { QuestionCard } from "@/components/QuestionCard";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
@@ -14,7 +14,9 @@ export default function Discursivas() {
   const [career, setCareer] = useState<string>("Todas");
   const [type, setType] = useState<string>("Todas");
 
-  const filtered = questions.filter(q => {
+  const allQuestions = [...questions, ...getExpiredWeeklyQuestions()];
+
+  const filtered = allQuestions.filter(q => {
     if (difficulty !== "Todas" && q.difficulty !== difficulty) return false;
     if (career !== "Todas" && q.career !== career) return false;
     const isPremium = q.isPremium || q.isWeekly;

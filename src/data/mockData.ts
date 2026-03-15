@@ -162,6 +162,13 @@ export const badges: Badge[] = [
   { id: "b14", name: "Mestre da Constância", description: "Manteve estudo diário por 60 dias", icon: "🔱", earned: false, category: "constância" },
   { id: "b15", name: "Participou da Questão da Semana", description: "Respondeu o desafio semanal", icon: "📅", earned: false, category: "semanal" },
   { id: "b16", name: "Evolução Rápida", description: "Melhorou sua nota média em 1 ponto em 7 dias", icon: "🚀", earned: false, category: "evolução" },
+  { id: "b17", name: "50 Questões Respondidas", description: "Respondeu 50 questões discursivas", icon: "📋", earned: false, category: "discursivas" },
+  { id: "b18", name: "100 Questões Respondidas", description: "Respondeu 100 questões discursivas", icon: "💯", earned: false, category: "discursivas" },
+  { id: "b19", name: "200 Questões Respondidas", description: "Respondeu 200 questões discursivas", icon: "🏅", earned: false, category: "discursivas" },
+  { id: "b20", name: "500 Questões Respondidas", description: "Respondeu 500 questões discursivas", icon: "🎖️", earned: false, category: "discursivas" },
+  { id: "b21", name: "1000 Questões Respondidas", description: "Respondeu 1000 questões discursivas", icon: "🏛️", earned: false, category: "discursivas" },
+  { id: "b22", name: "5000 Questões Respondidas", description: "Respondeu 5000 questões discursivas", icon: "👨‍⚖️", earned: false, category: "discursivas" },
+  { id: "b23", name: "Assinante Anual", description: "Possui plano anual ativo", icon: "💎", earned: false, category: "assinatura" },
 ];
 
 // ========== MOCK USERS DB ==========
@@ -285,7 +292,28 @@ export function getWeeklyRanking(): RankingEntry[] {
   return entries;
 }
 
+// Track answered weekly questions (userId -> Set of questionIds)
+const answeredWeeklyMap = new Map<string, Set<string>>();
+
+export function hasAnsweredWeekly(userId: string, questionId: string): boolean {
+  return answeredWeeklyMap.get(userId)?.has(questionId) || false;
+}
+
+export function markWeeklyAnswered(userId: string, questionId: string) {
+  if (!answeredWeeklyMap.has(userId)) answeredWeeklyMap.set(userId, new Set());
+  answeredWeeklyMap.get(userId)!.add(questionId);
+}
+
+export function getWeeklyAnswerScore(userId: string, questionId: string): number | null {
+  const answer = weeklyScores.find(s => s.userId === userId && s.questionId === questionId);
+  return answer ? answer.score : null;
+}
+
 export function addWeeklyScore(userId: string, questionId: string, score: number, answerText: string, feedback: string) {
+  // Prevent duplicate weekly answers
+  if (hasAnsweredWeekly(userId, questionId)) return;
+  markWeeklyAnswered(userId, questionId);
+
   weeklyScores.push({
     id: `da-${Date.now()}`,
     userId,
@@ -295,7 +323,7 @@ export function addWeeklyScore(userId: string, questionId: string, score: number
     feedback,
     createdAt: new Date().toISOString(),
   });
-  // Update user stats
+  // Update user stats — only weekly scores affect ranking
   const user = registeredUsers.find(u => u.id === userId);
   if (user) {
     user.totalEssays += 1;
@@ -304,6 +332,23 @@ export function addWeeklyScore(userId: string, questionId: string, score: number
     user.averageGrade = userScores.length > 0 ? Math.round((user.totalScore / userScores.length) * 10) / 10 : 0;
     user.rankPosition = getWeeklyRanking().find(e => e.userId === userId)?.position || 0;
   }
+}
+
+// Regular answers: count for badges/totalEssays only, NOT for ranking
+export function addRegularAnswer(userId: string, questionId: string, score: number) {
+  const user = registeredUsers.find(u => u.id === userId);
+  if (user) {
+    user.totalEssays += 1;
+  }
+}
+
+// Get all expired weekly questions (past deadline) to show in discursivas
+export function getExpiredWeeklyQuestions(): Question[] {
+  const now = new Date();
+  if (weeklyQuestion.deadline && new Date(weeklyQuestion.deadline) < now) {
+    return [{ ...weeklyQuestion, isWeekly: false, isPremium: false }];
+  }
+  return [];
 }
 
 // ========== QUESTÃO ÚNICA ==========
