@@ -1,15 +1,15 @@
-import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "react-router-dom";
-import { MessageSquare, Send, Trash2 } from "lucide-react";
+import { MessageSquare, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "@/hooks/use-toast";
+import { RichTextEditor } from "@/components/RichTextEditor";
+import { CommentVoteButton } from "@/components/CommentVoteButton";
+import DOMPurify from "dompurify";
 
 interface Comment {
   id: string;
@@ -21,12 +21,12 @@ interface Comment {
     username: string;
     name: string | null;
     avatar_url: string | null;
+    comment_score: number | null;
   };
 }
 
 export function QuestionComments({ questionId }: { questionId: string }) {
   const { user } = useAuth();
-  const [content, setContent] = useState("");
   const queryClient = useQueryClient();
 
   const { data: comments = [], isLoading } = useQuery({
@@ -34,7 +34,7 @@ export function QuestionComments({ questionId }: { questionId: string }) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("question_comments")
-        .select("*, profiles(username, name, avatar_url)")
+        .select("*, profiles(username, name, avatar_url, comment_score)")
         .eq("question_id", questionId)
         .order("created_at", { ascending: true });
       if (error) throw error;
@@ -43,17 +43,20 @@ export function QuestionComments({ questionId }: { questionId: string }) {
   });
 
   const addComment = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (html: string) => {
       if (!user) throw new Error("Not authenticated");
+      const clean = DOMPurify.sanitize(html, {
+        ALLOWED_TAGS: ["b", "strong", "i", "em", "u", "s", "del", "mark", "br", "img", "p", "div", "span"],
+        ALLOWED_ATTR: ["src", "alt", "style", "class"],
+      });
       const { error } = await supabase.from("question_comments").insert({
         question_id: questionId,
         user_id: user.id,
-        content: content.trim(),
+        content: clean,
       });
       if (error) throw error;
     },
     onSuccess: () => {
-      setContent("");
       queryClient.invalidateQueries({ queryKey: ["question-comments", questionId] });
     },
     onError: () => toast({ title: "Erro ao comentar", variant: "destructive" }),
@@ -70,12 +73,18 @@ export function QuestionComments({ questionId }: { questionId: string }) {
   });
 
   const getInitials = (name: string | null, username: string) =>
-    (name || username || "U").split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2);
+    (name || username || "U").split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
 
   const formatDate = (date: string) => {
     const d = new Date(date);
     return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
   };
+
+  const sanitize = (html: string) =>
+    DOMPurify.sanitize(html, {
+      ALLOWED_TAGS: ["b", "strong", "i", "em", "u", "s", "del", "mark", "br", "img", "p", "div", "span"],
+      ALLOWED_ATTR: ["src", "alt", "style", "class"],
+    });
 
   return (
     <Card className="gradient-card border-border">
@@ -86,7 +95,6 @@ export function QuestionComments({ questionId }: { questionId: string }) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Comment list */}
         {isLoading ? (
           <p className="text-sm text-muted-foreground">Carregando...</p>
         ) : comments.length === 0 ? (
@@ -119,9 +127,25 @@ export function QuestionComments({ questionId }: { questionId: string }) {
                     >
                       {c.profiles.name || c.profiles.username}
                     </Link>
+                    {(c.profiles.comment_score ?? 0) !== 0 && (
+                      <span
+                        className={`text-[10px] font-bold ${
+                          (c.profiles.comment_score ?? 0) > 0 ? "text-primary" : "text-destructive"
+                        }`}
+                      >
+                        {(c.profiles.comment_score ?? 0) > 0 ? "+" : ""}
+                        {c.profiles.comment_score}
+                      </span>
+                    )}
                     <span className="text-[10px] text-muted-foreground">{formatDate(c.created_at)}</span>
                   </div>
-                  <p className="text-sm text-foreground/80 mt-1 break-words">{c.content}</p>
+                  <div
+                    className="text-sm text-foreground/80 mt-1 break-words [&_img]:max-w-[200px] [&_img]:rounded [&_img]:my-1 [&_mark]:bg-accent/40 [&_mark]:px-0.5 [&_mark]:rounded"
+                    dangerouslySetInnerHTML={{ __html: sanitize(c.content) }}
+                  />
+                  <div className="mt-1.5">
+                    <CommentVoteButton commentId={c.id} />
+                  </div>
                 </div>
                 {user?.id === c.user_id && (
                   <button
@@ -136,23 +160,9 @@ export function QuestionComments({ questionId }: { questionId: string }) {
           </div>
         )}
 
-        {/* Add comment */}
         {user && (
-          <div className="flex gap-2 pt-2 border-t border-border">
-            <Textarea
-              placeholder="Escreva seu comentário..."
-              value={content}
-              onChange={e => setContent(e.target.value)}
-              className="min-h-[60px] bg-secondary border-border text-sm resize-none flex-1"
-            />
-            <Button
-              size="sm"
-              onClick={() => addComment.mutate()}
-              disabled={!content.trim() || addComment.isPending}
-              className="gradient-electric text-white self-end"
-            >
-              <Send className="h-4 w-4" />
-            </Button>
+          <div className="pt-2 border-t border-border">
+            <RichTextEditor onSubmit={(html) => addComment.mutate(html)} isPending={addComment.isPending} />
           </div>
         )}
       </CardContent>
