@@ -16,6 +16,7 @@ export interface User {
   streak: number;
   badges: Badge[];
   createdAt: string;
+  subscription?: Subscription;
 }
 
 export interface Badge {
