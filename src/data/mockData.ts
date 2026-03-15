@@ -80,6 +80,17 @@ export interface BaremaScore {
   subitems: { description: string; maxScore: number; earnedScore: number; status: "full" | "partial" | "missed" }[];
 }
 
+export interface Subscription {
+  planId: string;
+  planName: string;
+  billingCycle: "monthly" | "quarterly" | "annual";
+  priceMonthly: number;
+  priceTotal: number;
+  startDate: string;
+  endDate: string;
+  status: "active" | "expired" | "cancelled";
+}
+
 export interface StudySession {
   id: string;
   userId: string;
