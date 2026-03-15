@@ -82,7 +82,18 @@ export default function QuestionDetail() {
       </Card>
 
       {!correction ? (
-        canAnswer ? (
+        alreadyAnsweredWeekly ? (
+        <Card className="gradient-card border-gold/20">
+          <CardContent className="p-8 text-center space-y-4">
+            <CheckCircle2 className="h-10 w-10 text-gold mx-auto" />
+            <p className="text-lg font-display font-bold">Você já respondeu esta questão da semana</p>
+            {previousWeeklyScore !== null && (
+              <p className="text-2xl font-display font-bold text-primary">{previousWeeklyScore.toFixed(1)} / 10</p>
+            )}
+            <p className="text-sm text-muted-foreground">Questões da semana só podem ser respondidas uma vez. Sua nota foi adicionada ao ranking.</p>
+          </CardContent>
+        </Card>
+        ) : canAnswer ? (
         <Card className="gradient-card border-border">
           <CardHeader>
             <CardTitle className="text-base font-display flex items-center gap-2">
