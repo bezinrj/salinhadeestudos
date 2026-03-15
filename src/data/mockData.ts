@@ -162,6 +162,13 @@ export const badges: Badge[] = [
   { id: "b14", name: "Mestre da Constância", description: "Manteve estudo diário por 60 dias", icon: "🔱", earned: false, category: "constância" },
   { id: "b15", name: "Participou da Questão da Semana", description: "Respondeu o desafio semanal", icon: "📅", earned: false, category: "semanal" },
   { id: "b16", name: "Evolução Rápida", description: "Melhorou sua nota média em 1 ponto em 7 dias", icon: "🚀", earned: false, category: "evolução" },
+  { id: "b17", name: "50 Questões Respondidas", description: "Respondeu 50 questões discursivas", icon: "📋", earned: false, category: "discursivas" },
+  { id: "b18", name: "100 Questões Respondidas", description: "Respondeu 100 questões discursivas", icon: "💯", earned: false, category: "discursivas" },
+  { id: "b19", name: "200 Questões Respondidas", description: "Respondeu 200 questões discursivas", icon: "🏅", earned: false, category: "discursivas" },
+  { id: "b20", name: "500 Questões Respondidas", description: "Respondeu 500 questões discursivas", icon: "🎖️", earned: false, category: "discursivas" },
+  { id: "b21", name: "1000 Questões Respondidas", description: "Respondeu 1000 questões discursivas", icon: "🏛️", earned: false, category: "discursivas" },
+  { id: "b22", name: "5000 Questões Respondidas", description: "Respondeu 5000 questões discursivas", icon: "👨‍⚖️", earned: false, category: "discursivas" },
+  { id: "b23", name: "Assinante Anual", description: "Possui plano anual ativo", icon: "💎", earned: false, category: "assinatura" },
 ];
 
 // ========== MOCK USERS DB ==========
