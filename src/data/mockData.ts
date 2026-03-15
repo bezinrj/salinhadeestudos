@@ -377,6 +377,7 @@ c) Explique a Teoria dos Frutos da Árvore Envenenada, indicando sua aplicação
 d) É possível reconhecer a licitude das provas obtidas por meio da busca e apreensão no caso narrado? Em caso afirmativo, indique a teoria aplicável, seus pressupostos e a razão pela qual a prova não deve ser considerada contaminada.`,
     difficulty: "Difícil",
     participants: 45,
+    isPremium: false,
     barema: questionBarema,
   },
 ];
