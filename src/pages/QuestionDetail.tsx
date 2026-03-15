@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { questions, weeklyQuestion, evaluateAnswer, addWeeklyScore, type CorrectionResult } from "@/data/mockData";
+import { questions, weeklyQuestion, evaluateAnswer, addWeeklyScore, addRegularAnswer, hasAnsweredWeekly, getWeeklyAnswerScore, type CorrectionResult } from "@/data/mockData";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
