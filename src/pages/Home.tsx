@@ -59,9 +59,10 @@ export default function Home() {
               <Button size="lg" onClick={() => navigate("/login")} className="gradient-electric text-white font-semibold text-base px-8">
                 Começar agora <ChevronRight className="ml-1 h-4 w-4" />
               </Button>
-              <Button size="lg" variant="outline" className="border-border text-foreground hover:bg-secondary">
+              <Button size="lg" variant="outline" onClick={() => setTourOpen(true)} className="border-border text-foreground hover:bg-secondary">
                 Conhecer funcionalidades
               </Button>
+              <FeatureTour open={tourOpen} onOpenChange={setTourOpen} />
             </div>
           </motion.div>
         </div>
