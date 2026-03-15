@@ -1,5 +1,5 @@
 import { useLocation, Link, useNavigate } from "react-router-dom";
-import { Scale, FileText, Timer, Trophy, User, LogOut } from "lucide-react";
+import { Scale, FileText, Timer, Trophy, User, LogOut, CreditCard } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 
