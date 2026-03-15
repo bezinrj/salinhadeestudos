@@ -171,8 +171,49 @@ export const registeredUsers: User[] = [
     avatar: "CS", bio: "Concurseiro focado em Delegado. Estudando há 2 anos.", targetCareer: "Delegado",
     totalScore: 0, rankPosition: 0, weeklyHours: 0, totalEssays: 0, averageGrade: 0, streak: 0,
     badges: [], createdAt: "2026-01-15",
+    subscription: {
+      planId: "monthly", planName: "Mensal", billingCycle: "monthly",
+      priceMonthly: 49.90, priceTotal: 49.90,
+      startDate: "2026-03-01", endDate: "2026-03-31", status: "active",
+    },
   },
 ];
+
+export const plans = [
+  {
+    id: "monthly", name: "Mensal", billingCycle: "monthly" as const,
+    priceMonthly: 49.90, priceTotal: 49.90, discount: 0,
+    features: ["Discursivas ilimitadas", "Correção com espelho detalhado", "Ranking semanal", "Cronômetro de estudos", "Badges e gamificação"],
+  },
+  {
+    id: "quarterly", name: "Trimestral", billingCycle: "quarterly" as const,
+    priceMonthly: 43.91, priceTotal: 131.73, discount: 12,
+    popular: true,
+    features: ["Tudo do plano Mensal", "12% de desconto", "Acesso prioritário a novidades", "Suporte prioritário"],
+  },
+  {
+    id: "annual", name: "Anual", billingCycle: "annual" as const,
+    priceMonthly: 33.43, priceTotal: 401.21, discount: 33,
+    features: ["Tudo do plano Trimestral", "33% de desconto", "Acesso antecipado a funcionalidades", "Badge exclusivo de assinante anual"],
+  },
+];
+
+export function updateUserSubscription(userId: string, planId: string): User | null {
+  const user = registeredUsers.find(u => u.id === userId);
+  const plan = plans.find(p => p.id === planId);
+  if (!user || !plan) return null;
+  const now = new Date();
+  const end = new Date(now);
+  if (plan.billingCycle === "monthly") end.setMonth(end.getMonth() + 1);
+  else if (plan.billingCycle === "quarterly") end.setMonth(end.getMonth() + 3);
+  else end.setFullYear(end.getFullYear() + 1);
+  user.subscription = {
+    planId: plan.id, planName: plan.name, billingCycle: plan.billingCycle,
+    priceMonthly: plan.priceMonthly, priceTotal: plan.priceTotal,
+    startDate: now.toISOString().split("T")[0], endDate: end.toISOString().split("T")[0], status: "active",
+  };
+  return user;
+}
 
 // Current user starts null (must login)
 export let currentUser: User | null = null;
