@@ -14,6 +14,7 @@ import WeeklyChallenge from "./pages/WeeklyChallenge";
 import Ranking from "./pages/Ranking";
 import StudyTimerPage from "./pages/StudyTimerPage";
 import Profile from "./pages/Profile";
+import MyPlan from "./pages/MyPlan";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -42,6 +43,7 @@ const App = () => (
               <Route path="/ranking" element={<Ranking />} />
               <Route path="/cronometro" element={<StudyTimerPage />} />
               <Route path="/perfil" element={<Profile />} />
+              <Route path="/meu-plano" element={<MyPlan />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

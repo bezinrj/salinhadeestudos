@@ -1,5 +1,5 @@
 import { useLocation, Link, useNavigate } from "react-router-dom";
-import { Scale, FileText, Timer, Trophy, User, LogOut } from "lucide-react";
+import { Scale, FileText, Timer, Trophy, User, LogOut, CreditCard } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -9,6 +9,7 @@ const navItems = [
   { path: "/cronometro", icon: Timer, label: "Timer" },
   { path: "/ranking", icon: Trophy, label: "Ranking" },
   { path: "/perfil", icon: User, label: "Perfil" },
+  { path: "/meu-plano", icon: CreditCard, label: "Plano" },
 ];
 
 export function BottomNav() {

@@ -1,4 +1,4 @@
-import { Scale, FileText, Timer, Trophy, User, Calendar, LayoutDashboard, LogOut } from "lucide-react";
+import { Scale, FileText, Timer, Trophy, User, Calendar, LayoutDashboard, LogOut, CreditCard } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -22,6 +22,7 @@ const mainItems = [
   { title: "Ranking", url: "/ranking", icon: Trophy },
   { title: "Cronômetro", url: "/cronometro", icon: Timer },
   { title: "Perfil", url: "/perfil", icon: User },
+  { title: "Meu Plano", url: "/meu-plano", icon: CreditCard },
 ];
 
 export function AppSidebar() {
