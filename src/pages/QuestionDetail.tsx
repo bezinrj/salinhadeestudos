@@ -24,15 +24,21 @@ export default function QuestionDetail() {
   const isPremium = question.isPremium || question.isWeekly;
   const canAnswer = !isPremium || subscribed;
 
+  const alreadyAnsweredWeekly = question.isWeekly && user ? hasAnsweredWeekly(user.id, question.id) : false;
+  const previousWeeklyScore = question.isWeekly && user ? getWeeklyAnswerScore(user.id, question.id) : null;
+
   const handleSubmit = () => {
     if (answer.trim().length < 50) return;
     if (!question.barema) return;
     const result = evaluateAnswer(answer, question.barema);
     setCorrection(result);
 
-    // If it's a weekly question, add score to ranking
     if (question.isWeekly && user) {
+      // Weekly: adds to ranking (only once, enforced in addWeeklyScore)
       addWeeklyScore(user.id, question.id, result.grade, answer, result.feedback);
+    } else if (user) {
+      // Regular: only counts for badges/totalEssays, NOT ranking
+      addRegularAnswer(user.id, question.id, result.grade);
     }
   };
 
