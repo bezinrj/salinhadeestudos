@@ -113,7 +113,7 @@ function OverviewTab() {
   const overviewCards = [
     { title: "Total de Usuários", value: stats?.totalUsers ?? 0, icon: Users, color: "text-blue-400", bg: "bg-blue-500/10" },
     { title: "Online Agora", value: stats?.onlineNow ?? 0, icon: Activity, color: "text-green-400", bg: "bg-green-500/10" },
-    { title: "Aguardando Aprovação", value: stats?.waitingApproval ?? 0, icon: Clock, color: "text-orange-400", bg: "bg-orange-500/10" },
+    { title: "Cortesias Ativas", value: stats?.manualPlans ?? 0, icon: Gift, color: "text-orange-400", bg: "bg-orange-500/10" },
     { title: "Ativos (24h)", value: stats?.activeUsers ?? 0, icon: UserCheck, color: "text-sky-400", bg: "bg-sky-500/10" },
     { title: "Bloqueados", value: stats?.blockedUsers ?? 0, icon: Ban, color: "text-red-400", bg: "bg-red-500/10" },
     { title: "Assinaturas Ativas", value: stats?.activeSubscriptions ?? 0, icon: CreditCard, color: "text-primary", bg: "bg-primary/10" },
