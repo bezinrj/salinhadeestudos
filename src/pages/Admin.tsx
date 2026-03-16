@@ -940,7 +940,7 @@ function WeeklyQuestionsTab() {
       {/* Existing questions */}
       <Card className="gradient-card border-border">
         <CardHeader>
-          <CardTitle className="text-sm font-medium">Questões Semanais</CardTitle>
+          <CardTitle className="text-sm font-medium">Todas as Questões</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           {questions?.length ? questions.map((q: any) => (
@@ -948,15 +948,21 @@ function WeeklyQuestionsTab() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <p className="text-sm font-medium">{q.title}</p>
-                  {q.is_active && new Date(q.deadline) > new Date() && (
+                  {q.is_weekly && (
+                    <Badge className="bg-gold/10 text-gold border-gold/20 text-[10px]">Semanal</Badge>
+                  )}
+                  {q.is_premium && !q.is_weekly && (
+                    <Badge className="bg-purple-500/20 text-purple-400 border-purple-400/30 text-[10px]">Premium</Badge>
+                  )}
+                  {q.is_active && (
                     <Badge className="bg-green-500/20 text-green-400 border-green-400/30 text-[10px]">Ativa</Badge>
                   )}
-                  {new Date(q.deadline) <= new Date() && (
+                  {q.deadline && new Date(q.deadline) <= new Date() && (
                     <Badge variant="outline" className="text-muted-foreground text-[10px]">Encerrada</Badge>
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">{q.career} · {q.discipline} · {q.difficulty}</p>
-                <p className="text-[10px] text-muted-foreground mt-1">Prazo: {new Date(q.deadline).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}</p>
+                {q.deadline && <p className="text-[10px] text-muted-foreground mt-1">Prazo: {new Date(q.deadline).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}</p>}
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 <Switch checked={q.is_active} onCheckedChange={(checked) => toggleMutation.mutate({ id: q.id, is_active: checked })} />
@@ -966,7 +972,7 @@ function WeeklyQuestionsTab() {
               </div>
             </div>
           )) : (
-            <p className="text-sm text-muted-foreground text-center py-4">Nenhuma questão semanal criada ainda.</p>
+            <p className="text-sm text-muted-foreground text-center py-4">Nenhuma questão criada ainda.</p>
           )}
         </CardContent>
       </Card>
