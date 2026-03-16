@@ -652,6 +652,21 @@ function WeeklyQuestionsTab() {
   const [generatingBarema, setGeneratingBarema] = useState(false);
   const [isWeekly, setIsWeekly] = useState(true);
   const [isPremiumQ, setIsPremiumQ] = useState(false);
+  const [mirrorText, setMirrorText] = useState("");
+  const [idealAnswer, setIdealAnswer] = useState("");
+
+  // Edit state
+  const [editingQuestion, setEditingQuestion] = useState<any>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editCareer, setEditCareer] = useState("Delegado");
+  const [editDiscipline, setEditDiscipline] = useState("");
+  const [editStatement, setEditStatement] = useState("");
+  const [editDifficulty, setEditDifficulty] = useState("Médio");
+  const [editBaremaJson, setEditBaremaJson] = useState("");
+  const [editMirrorText, setEditMirrorText] = useState("");
+  const [editIdealAnswer, setEditIdealAnswer] = useState("");
+  const [editIsWeekly, setEditIsWeekly] = useState(false);
+  const [editIsPremium, setEditIsPremium] = useState(false);
 
   const { data: questions } = useQuery({
     queryKey: ["admin-weekly-questions"],
@@ -669,17 +684,14 @@ function WeeklyQuestionsTab() {
     },
   });
 
-  // Calculate next Sunday 00:00 BRT (UTC-3)
   function getNextSundayDeadline(): string {
     const now = new Date();
-    // Convert to BRT
     const brt = new Date(now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
-    const dayOfWeek = brt.getDay(); // 0 = Sunday
+    const dayOfWeek = brt.getDay();
     const daysUntilSunday = dayOfWeek === 0 ? 7 : 7 - dayOfWeek;
     const nextSunday = new Date(brt);
     nextSunday.setDate(nextSunday.getDate() + daysUntilSunday);
     nextSunday.setHours(0, 0, 0, 0);
-    // Convert back: BRT is UTC-3
     const utcTime = new Date(nextSunday.getTime() + 3 * 60 * 60 * 1000);
     return utcTime.toISOString();
   }
@@ -689,12 +701,13 @@ function WeeklyQuestionsTab() {
       const baremaData = baremaJson.trim() ? JSON.parse(baremaJson) : null;
       if (isWeekly) {
         const deadline = getNextSundayDeadline();
-        // Deactivate previous weekly questions
         await (supabase.from("weekly_questions") as any).update({ is_active: false }).eq("is_active", true).eq("is_weekly", true);
         const { error } = await (supabase.from("weekly_questions") as any).insert({
           title, career, discipline, statement, difficulty, deadline,
           is_active: true, created_by: user?.id, barema: baremaData,
           is_weekly: true, is_premium: true,
+          mirror_text: mirrorText.trim() || null,
+          ideal_answer: idealAnswer.trim() || null,
         });
         if (error) throw error;
         await supabase.from("weekly_waitlist").update({ notified: false }).eq("notified", true);
@@ -703,6 +716,8 @@ function WeeklyQuestionsTab() {
           title, career, discipline, statement, difficulty,
           deadline: null, is_active: true, created_by: user?.id, barema: baremaData,
           is_weekly: false, is_premium: isPremiumQ,
+          mirror_text: mirrorText.trim() || null,
+          ideal_answer: idealAnswer.trim() || null,
         });
         if (error) throw error;
       }
@@ -710,7 +725,7 @@ function WeeklyQuestionsTab() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-weekly-questions"] });
       queryClient.invalidateQueries({ queryKey: ["discursivas-questions"] });
-      setTitle(""); setCareer("Delegado"); setDiscipline(""); setStatement(""); setDifficulty("Médio"); setBaremaJson(""); setTestResult(null); setTestAnswer(""); setShowTest(false); setGuidelines(""); setIsWeekly(true); setIsPremiumQ(false);
+      setTitle(""); setCareer("Delegado"); setDiscipline(""); setStatement(""); setDifficulty("Médio"); setBaremaJson(""); setTestResult(null); setTestAnswer(""); setShowTest(false); setGuidelines(""); setIsWeekly(true); setIsPremiumQ(false); setMirrorText(""); setIdealAnswer("");
       toast({ title: isWeekly ? "Questão semanal publicada!" : "Questão discursiva publicada!", description: isWeekly ? "Os usuários na lista de espera serão notificados." : undefined });
     },
     onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
@@ -734,6 +749,49 @@ function WeeklyQuestionsTab() {
       toast({ title: "Questão removida." });
     },
   });
+
+  const updateMutation = useMutation({
+    mutationFn: async () => {
+      if (!editingQuestion) return;
+      const baremaData = editBaremaJson.trim() ? JSON.parse(editBaremaJson) : null;
+      const { error } = await (supabase.from("weekly_questions") as any)
+        .update({
+          title: editTitle,
+          career: editCareer,
+          discipline: editDiscipline,
+          statement: editStatement,
+          difficulty: editDifficulty,
+          barema: baremaData,
+          is_weekly: editIsWeekly,
+          is_premium: editIsPremium,
+          mirror_text: editMirrorText.trim() || null,
+          ideal_answer: editIdealAnswer.trim() || null,
+        })
+        .eq("id", editingQuestion.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-weekly-questions"] });
+      queryClient.invalidateQueries({ queryKey: ["discursivas-questions"] });
+      setEditingQuestion(null);
+      toast({ title: "Questão atualizada!" });
+    },
+    onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
+  });
+
+  const openEditDialog = (q: any) => {
+    setEditingQuestion(q);
+    setEditTitle(q.title);
+    setEditCareer(q.career);
+    setEditDiscipline(q.discipline);
+    setEditStatement(q.statement);
+    setEditDifficulty(q.difficulty);
+    setEditBaremaJson(q.barema ? JSON.stringify(q.barema, null, 2) : "");
+    setEditIsWeekly(q.is_weekly);
+    setEditIsPremium(q.is_premium);
+    setEditMirrorText(q.mirror_text || "");
+    setEditIdealAnswer(q.ideal_answer || "");
+  };
 
   return (
     <div className="space-y-6">
@@ -799,7 +857,7 @@ function WeeklyQuestionsTab() {
           <div className="space-y-2">
             <label className="text-sm font-medium">Diretrizes / Gabarito (texto livre)</label>
             <Textarea
-              placeholder="Cole aqui as diretrizes de correção ou gabarito em texto livre. Ex: O candidato deve abordar os seguintes pontos: 1) Conceito de legítima defesa (art. 25 CP)..."
+              placeholder="Cole aqui as diretrizes de correção ou gabarito em texto livre..."
               value={guidelines}
               onChange={(e) => setGuidelines(e.target.value)}
               rows={6}
@@ -864,6 +922,26 @@ function WeeklyQuestionsTab() {
             <p className="text-xs text-muted-foreground">JSON gerado pela IA ou editado manualmente. Cada subitem precisa de keywords para a correção automática.</p>
           </div>
 
+          {/* Mirror and Ideal Answer */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Espelho Resumido</label>
+            <Textarea
+              placeholder="Resumo do que a questão exige do candidato. Se vazio, será gerado automaticamente a partir do barema."
+              value={mirrorText}
+              onChange={(e) => setMirrorText(e.target.value)}
+              rows={4}
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Resposta Ideal</label>
+            <Textarea
+              placeholder="Resposta completa de referência/gabarito. Se vazio, será gerada automaticamente a partir do barema."
+              value={idealAnswer}
+              onChange={(e) => setIdealAnswer(e.target.value)}
+              rows={6}
+            />
+          </div>
+
           {baremaJson.trim() && (
             <div className="space-y-3">
               <Button type="button" variant="outline" onClick={() => setShowTest(!showTest)} className="gap-2">
@@ -886,7 +964,10 @@ function WeeklyQuestionsTab() {
                       onClick={() => {
                         try {
                           const parsedBarema = JSON.parse(baremaJson);
-                          const result = evaluateAnswer(testAnswer, parsedBarema);
+                          const result = evaluateAnswer(testAnswer, parsedBarema, {
+                            mirror: mirrorText || undefined,
+                            idealAnswer: idealAnswer || undefined,
+                          });
                           setTestResult(result);
                         } catch (e) {
                           toast({ title: "Erro no JSON", description: "Verifique o formato do barema.", variant: "destructive" });
@@ -965,6 +1046,9 @@ function WeeklyQuestionsTab() {
                 {q.deadline && <p className="text-[10px] text-muted-foreground mt-1">Prazo: {new Date(q.deadline).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}</p>}
               </div>
               <div className="flex items-center gap-2 shrink-0">
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:text-primary" onClick={() => openEditDialog(q)}>
+                  <Pencil className="h-4 w-4" />
+                </Button>
                 <Switch checked={q.is_active} onCheckedChange={(checked) => toggleMutation.mutate({ id: q.id, is_active: checked })} />
                 <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => deleteMutation.mutate(q.id)}>
                   <Trash2 className="h-4 w-4" />
@@ -976,6 +1060,74 @@ function WeeklyQuestionsTab() {
           )}
         </CardContent>
       </Card>
+
+      {/* Edit Dialog */}
+      {editingQuestion && (
+        <Drawer open onOpenChange={(open) => !open && setEditingQuestion(null)}>
+          <DrawerContent className="max-h-[90vh]">
+            <DrawerHeader>
+              <DrawerTitle>Editar Questão</DrawerTitle>
+              <DrawerDescription>Altere os campos desejados e salve.</DrawerDescription>
+            </DrawerHeader>
+            <div className="px-4 pb-6 space-y-3 overflow-y-auto">
+              <Input placeholder="Título" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
+              <div className="grid grid-cols-2 gap-3">
+                <Select value={editCareer} onValueChange={setEditCareer}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Delegado">Delegado</SelectItem>
+                    <SelectItem value="Magistratura">Magistratura</SelectItem>
+                    <SelectItem value="Promotoria">Promotoria</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={editDifficulty} onValueChange={setEditDifficulty}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Fácil">Fácil</SelectItem>
+                    <SelectItem value="Médio">Médio</SelectItem>
+                    <SelectItem value="Difícil">Difícil</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Select value={editDiscipline} onValueChange={setEditDiscipline}>
+                <SelectTrigger><SelectValue placeholder="Matéria" /></SelectTrigger>
+                <SelectContent>
+                  {disciplines.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Textarea placeholder="Enunciado" value={editStatement} onChange={(e) => setEditStatement(e.target.value)} rows={5} />
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Barema (JSON)</label>
+                <Textarea value={editBaremaJson} onChange={(e) => setEditBaremaJson(e.target.value)} rows={6} className="font-mono text-xs" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Espelho Resumido</label>
+                <Textarea placeholder="Resumo do espelho..." value={editMirrorText} onChange={(e) => setEditMirrorText(e.target.value)} rows={4} />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Resposta Ideal</label>
+                <Textarea placeholder="Resposta de referência..." value={editIdealAnswer} onChange={(e) => setEditIdealAnswer(e.target.value)} rows={6} />
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Switch checked={editIsWeekly} onCheckedChange={setEditIsWeekly} />
+                  <span className="text-sm">Semanal</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Switch checked={editIsPremium} onCheckedChange={setEditIsPremium} />
+                  <span className="text-sm">Premium</span>
+                </div>
+              </div>
+              <div className="flex gap-2 pt-2">
+                <Button onClick={() => updateMutation.mutate()} disabled={updateMutation.isPending || !editTitle.trim() || !editStatement.trim()}>
+                  {updateMutation.isPending ? "Salvando..." : "Salvar Alterações"}
+                </Button>
+                <Button variant="outline" onClick={() => setEditingQuestion(null)}>Cancelar</Button>
+              </div>
+            </div>
+          </DrawerContent>
+        </Drawer>
+      )}
     </div>
   );
 }

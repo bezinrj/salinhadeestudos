@@ -175,16 +175,63 @@ export default function WeeklyChallenge() {
       )}
 
       {/* Weekly Ranking */}
-      <Card className="gradient-card border-border">
-        <CardHeader>
-          <CardTitle className="text-base font-display flex items-center gap-2">
-            <Trophy className="h-4 w-4 text-gold" /> Ranking da Semana
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-center py-8 text-muted-foreground text-sm">Ranking será exibido quando houver participantes.</p>
-        </CardContent>
-      </Card>
+      <WeeklyRankingSection />
     </div>
+  );
+}
+
+function WeeklyRankingSection() {
+  const { data: ranking = [] } = useQuery({
+    queryKey: ["weekly-challenge-ranking"],
+    queryFn: async () => {
+      // Get active weekly question
+      const { data: activeQ } = await supabase
+        .from("weekly_questions")
+        .select("id")
+        .eq("is_weekly", true)
+        .eq("is_active", true)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (!activeQ) return [];
+
+      const { data: answers } = await (supabase.from("weekly_answers" as any) as any)
+        .select("user_id, score")
+        .eq("question_id", activeQ.id);
+
+      const { data: profiles } = await supabase.from("profiles").select("id, name, username, avatar_url");
+
+      if (!answers || !profiles) return [];
+
+      return answers
+        .filter((a: any) => Number(a.score) > 0)
+        .map((a: any) => {
+          const p = profiles.find((p: any) => p.id === a.user_id);
+          const name = p?.name || p?.username || "Usuário";
+          const initials = name.split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2);
+          return { userId: a.user_id, name, avatar: initials, avatarUrl: p?.avatar_url, score: Number(a.score), position: 0 };
+        })
+        .sort((a: any, b: any) => b.score - a.score)
+        .map((e: any, i: number) => ({ ...e, position: i + 1 }));
+    },
+    refetchInterval: 30_000,
+  });
+
+  return (
+    <Card className="gradient-card border-border">
+      <CardHeader>
+        <CardTitle className="text-base font-display flex items-center gap-2">
+          <Trophy className="h-4 w-4 text-gold" /> Ranking da Semana
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {ranking.length > 0 ? (
+          <RankingTable entries={ranking} />
+        ) : (
+          <p className="text-center py-8 text-muted-foreground text-sm">Ranking será exibido quando houver participantes.</p>
+        )}
+      </CardContent>
+    </Card>
   );
 }
