@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { StatCard } from "@/components/StatCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,44 @@ export default function Dashboard() {
     },
   });
 
+  // Check if user is on waitlist and a new question is available
+  const { data: weeklyNotification } = useQuery({
+    queryKey: ["weekly-notification"],
+    queryFn: async () => {
+      if (!profile) return null;
+      // Check waitlist entry
+      const { data: waitEntry } = await supabase
+        .from("weekly_waitlist")
+        .select("*")
+        .eq("user_id", profile.id)
+        .eq("notified", false)
+        .maybeSingle();
+      if (!waitEntry) return null;
+      // Check if there's a new active question
+      const { data: activeQ } = await supabase
+        .from("weekly_questions")
+        .select("id, title")
+        .eq("is_active", true)
+        .gt("deadline", new Date().toISOString())
+        .limit(1)
+        .maybeSingle();
+      if (!activeQ) return null;
+      return { waitEntryId: waitEntry.id, question: activeQ };
+    },
+    enabled: !!profile,
+  });
+
+  // Mark as notified when banner is shown
+  useEffect(() => {
+    if (weeklyNotification) {
+      supabase
+        .from("weekly_waitlist")
+        .update({ notified: true })
+        .eq("id", weeklyNotification.waitEntryId)
+        .then();
+    }
+  }, [weeklyNotification]);
+
   const activeAnnouncements = announcements?.filter((a: any) => !dismissedAnnouncements.includes(a.id)) || [];
 
   if (!profile) return null;
@@ -48,6 +86,24 @@ export default function Dashboard() {
           </button>
         </motion.div>
       ))}
+
+      {/* Weekly Challenge Notification */}
+      {weeklyNotification && (
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="rounded-lg border border-primary/30 bg-primary/10 p-4 flex items-start gap-3">
+          <span className="text-2xl shrink-0">🏆</span>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <Badge className="bg-primary text-primary-foreground hover:bg-primary/90 border-none text-[10px] px-2 py-0.5">NOVO DESAFIO</Badge>
+              <p className="text-sm font-semibold text-primary">Nova questão da semana disponível!</p>
+            </div>
+            <p className="text-sm text-foreground/80 mt-1">{weeklyNotification.question.title}</p>
+          </div>
+          <Button size="sm" variant="outline" className="shrink-0 border-primary/30 hover:bg-primary/10" onClick={() => navigate("/desafio-semanal")}>
+            Ver desafio
+          </Button>
+        </motion.div>
+      )}
+
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-2xl md:text-3xl font-display font-bold">
           Olá, <span className="text-primary">{(profile.name || profile.username).split(" ")[0]}</span> 👋

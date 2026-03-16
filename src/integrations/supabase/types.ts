@@ -264,6 +264,69 @@ export type Database = {
           },
         ]
       }
+      weekly_questions: {
+        Row: {
+          barema: Json | null
+          career: string
+          created_at: string | null
+          created_by: string | null
+          deadline: string
+          difficulty: string
+          discipline: string
+          id: string
+          is_active: boolean
+          statement: string
+          title: string
+        }
+        Insert: {
+          barema?: Json | null
+          career: string
+          created_at?: string | null
+          created_by?: string | null
+          deadline: string
+          difficulty?: string
+          discipline: string
+          id?: string
+          is_active?: boolean
+          statement: string
+          title: string
+        }
+        Update: {
+          barema?: Json | null
+          career?: string
+          created_at?: string | null
+          created_by?: string | null
+          deadline?: string
+          difficulty?: string
+          discipline?: string
+          id?: string
+          is_active?: boolean
+          statement?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      weekly_waitlist: {
+        Row: {
+          created_at: string | null
+          id: string
+          notified: boolean
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          notified?: boolean
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          notified?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
