@@ -650,6 +650,8 @@ function WeeklyQuestionsTab() {
   const [showTest, setShowTest] = useState(false);
   const [guidelines, setGuidelines] = useState("");
   const [generatingBarema, setGeneratingBarema] = useState(false);
+  const [isWeekly, setIsWeekly] = useState(true);
+  const [isPremiumQ, setIsPremiumQ] = useState(false);
 
   const { data: questions } = useQuery({
     queryKey: ["admin-weekly-questions"],
