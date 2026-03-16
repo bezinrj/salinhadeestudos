@@ -264,6 +264,41 @@ export type Database = {
           },
         ]
       }
+      weekly_answers: {
+        Row: {
+          answer_text: string
+          created_at: string
+          id: string
+          question_id: string
+          score: number
+          user_id: string
+        }
+        Insert: {
+          answer_text: string
+          created_at?: string
+          id?: string
+          question_id: string
+          score?: number
+          user_id: string
+        }
+        Update: {
+          answer_text?: string
+          created_at?: string
+          id?: string
+          question_id?: string
+          score?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "weekly_answers_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "weekly_questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       weekly_questions: {
         Row: {
           barema: Json | null
