@@ -459,6 +459,9 @@ function UserDetailDrawer({ user, role, isOnline, onClose }: { user: any; role: 
             ))}
           </div>
 
+          {/* Subscription Info */}
+          <UserSubscriptionInfo userId={user.id} />
+
           <Separator />
 
           {/* Actions */}
