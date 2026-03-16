@@ -14,9 +14,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { StatCard } from "@/components/StatCard";
-import { Shield, Users, MessageSquare, Bell, Eye, Trash2, Plus, Activity } from "lucide-react";
+import { Shield, Users, MessageSquare, Bell, Eye, Trash2, Plus, Activity, Crown, GraduationCap, KeyRound, ChevronRight, X } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerClose } from "@/components/ui/drawer";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 
 export default function Admin() {
   const { isAdmin, loading: adminLoading } = useIsAdmin();
@@ -134,34 +137,86 @@ function OverviewTab() {
 
 function UsersTab() {
   const [search, setSearch] = useState("");
+  const [subTab, setSubTab] = useState<"all" | "new" | "active">("all");
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+
+  const { data: sessions } = useQuery({
+    queryKey: ["admin-all-sessions"],
+    queryFn: async () => {
+      const { data } = await supabase.from("user_sessions").select("*");
+      return data || [];
+    },
+    refetchInterval: 30_000,
+  });
+
+  const { data: roles } = useQuery({
+    queryKey: ["admin-all-roles"],
+    queryFn: async () => {
+      const { data } = await supabase.from("user_roles").select("*");
+      return data || [];
+    },
+  });
 
   const { data: users } = useQuery({
     queryKey: ["admin-users", search],
     queryFn: async () => {
-      let query = supabase.from("profiles").select("*").order("created_at", { ascending: false }).limit(50);
+      let query = supabase.from("profiles").select("*").order("created_at", { ascending: false }).limit(200);
       if (search) query = query.or(`username.ilike.%${search}%,name.ilike.%${search}%`);
       const { data } = await query;
       return data || [];
     },
   });
 
+  const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const onlineIds = new Set((sessions || []).filter((s: any) => s.last_seen_at > fiveMinAgo).map((s: any) => s.user_id));
+
+  const filteredUsers = (users || []).filter((u: any) => {
+    if (subTab === "new") return u.created_at && u.created_at > sevenDaysAgo;
+    if (subTab === "active") return onlineIds.has(u.id);
+    return true;
+  });
+
+  const getUserRole = (userId: string) => {
+    const r = (roles || []).find((r: any) => r.user_id === userId);
+    return r?.role || "user";
+  };
+
+  const roleBadge = (role: string) => {
+    if (role === "admin") return <Badge className="bg-red-500/20 text-red-400 border-red-400/30 text-[10px]"><Crown className="h-3 w-3 mr-1" />Admin</Badge>;
+    if (role === "moderator") return <Badge className="bg-blue-500/20 text-blue-400 border-blue-400/30 text-[10px]"><GraduationCap className="h-3 w-3 mr-1" />Professor</Badge>;
+    return <Badge variant="outline" className="text-muted-foreground text-[10px]">Aluno</Badge>;
+  };
+
   return (
     <div className="space-y-4">
-      <Input placeholder="Buscar por nome ou username..." value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-sm" />
+      <div className="flex flex-col sm:flex-row gap-3">
+        <Input placeholder="Buscar por nome ou username..." value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-sm" />
+        <div className="flex gap-1">
+          {(["all", "new", "active"] as const).map((t) => (
+            <Button key={t} variant={subTab === t ? "default" : "outline"} size="sm" onClick={() => setSubTab(t)}>
+              {t === "all" ? `Todos (${users?.length || 0})` : t === "new" ? `Novos (${(users || []).filter((u: any) => u.created_at > sevenDaysAgo).length})` : `Ativos (${onlineIds.size})`}
+            </Button>
+          ))}
+        </div>
+      </div>
+
       <Card className="gradient-card border-border overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Usuário</TableHead>
+              <TableHead>Role</TableHead>
               <TableHead>Score</TableHead>
-              <TableHead>Discursivas</TableHead>
-              <TableHead>Streak</TableHead>
-              <TableHead>Cadastro</TableHead>
+              <TableHead className="hidden md:table-cell">Streak</TableHead>
+              <TableHead className="hidden md:table-cell">Status</TableHead>
+              <TableHead className="hidden md:table-cell">Cadastro</TableHead>
+              <TableHead></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {users?.map((u: any) => (
-              <TableRow key={u.id}>
+            {filteredUsers.map((u: any) => (
+              <TableRow key={u.id} className="cursor-pointer hover:bg-secondary/80" onClick={() => setSelectedUser(u)}>
                 <TableCell>
                   <div className="flex items-center gap-2">
                     <Avatar className="h-7 w-7">
@@ -174,16 +229,187 @@ function UsersTab() {
                     </div>
                   </div>
                 </TableCell>
+                <TableCell>{roleBadge(getUserRole(u.id))}</TableCell>
                 <TableCell className="text-sm">{u.total_score ?? 0}</TableCell>
-                <TableCell className="text-sm">{u.total_essays ?? 0}</TableCell>
-                <TableCell className="text-sm">{u.streak ?? 0}🔥</TableCell>
-                <TableCell className="text-xs text-muted-foreground">{u.created_at ? new Date(u.created_at).toLocaleDateString("pt-BR") : "—"}</TableCell>
+                <TableCell className="text-sm hidden md:table-cell">{u.streak ?? 0}🔥</TableCell>
+                <TableCell className="hidden md:table-cell">
+                  {onlineIds.has(u.id) ? (
+                    <Badge variant="outline" className="text-green-400 border-green-400/30 text-[10px]">Online</Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-muted-foreground text-[10px]">Offline</Badge>
+                  )}
+                </TableCell>
+                <TableCell className="text-xs text-muted-foreground hidden md:table-cell">{u.created_at ? new Date(u.created_at).toLocaleDateString("pt-BR") : "—"}</TableCell>
+                <TableCell><ChevronRight className="h-4 w-4 text-muted-foreground" /></TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
+        {!filteredUsers.length && <p className="text-sm text-muted-foreground text-center py-8">Nenhum usuário encontrado.</p>}
       </Card>
+
+      {selectedUser && (
+        <UserDetailDrawer
+          user={selectedUser}
+          role={getUserRole(selectedUser.id)}
+          isOnline={onlineIds.has(selectedUser.id)}
+          onClose={() => setSelectedUser(null)}
+        />
+      )}
     </div>
+  );
+}
+
+function UserDetailDrawer({ user, role, isOnline, onClose }: { user: any; role: string; isOnline: boolean; onClose: () => void }) {
+  const queryClient = useQueryClient();
+
+  const { data: userComments } = useQuery({
+    queryKey: ["admin-user-comments", user.id],
+    queryFn: async () => {
+      const { data } = await supabase.from("question_comments").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10);
+      return data || [];
+    },
+  });
+
+  const roleMutation = useMutation({
+    mutationFn: async (newRole: string) => {
+      // Remove existing role
+      await supabase.from("user_roles").delete().eq("user_id", user.id);
+      // Insert new role if not "user" (default)
+      if (newRole !== "user") {
+        const { error } = await supabase.from("user_roles").insert({ user_id: user.id, role: newRole as any });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-all-roles"] });
+      toast({ title: "Role atualizada com sucesso!" });
+    },
+    onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
+  });
+
+  const resetPasswordMutation = useMutation({
+    mutationFn: async () => {
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      const res = await fetch(`https://${projectId}.supabase.co/functions/v1/admin-reset-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ user_id: user.id }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Erro ao resetar senha");
+      return result;
+    },
+    onSuccess: () => toast({ title: "Email de reset enviado!", description: "O usuário receberá um email para redefinir a senha." }),
+    onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
+  });
+
+  return (
+    <Drawer open onOpenChange={(open) => !open && onClose()}>
+      <DrawerContent className="max-h-[85vh]">
+        <DrawerHeader className="text-left">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Avatar className="h-12 w-12">
+                <AvatarImage src={user.avatar_url} />
+                <AvatarFallback className="bg-primary/20 text-primary">{(user.name || user.username || "?")[0].toUpperCase()}</AvatarFallback>
+              </Avatar>
+              <div>
+                <DrawerTitle>{user.name || user.username}</DrawerTitle>
+                <DrawerDescription>@{user.username}</DrawerDescription>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {isOnline ? (
+                <Badge variant="outline" className="text-green-400 border-green-400/30">Online</Badge>
+              ) : (
+                <Badge variant="outline" className="text-muted-foreground">Offline</Badge>
+              )}
+              <DrawerClose asChild><Button variant="ghost" size="icon"><X className="h-4 w-4" /></Button></DrawerClose>
+            </div>
+          </div>
+        </DrawerHeader>
+
+        <div className="px-4 pb-6 space-y-5 overflow-y-auto">
+          {/* Info */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="p-3 rounded-lg bg-secondary/50">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Bio</p>
+              <p className="text-sm mt-1">{user.bio || "—"}</p>
+            </div>
+            <div className="p-3 rounded-lg bg-secondary/50">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Carreira Alvo</p>
+              <p className="text-sm mt-1">{user.target_career || "—"}</p>
+            </div>
+          </div>
+
+          {/* Stats */}
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+            {[
+              { label: "Score", value: user.total_score ?? 0 },
+              { label: "Discursivas", value: user.total_essays ?? 0 },
+              { label: "Streak", value: `${user.streak ?? 0}🔥` },
+              { label: "Likes", value: user.likes_count ?? 0 },
+              { label: "Reputação", value: user.comment_score ?? 0 },
+              { label: "Horas/Sem", value: user.weekly_hours ?? 0 },
+            ].map((s) => (
+              <div key={s.label} className="p-2 rounded-lg bg-secondary/50 text-center">
+                <p className="text-[10px] text-muted-foreground">{s.label}</p>
+                <p className="text-sm font-bold mt-0.5">{s.value}</p>
+              </div>
+            ))}
+          </div>
+
+          <Separator />
+
+          {/* Actions */}
+          <div className="space-y-3">
+            <h3 className="text-sm font-medium">Ações</h3>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex-1">
+                <p className="text-xs text-muted-foreground mb-1">Alterar Role</p>
+                <Select defaultValue={role} onValueChange={(v) => roleMutation.mutate(v)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="user">Aluno</SelectItem>
+                    <SelectItem value="moderator">Professor</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex-1">
+                <p className="text-xs text-muted-foreground mb-1">Senha</p>
+                <Button variant="outline" className="w-full" onClick={() => resetPasswordMutation.mutate()} disabled={resetPasswordMutation.isPending}>
+                  <KeyRound className="h-4 w-4 mr-2" />
+                  Enviar Reset de Senha
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Recent comments */}
+          <div className="space-y-2">
+            <h3 className="text-sm font-medium">Comentários Recentes</h3>
+            {userComments?.length ? userComments.map((c: any) => (
+              <div key={c.id} className="p-2 rounded-lg bg-secondary/50">
+                <p className="text-xs text-muted-foreground">Questão {c.question_id} · {new Date(c.created_at).toLocaleDateString("pt-BR")}</p>
+                <p className="text-sm mt-1">{c.content}</p>
+              </div>
+            )) : (
+              <p className="text-xs text-muted-foreground">Nenhum comentário.</p>
+            )}
+          </div>
+
+          <p className="text-[10px] text-muted-foreground">Cadastro: {user.created_at ? new Date(user.created_at).toLocaleDateString("pt-BR") : "—"}</p>
+        </div>
+      </DrawerContent>
+    </Drawer>
   );
 }
 
