@@ -15,6 +15,7 @@ import Ranking from "./pages/Ranking";
 import StudyTimerPage from "./pages/StudyTimerPage";
 import Profile from "./pages/Profile";
 import MyPlan from "./pages/MyPlan";
+import Admin from "./pages/Admin";
 import CheckoutSuccess from "./pages/CheckoutSuccess";
 import NotFound from "./pages/NotFound";
 
