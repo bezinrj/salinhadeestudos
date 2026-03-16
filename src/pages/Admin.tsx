@@ -767,8 +767,108 @@ function WeeklyQuestionsTab() {
               </SelectContent>
             </Select>
           </div>
-          <Input placeholder="Disciplina (ex: Processo Penal)" value={discipline} onChange={(e) => setDiscipline(e.target.value)} />
+          <Select value={discipline} onValueChange={setDiscipline}>
+            <SelectTrigger><SelectValue placeholder="Matéria / Disciplina" /></SelectTrigger>
+            <SelectContent>
+              {disciplines.map(d => (
+                <SelectItem key={d} value={d}>{d}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Textarea placeholder="Enunciado completo da questão..." value={statement} onChange={(e) => setStatement(e.target.value)} rows={6} />
+          
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Gabarito / Barema (JSON)</label>
+            <Textarea
+              placeholder={`[
+  {
+    "letter": "a",
+    "title": "Título do item",
+    "maxScore": 2.5,
+    "subitems": [
+      {
+        "id": "a1",
+        "description": "Descrição do subitem",
+        "maxScore": 1.0,
+        "keywords": ["palavra1", "palavra2"]
+      }
+    ]
+  }
+]`}
+              value={baremaJson}
+              onChange={(e) => setBaremaJson(e.target.value)}
+              rows={8}
+              className="font-mono text-xs"
+            />
+            <p className="text-xs text-muted-foreground">Formato JSON com itens do barema. Cada subitem precisa de keywords para a correção automática.</p>
+          </div>
+
+          {baremaJson.trim() && (
+            <div className="space-y-3">
+              <Button type="button" variant="outline" onClick={() => setShowTest(!showTest)} className="gap-2">
+                <Eye className="h-4 w-4" /> {showTest ? "Fechar Teste" : "Testar Correção"}
+              </Button>
+              
+              {showTest && (
+                <Card className="border-primary/20 bg-primary/5">
+                  <CardContent className="p-4 space-y-3">
+                    <p className="text-sm font-medium">Teste de Correção</p>
+                    <Textarea
+                      placeholder="Cole aqui uma resposta de exemplo para testar o barema..."
+                      value={testAnswer}
+                      onChange={(e) => setTestAnswer(e.target.value)}
+                      rows={6}
+                    />
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => {
+                        try {
+                          const parsedBarema = JSON.parse(baremaJson);
+                          const result = evaluateAnswer(testAnswer, parsedBarema);
+                          setTestResult(result);
+                        } catch (e) {
+                          toast({ title: "Erro no JSON", description: "Verifique o formato do barema.", variant: "destructive" });
+                        }
+                      }}
+                      disabled={!testAnswer.trim()}
+                    >
+                      Executar Correção
+                    </Button>
+                    
+                    {testResult && (
+                      <div className="space-y-3 mt-3">
+                        <div className="flex items-center gap-3">
+                          <Badge className="text-lg px-3 py-1">{testResult.grade}/10</Badge>
+                          <p className="text-sm text-muted-foreground">{testResult.feedback}</p>
+                        </div>
+                        <Separator />
+                        {testResult.baremaBreakdown?.map((item: any) => (
+                          <div key={item.letter} className="space-y-1">
+                            <div className="flex justify-between items-center">
+                              <p className="text-sm font-medium">({item.letter}) {item.title}</p>
+                              <Badge variant="outline" className="text-xs">{item.earnedScore}/{item.maxScore}</Badge>
+                            </div>
+                            {item.subitems?.map((sub: any, i: number) => (
+                              <div key={i} className="flex items-center gap-2 text-xs pl-4">
+                                <span className={cn(
+                                  "h-2 w-2 rounded-full",
+                                  sub.status === "full" ? "bg-green-500" : sub.status === "partial" ? "bg-yellow-500" : "bg-destructive"
+                                )} />
+                                <span className="flex-1 text-muted-foreground">{sub.description}</span>
+                                <span>{sub.earnedScore}/{sub.maxScore}</span>
+                              </div>
+                            ))}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
+
           <p className="text-xs text-muted-foreground">O prazo será automaticamente definido para o próximo domingo às 00:00 (horário de Brasília).</p>
           <Button onClick={() => publishMutation.mutate()} disabled={!title.trim() || !statement.trim() || !discipline.trim() || publishMutation.isPending} className="w-full sm:w-auto">
             <Trophy className="h-4 w-4 mr-2" /> Publicar Questão Semanal
