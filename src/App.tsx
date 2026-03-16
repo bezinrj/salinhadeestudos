@@ -49,6 +49,7 @@ const App = () => (
               <Route path="/perfil" element={<Profile />} />
               <Route path="/perfil/:userId" element={<Profile />} />
               <Route path="/meu-plano" element={<MyPlan />} />
+              <Route path="/admin" element={<Admin />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

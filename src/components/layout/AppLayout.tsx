@@ -5,6 +5,7 @@ import { BottomNav } from "./BottomNav";
 import { useOnlineTracker } from "@/hooks/useOnlineTracker";
 
 export function AppLayout() {
+  useOnlineTracker();
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
