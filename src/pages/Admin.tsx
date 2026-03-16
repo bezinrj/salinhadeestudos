@@ -684,6 +684,7 @@ function WeeklyQuestionsTab() {
       // Deactivate previous questions
       await supabase.from("weekly_questions").update({ is_active: false }).eq("is_active", true);
       // Insert new
+      const baremaData = baremaJson.trim() ? JSON.parse(baremaJson) : null;
       const { error } = await supabase.from("weekly_questions").insert({
         title,
         career,
@@ -693,7 +694,8 @@ function WeeklyQuestionsTab() {
         deadline,
         is_active: true,
         created_by: user?.id,
-      });
+        barema: baremaData,
+      } as any);
       if (error) throw error;
       // Reset waitlist notifications so users get notified
       await supabase.from("weekly_waitlist").update({ notified: false }).eq("notified", true);
