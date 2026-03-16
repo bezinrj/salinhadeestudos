@@ -17,6 +17,9 @@ export function BottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
   const { logout } = useAuth();
+  const { isAdmin } = useIsAdmin();
+
+  const allNavItems = isAdmin ? [...navItems, { path: "/admin", icon: Shield, label: "Admin" }] : navItems;
 
   const handleLogout = () => {
     logout();
