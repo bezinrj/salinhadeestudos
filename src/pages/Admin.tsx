@@ -690,20 +690,20 @@ function WeeklyQuestionsTab() {
       if (isWeekly) {
         const deadline = getNextSundayDeadline();
         // Deactivate previous weekly questions
-        await supabase.from("weekly_questions").update({ is_active: false }).eq("is_active", true).eq("is_weekly" as any, true);
-        const { error } = await supabase.from("weekly_questions").insert({
+        await (supabase.from("weekly_questions") as any).update({ is_active: false }).eq("is_active", true).eq("is_weekly", true);
+        const { error } = await (supabase.from("weekly_questions") as any).insert({
           title, career, discipline, statement, difficulty, deadline,
           is_active: true, created_by: user?.id, barema: baremaData,
           is_weekly: true, is_premium: true,
-        } as any);
+        });
         if (error) throw error;
         await supabase.from("weekly_waitlist").update({ notified: false }).eq("notified", true);
       } else {
-        const { error } = await supabase.from("weekly_questions").insert({
+        const { error } = await (supabase.from("weekly_questions") as any).insert({
           title, career, discipline, statement, difficulty,
           deadline: null, is_active: true, created_by: user?.id, barema: baremaData,
           is_weekly: false, is_premium: isPremiumQ,
-        } as any);
+        });
         if (error) throw error;
       }
     },
