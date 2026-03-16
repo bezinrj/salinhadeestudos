@@ -1,13 +1,16 @@
+import { useState } from "react";
 import { StatCard } from "@/components/StatCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { Trophy, FileText, Timer, TrendingUp, Flame, Target } from "lucide-react";
+import { Trophy, FileText, Timer, TrendingUp, Flame, Target, Bell, X } from "lucide-react";
 import { recentCorrections, weeklyStudyData } from "@/data/mockData";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 import { Progress } from "@/components/ui/progress";
 import { motion } from "framer-motion";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Dashboard() {
   const { profile } = useAuth();
