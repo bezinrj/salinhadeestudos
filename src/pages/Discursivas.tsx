@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { questions, getExpiredWeeklyQuestions } from "@/data/mockData";
+import { questions, getExpiredWeeklyQuestions, disciplines } from "@/data/mockData";
 import { QuestionCard } from "@/components/QuestionCard";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
@@ -10,17 +10,20 @@ import { cn } from "@/lib/utils";
 const difficulties = ["Todas", "Fácil", "Médio", "Difícil"] as const;
 const careers = ["Todas", "Delegado", "Magistratura", "Promotoria"] as const;
 const types = ["Todas", "Gratuitas", "Premium"] as const;
+const disciplineOptions = ["Todas", ...disciplines] as const;
 
 export default function Discursivas() {
   const [difficulty, setDifficulty] = useState<string>("Todas");
   const [career, setCareer] = useState<string>("Todas");
   const [type, setType] = useState<string>("Todas");
+  const [selectedDiscipline, setSelectedDiscipline] = useState<string>("Todas");
 
   const allQuestions = [...questions, ...getExpiredWeeklyQuestions()];
 
   const filtered = allQuestions.filter(q => {
     if (difficulty !== "Todas" && q.difficulty !== difficulty) return false;
     if (career !== "Todas" && q.career !== career) return false;
+    if (selectedDiscipline !== "Todas" && q.discipline !== selectedDiscipline) return false;
     const isPremium = q.isPremium || q.isWeekly;
     if (type === "Gratuitas" && isPremium) return false;
     if (type === "Premium" && !isPremium) return false;
@@ -84,6 +87,26 @@ export default function Discursivas() {
                 onClick={() => setCareer(c)}
               >
                 {c}
+              </Badge>
+            ))}
+          </div>
+        </div>
+        <div>
+          <p className="text-xs text-muted-foreground mb-2 uppercase tracking-wider">Matéria</p>
+          <div className="flex flex-wrap gap-2">
+            {disciplineOptions.map(d => (
+              <Badge
+                key={d}
+                variant="outline"
+                className={cn(
+                  "cursor-pointer transition-colors text-xs px-3 py-1",
+                  selectedDiscipline === d
+                    ? "bg-primary/10 text-primary border-primary/30"
+                    : "border-border text-muted-foreground hover:border-primary/20 hover:text-foreground"
+                )}
+                onClick={() => setSelectedDiscipline(d)}
+              >
+                {d}
               </Badge>
             ))}
           </div>
