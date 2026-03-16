@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { questions, getExpiredWeeklyQuestions } from "@/data/mockData";
+import { questions, getExpiredWeeklyQuestions, disciplines } from "@/data/mockData";
 import { QuestionCard } from "@/components/QuestionCard";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 const difficulties = ["Todas", "Fácil", "Médio", "Difícil"] as const;
 const careers = ["Todas", "Delegado", "Magistratura", "Promotoria"] as const;
 const types = ["Todas", "Gratuitas", "Premium"] as const;
+const disciplineOptions = ["Todas", ...disciplines] as const;
 
 export default function Discursivas() {
   const [difficulty, setDifficulty] = useState<string>("Todas");
