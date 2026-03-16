@@ -1,22 +1,49 @@
+import { useState } from "react";
 import { StatCard } from "@/components/StatCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { Trophy, FileText, Timer, TrendingUp, Flame, Target } from "lucide-react";
+import { Trophy, FileText, Timer, TrendingUp, Flame, Target, Bell, X } from "lucide-react";
 import { recentCorrections, weeklyStudyData } from "@/data/mockData";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 import { Progress } from "@/components/ui/progress";
 import { motion } from "framer-motion";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Dashboard() {
   const { profile } = useAuth();
   const navigate = useNavigate();
+  const [dismissedAnnouncements, setDismissedAnnouncements] = useState<string[]>([]);
+
+  const { data: announcements } = useQuery({
+    queryKey: ["announcements"],
+    queryFn: async () => {
+      const { data } = await supabase.from("admin_announcements").select("*").eq("is_active", true).order("created_at", { ascending: false });
+      return data || [];
+    },
+  });
+
+  const activeAnnouncements = announcements?.filter((a: any) => !dismissedAnnouncements.includes(a.id)) || [];
 
   if (!profile) return null;
 
   return (
     <div className="space-y-6">
+      {/* Announcement Banners */}
+      {activeAnnouncements.map((a: any) => (
+        <motion.div key={a.id} initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="rounded-lg border border-primary/30 bg-primary/10 p-4 flex items-start gap-3">
+          <Bell className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-primary">{a.title}</p>
+            <p className="text-sm text-foreground/80 mt-1">{a.message}</p>
+          </div>
+          <button onClick={() => setDismissedAnnouncements((prev) => [...prev, a.id])} className="text-muted-foreground hover:text-foreground shrink-0">
+            <X className="h-4 w-4" />
+          </button>
+        </motion.div>
+      ))}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-2xl md:text-3xl font-display font-bold">
           Olá, <span className="text-primary">{(profile.name || profile.username).split(" ")[0]}</span> 👋

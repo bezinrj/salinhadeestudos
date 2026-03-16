@@ -2,8 +2,10 @@ import { Outlet } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { BottomNav } from "./BottomNav";
+import { useOnlineTracker } from "@/hooks/useOnlineTracker";
 
 export function AppLayout() {
+  useOnlineTracker();
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">

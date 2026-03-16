@@ -15,6 +15,7 @@ import Ranking from "./pages/Ranking";
 import StudyTimerPage from "./pages/StudyTimerPage";
 import Profile from "./pages/Profile";
 import MyPlan from "./pages/MyPlan";
+import Admin from "./pages/Admin";
 import CheckoutSuccess from "./pages/CheckoutSuccess";
 import NotFound from "./pages/NotFound";
 
@@ -48,6 +49,7 @@ const App = () => (
               <Route path="/perfil" element={<Profile />} />
               <Route path="/perfil/:userId" element={<Profile />} />
               <Route path="/meu-plano" element={<MyPlan />} />
+              <Route path="/admin" element={<Admin />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

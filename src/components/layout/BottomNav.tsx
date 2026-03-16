@@ -1,7 +1,8 @@
 import { useLocation, Link, useNavigate } from "react-router-dom";
-import { Scale, FileText, Timer, Trophy, User, LogOut, CreditCard } from "lucide-react";
+import { Scale, FileText, Timer, Trophy, User, LogOut, CreditCard, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 
 const navItems = [
   { path: "/dashboard", icon: Scale, label: "Home" },
@@ -16,6 +17,9 @@ export function BottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
   const { logout } = useAuth();
+  const { isAdmin } = useIsAdmin();
+
+  const allNavItems = isAdmin ? [...navItems, { path: "/admin", icon: Shield, label: "Admin" }] : navItems;
 
   const handleLogout = () => {
     logout();
@@ -25,7 +29,7 @@ export function BottomNav() {
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/95 backdrop-blur-lg md:hidden">
       <div className="flex items-center justify-around py-2">
-        {navItems.map((item) => {
+        {allNavItems.map((item) => {
           const isActive = location.pathname.startsWith(item.path);
           return (
             <Link
