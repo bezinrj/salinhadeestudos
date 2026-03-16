@@ -694,6 +694,9 @@ function ContentTab() {
 
 /* ─── User Subscription Info ─── */
 function UserSubscriptionInfo({ userId }: { userId: string }) {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
   const { data: subData, isLoading } = useQuery({
     queryKey: ["admin-user-subscription", userId],
     queryFn: async () => {
@@ -704,8 +707,55 @@ function UserSubscriptionInfo({ userId }: { userId: string }) {
         body: { user_id: userId },
       });
       if (error) throw error;
-      return data as { subscribed: boolean; price_id?: string; product_id?: string; subscription_end?: string };
+      return data as {
+        subscribed: boolean;
+        price_id?: string;
+        product_id?: string;
+        subscription_end?: string;
+        manual?: boolean;
+        plan_type?: string;
+      };
     },
+  });
+
+  const grantMutation = useMutation({
+    mutationFn: async ({ days, planType }: { days: number; planType: string }) => {
+      const expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
+      // Deactivate any existing manual sub first
+      await supabase
+        .from("manual_subscriptions")
+        .update({ is_active: false })
+        .eq("user_id", userId)
+        .eq("is_active", true);
+      const { error } = await supabase.from("manual_subscriptions").insert({
+        user_id: userId,
+        plan_type: planType,
+        granted_by: user?.id,
+        expires_at: expiresAt,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-user-subscription", userId] });
+      toast({ title: "Plano atribuído com sucesso!" });
+    },
+    onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
+  });
+
+  const revokeMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from("manual_subscriptions")
+        .update({ is_active: false })
+        .eq("user_id", userId)
+        .eq("is_active", true);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-user-subscription", userId] });
+      toast({ title: "Plano manual removido." });
+    },
+    onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
   });
 
   if (isLoading) {
@@ -719,6 +769,7 @@ function UserSubscriptionInfo({ userId }: { userId: string }) {
 
   const plan = subData?.price_id ? getPlanByPriceId(subData.price_id) : null;
   const isSubscribed = subData?.subscribed ?? false;
+  const isManual = subData?.manual ?? false;
 
   let daysRemaining = 0;
   let totalDays = 0;
@@ -729,14 +780,18 @@ function UserSubscriptionInfo({ userId }: { userId: string }) {
     const now = new Date();
     daysRemaining = Math.max(0, Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
 
-    // Estimate total cycle days based on plan
-    if (plan?.billingCycle === "monthly") totalDays = 30;
+    if (isManual) {
+      if (subData.plan_type === "trial") totalDays = 3;
+      else totalDays = daysRemaining > 90 ? 365 : daysRemaining > 30 ? 90 : 30;
+    } else if (plan?.billingCycle === "monthly") totalDays = 30;
     else if (plan?.billingCycle === "quarterly") totalDays = 90;
     else if (plan?.billingCycle === "annual") totalDays = 365;
     else totalDays = 30;
 
     progressPercent = totalDays > 0 ? Math.round((daysRemaining / totalDays) * 100) : 0;
   }
+
+  const isMutating = grantMutation.isPending || revokeMutation.isPending;
 
   return (
     <div className="rounded-lg border border-border bg-secondary/30 p-4 space-y-3">
@@ -745,24 +800,40 @@ function UserSubscriptionInfo({ userId }: { userId: string }) {
           <CreditCard className="h-4 w-4 text-muted-foreground" />
           <h4 className="text-sm font-medium">Assinatura</h4>
         </div>
-        {isSubscribed ? (
-          <Badge className="bg-green-500/20 text-green-400 border-green-400/30 text-[10px]">Assinante</Badge>
-        ) : (
-          <Badge variant="outline" className="text-muted-foreground text-[10px]">Gratuito</Badge>
-        )}
+        <div className="flex items-center gap-1.5">
+          {isSubscribed ? (
+            <>
+              {isManual && (
+                <Badge className="bg-purple-500/20 text-purple-400 border-purple-400/30 text-[10px]">
+                  {subData?.plan_type === "trial" ? "Trial" : "Manual"}
+                </Badge>
+              )}
+              {!isManual && (
+                <Badge className="bg-blue-500/20 text-blue-400 border-blue-400/30 text-[10px]">Stripe</Badge>
+              )}
+              <Badge className="bg-green-500/20 text-green-400 border-green-400/30 text-[10px]">Assinante</Badge>
+            </>
+          ) : (
+            <Badge variant="outline" className="text-muted-foreground text-[10px]">Gratuito</Badge>
+          )}
+        </div>
       </div>
 
-      {isSubscribed && plan ? (
+      {isSubscribed && (
         <>
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Plano</span>
-            <span className="font-semibold">{plan.name}</span>
+            <span className="font-semibold">
+              {isManual
+                ? subData?.plan_type === "trial" ? "Teste (3 dias)" : "Premium (Manual)"
+                : plan?.name ?? "Premium"}
+            </span>
           </div>
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground flex items-center gap-1">
               <CalendarDays className="h-3.5 w-3.5" /> Vencimento
             </span>
-            <span>{new Date(subData.subscription_end!).toLocaleDateString("pt-BR")}</span>
+            <span>{new Date(subData!.subscription_end!).toLocaleDateString("pt-BR")}</span>
           </div>
           <div className="space-y-1.5">
             <div className="flex items-center justify-between text-sm">
@@ -773,18 +844,43 @@ function UserSubscriptionInfo({ userId }: { userId: string }) {
             <p className="text-[10px] text-muted-foreground text-right">{progressPercent}% do ciclo restante</p>
           </div>
         </>
-      ) : !isSubscribed ? (
-        <p className="text-xs text-muted-foreground">Este usuário não possui assinatura ativa.</p>
-      ) : (
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">Dias restantes</span>
-          <span className="font-bold text-primary">
-            {subData?.subscription_end
-              ? `${Math.max(0, Math.ceil((new Date(subData.subscription_end).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))} dias`
-              : "—"}
-          </span>
-        </div>
       )}
+
+      {!isSubscribed && (
+        <p className="text-xs text-muted-foreground">Este usuário não possui assinatura ativa.</p>
+      )}
+
+      <Separator />
+
+      {/* Admin manual controls */}
+      <div className="space-y-2">
+        <p className="text-xs font-medium">Gestão Manual</p>
+        <div className="flex flex-wrap gap-1.5">
+          <Button variant="outline" size="sm" className="h-7 text-[11px] px-2" disabled={isMutating}
+            onClick={() => grantMutation.mutate({ days: 30, planType: "premium" })}>
+            <Crown className="h-3 w-3 mr-1" />30 dias
+          </Button>
+          <Button variant="outline" size="sm" className="h-7 text-[11px] px-2" disabled={isMutating}
+            onClick={() => grantMutation.mutate({ days: 90, planType: "premium" })}>
+            <Crown className="h-3 w-3 mr-1" />90 dias
+          </Button>
+          <Button variant="outline" size="sm" className="h-7 text-[11px] px-2" disabled={isMutating}
+            onClick={() => grantMutation.mutate({ days: 365, planType: "premium" })}>
+            <Crown className="h-3 w-3 mr-1" />365 dias
+          </Button>
+          <Button variant="outline" size="sm" className="h-7 text-[11px] px-2 text-orange-400 border-orange-400/30 hover:bg-orange-500/10" disabled={isMutating}
+            onClick={() => grantMutation.mutate({ days: 3, planType: "trial" })}>
+            <Clock className="h-3 w-3 mr-1" />Teste 3 dias
+          </Button>
+        </div>
+        {(isSubscribed && isManual) && (
+          <Button variant="outline" size="sm" className="h-7 text-[11px] px-2 text-destructive border-destructive/30 hover:bg-destructive/10 w-full" disabled={isMutating}
+            onClick={() => revokeMutation.mutate()}>
+            <X className="h-3 w-3 mr-1" />Remover plano manual
+          </Button>
+        )}
+        <p className="text-[10px] text-muted-foreground">Planos via Stripe são gerenciados automaticamente.</p>
+      </div>
     </div>
   );
 }

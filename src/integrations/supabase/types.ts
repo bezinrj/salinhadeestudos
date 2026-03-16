@@ -80,6 +80,39 @@ export type Database = {
           },
         ]
       }
+      manual_subscriptions: {
+        Row: {
+          created_at: string | null
+          expires_at: string
+          granted_by: string | null
+          id: string
+          is_active: boolean
+          plan_type: string
+          starts_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at: string
+          granted_by?: string | null
+          id?: string
+          is_active?: boolean
+          plan_type?: string
+          starts_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string
+          granted_by?: string | null
+          id?: string
+          is_active?: boolean
+          plan_type?: string
+          starts_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profile_likes: {
         Row: {
           created_at: string | null
