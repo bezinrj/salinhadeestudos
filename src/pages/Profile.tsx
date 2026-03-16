@@ -131,6 +131,11 @@ export default function Profile() {
                           <Target className="h-3 w-3 mr-1" /> {profile.target_career}
                         </Badge>
                       )}
+                      {isOwnProfile && profile.likes_count > 0 && (
+                        <Badge variant="outline" className="text-destructive border-destructive/20 bg-destructive/10 text-xs">
+                          <Heart className="h-3 w-3 mr-1 fill-current" /> {profile.likes_count} curtida{profile.likes_count !== 1 ? 's' : ''}
+                        </Badge>
+                      )}
                       {!isOwnProfile && userId && <ProfileLikeButton profileId={userId} />}
                     </div>
                   </>
