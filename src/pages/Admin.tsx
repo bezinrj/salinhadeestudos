@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Shield, Users, MessageSquare, Bell, Trash2, Plus, Activity, Crown, GraduationCap, KeyRound, X, UserCheck, UserX, CreditCard, Ban, Eye, Clock, CalendarDays, Trophy } from "lucide-react";
+import { Shield, Users, MessageSquare, Bell, Trash2, Plus, Activity, Crown, GraduationCap, KeyRound, X, UserCheck, UserX, CreditCard, Ban, Eye, Gift, Clock, CalendarDays, Trophy } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { getPlanByPriceId } from "@/lib/stripe";
 import { toast } from "@/hooks/use-toast";
@@ -67,27 +67,21 @@ function OverviewTab() {
   const { data: stats } = useQuery({
     queryKey: ["admin-stats"],
     queryFn: async () => {
-      const [profiles, comments, sessions] = await Promise.all([
+      const [profiles, sessions, manualSubs] = await Promise.all([
         supabase.from("profiles").select("id, created_at", { count: "exact" }),
-        supabase.from("question_comments").select("id", { count: "exact", head: true }),
         supabase.from("user_sessions").select("*"),
+        supabase.from("manual_subscriptions").select("id", { count: "exact", head: true }).eq("is_active", true).gte("expires_at", new Date().toISOString()),
       ]);
       const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
-      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
       const onlineUsers = (sessions.data || []).filter((s: any) => s.last_seen_at > fiveMinAgo);
-      const allProfiles = profiles.data || [];
-      const newUsers = allProfiles.filter((p: any) => p.created_at && p.created_at > sevenDaysAgo);
-      // "Aguardando" = registered in last 7 days but never had a session
-      const sessionUserIds = new Set((sessions.data || []).map((s: any) => s.user_id));
-      const waitingApproval = newUsers.filter((p: any) => !sessionUserIds.has(p.id));
 
       return {
         totalUsers: profiles.count || 0,
         onlineNow: onlineUsers.length,
-        waitingApproval: waitingApproval.length,
+        manualPlans: manualSubs.count || 0,
         activeUsers: (sessions.data || []).filter((s: any) => s.last_seen_at > new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()).length,
-        blockedUsers: 0, // placeholder
-        activeSubscriptions: 0, // placeholder
+        blockedUsers: 0,
+        activeSubscriptions: 0,
         onlineList: onlineUsers,
       };
     },
@@ -119,7 +113,7 @@ function OverviewTab() {
   const overviewCards = [
     { title: "Total de Usuários", value: stats?.totalUsers ?? 0, icon: Users, color: "text-blue-400", bg: "bg-blue-500/10" },
     { title: "Online Agora", value: stats?.onlineNow ?? 0, icon: Activity, color: "text-green-400", bg: "bg-green-500/10" },
-    { title: "Aguardando Aprovação", value: stats?.waitingApproval ?? 0, icon: Clock, color: "text-orange-400", bg: "bg-orange-500/10" },
+    { title: "Cortesias Ativas", value: stats?.manualPlans ?? 0, icon: Gift, color: "text-orange-400", bg: "bg-orange-500/10" },
     { title: "Ativos (24h)", value: stats?.activeUsers ?? 0, icon: UserCheck, color: "text-sky-400", bg: "bg-sky-500/10" },
     { title: "Bloqueados", value: stats?.blockedUsers ?? 0, icon: Ban, color: "text-red-400", bg: "bg-red-500/10" },
     { title: "Assinaturas Ativas", value: stats?.activeSubscriptions ?? 0, icon: CreditCard, color: "text-primary", bg: "bg-primary/10" },
