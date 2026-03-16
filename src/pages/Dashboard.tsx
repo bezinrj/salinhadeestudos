@@ -26,6 +26,44 @@ export default function Dashboard() {
     },
   });
 
+  // Check if user is on waitlist and a new question is available
+  const { data: weeklyNotification } = useQuery({
+    queryKey: ["weekly-notification"],
+    queryFn: async () => {
+      if (!profile) return null;
+      // Check waitlist entry
+      const { data: waitEntry } = await supabase
+        .from("weekly_waitlist")
+        .select("*")
+        .eq("user_id", profile.id)
+        .eq("notified", false)
+        .maybeSingle();
+      if (!waitEntry) return null;
+      // Check if there's a new active question
+      const { data: activeQ } = await supabase
+        .from("weekly_questions")
+        .select("id, title")
+        .eq("is_active", true)
+        .gt("deadline", new Date().toISOString())
+        .limit(1)
+        .maybeSingle();
+      if (!activeQ) return null;
+      return { waitEntryId: waitEntry.id, question: activeQ };
+    },
+    enabled: !!profile,
+  });
+
+  // Mark as notified when banner is shown
+  useEffect(() => {
+    if (weeklyNotification) {
+      supabase
+        .from("weekly_waitlist")
+        .update({ notified: true })
+        .eq("id", weeklyNotification.waitEntryId)
+        .then();
+    }
+  }, [weeklyNotification]);
+
   const activeAnnouncements = announcements?.filter((a: any) => !dismissedAnnouncements.includes(a.id)) || [];
 
   if (!profile) return null;
