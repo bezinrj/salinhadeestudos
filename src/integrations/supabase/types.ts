@@ -274,9 +274,11 @@ export type Database = {
           difficulty: string
           discipline: string
           id: string
+          ideal_answer: string | null
           is_active: boolean
           is_premium: boolean
           is_weekly: boolean
+          mirror_text: string | null
           participants: number
           statement: string
           title: string
@@ -290,9 +292,11 @@ export type Database = {
           difficulty?: string
           discipline: string
           id?: string
+          ideal_answer?: string | null
           is_active?: boolean
           is_premium?: boolean
           is_weekly?: boolean
+          mirror_text?: string | null
           participants?: number
           statement: string
           title: string
@@ -306,9 +310,11 @@ export type Database = {
           difficulty?: string
           discipline?: string
           id?: string
+          ideal_answer?: string | null
           is_active?: boolean
           is_premium?: boolean
           is_weekly?: boolean
+          mirror_text?: string | null
           participants?: number
           statement?: string
           title?: string
