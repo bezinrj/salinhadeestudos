@@ -3,6 +3,8 @@ import { questions, getExpiredWeeklyQuestions } from "@/data/mockData";
 import { QuestionCard } from "@/components/QuestionCard";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Download } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const difficulties = ["Todas", "Fácil", "Médio", "Difícil"] as const;
