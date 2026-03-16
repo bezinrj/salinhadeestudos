@@ -1,7 +1,8 @@
 import { useLocation, Link, useNavigate } from "react-router-dom";
-import { Scale, FileText, Timer, Trophy, User, LogOut, CreditCard } from "lucide-react";
+import { Scale, FileText, Timer, Trophy, User, LogOut, CreditCard, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 
 const navItems = [
   { path: "/dashboard", icon: Scale, label: "Home" },
