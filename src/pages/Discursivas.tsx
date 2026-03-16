@@ -34,6 +34,18 @@ export default function Discursivas() {
         <p className="text-sm text-muted-foreground mt-1">Escolha uma questão e envie sua resposta para correção</p>
       </div>
 
+      <div>
+        <a href="/Folha_de_Resposta_30_linhas.pdf" download>
+          <Button variant="outline" className="gap-2">
+            <Download className="h-4 w-4" />
+            Rascunho - 30 linhas
+          </Button>
+        </a>
+        <p className="text-xs text-muted-foreground mt-2">
+          Treine a escrita, Aproveite a oportunidade e façam honestamente apenas com a lei seca.
+        </p>
+      </div>
+
       {/* Filters */}
       <div className="space-y-3">
         <div>
