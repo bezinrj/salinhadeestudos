@@ -642,6 +642,10 @@ function WeeklyQuestionsTab() {
   const [discipline, setDiscipline] = useState("");
   const [statement, setStatement] = useState("");
   const [difficulty, setDifficulty] = useState("Médio");
+  const [baremaJson, setBaremaJson] = useState("");
+  const [testAnswer, setTestAnswer] = useState("");
+  const [testResult, setTestResult] = useState<any>(null);
+  const [showTest, setShowTest] = useState(false);
 
   const { data: questions } = useQuery({
     queryKey: ["admin-weekly-questions"],
