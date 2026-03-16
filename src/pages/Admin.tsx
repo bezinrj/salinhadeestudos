@@ -10,16 +10,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { StatCard } from "@/components/StatCard";
-import { Shield, Users, MessageSquare, Bell, Eye, Trash2, Plus, Activity, Crown, GraduationCap, KeyRound, ChevronRight, X } from "lucide-react";
+import { Shield, Users, MessageSquare, Bell, Trash2, Plus, Activity, Crown, GraduationCap, KeyRound, X, UserCheck, UserX, CreditCard, Ban, Eye, Clock } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerClose } from "@/components/ui/drawer";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 export default function Admin() {
   const { isAdmin, loading: adminLoading } = useIsAdmin();
@@ -59,23 +58,32 @@ export default function Admin() {
   );
 }
 
+/* ─── Overview Tab ─── */
 function OverviewTab() {
   const { data: stats } = useQuery({
     queryKey: ["admin-stats"],
     queryFn: async () => {
-      const [profiles, comments, likes, sessions] = await Promise.all([
-        supabase.from("profiles").select("id", { count: "exact", head: true }),
+      const [profiles, comments, sessions] = await Promise.all([
+        supabase.from("profiles").select("id, created_at", { count: "exact" }),
         supabase.from("question_comments").select("id", { count: "exact", head: true }),
-        supabase.from("profile_likes").select("id", { count: "exact", head: true }),
         supabase.from("user_sessions").select("*"),
       ]);
       const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
       const onlineUsers = (sessions.data || []).filter((s: any) => s.last_seen_at > fiveMinAgo);
+      const allProfiles = profiles.data || [];
+      const newUsers = allProfiles.filter((p: any) => p.created_at && p.created_at > sevenDaysAgo);
+      // "Aguardando" = registered in last 7 days but never had a session
+      const sessionUserIds = new Set((sessions.data || []).map((s: any) => s.user_id));
+      const waitingApproval = newUsers.filter((p: any) => !sessionUserIds.has(p.id));
+
       return {
         totalUsers: profiles.count || 0,
-        totalComments: comments.count || 0,
-        totalLikes: likes.count || 0,
         onlineNow: onlineUsers.length,
+        waitingApproval: waitingApproval.length,
+        activeUsers: (sessions.data || []).filter((s: any) => s.last_seen_at > new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()).length,
+        blockedUsers: 0, // placeholder
+        activeSubscriptions: 0, // placeholder
         onlineList: onlineUsers,
       };
     },
@@ -88,18 +96,49 @@ function OverviewTab() {
       if (!stats?.onlineList?.length) return [];
       const ids = stats.onlineList.map((s: any) => s.user_id);
       const { data } = await supabase.from("profiles").select("*").in("id", ids);
-      return data || [];
+      return (data || []).map((p: any) => {
+        const session = stats.onlineList.find((s: any) => s.user_id === p.id);
+        return { ...p, last_seen_at: session?.last_seen_at };
+      });
     },
     enabled: !!stats?.onlineList?.length,
   });
 
+  const formatRelativeTime = (dateStr: string) => {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    if (diff < 60_000) return "agora";
+    const mins = Math.floor(diff / 60_000);
+    if (mins < 60) return `${mins}min atrás`;
+    return `${Math.floor(mins / 60)}h atrás`;
+  };
+
+  const overviewCards = [
+    { title: "Total de Usuários", value: stats?.totalUsers ?? 0, icon: Users, color: "text-blue-400", bg: "bg-blue-500/10" },
+    { title: "Online Agora", value: stats?.onlineNow ?? 0, icon: Activity, color: "text-green-400", bg: "bg-green-500/10" },
+    { title: "Aguardando Aprovação", value: stats?.waitingApproval ?? 0, icon: Clock, color: "text-orange-400", bg: "bg-orange-500/10" },
+    { title: "Ativos (24h)", value: stats?.activeUsers ?? 0, icon: UserCheck, color: "text-sky-400", bg: "bg-sky-500/10" },
+    { title: "Bloqueados", value: stats?.blockedUsers ?? 0, icon: Ban, color: "text-red-400", bg: "bg-red-500/10" },
+    { title: "Assinaturas Ativas", value: stats?.activeSubscriptions ?? 0, icon: CreditCard, color: "text-primary", bg: "bg-primary/10" },
+  ];
+
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard title="Total Usuários" value={stats?.totalUsers ?? 0} icon={Users} variant="electric" />
-        <StatCard title="Online Agora" value={stats?.onlineNow ?? 0} icon={Activity} variant="gold" />
-        <StatCard title="Comentários" value={stats?.totalComments ?? 0} icon={MessageSquare} variant="purple" />
-        <StatCard title="Total Likes" value={stats?.totalLikes ?? 0} icon={Eye} variant="default" />
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+        {overviewCards.map((card) => (
+          <Card key={card.title} className="gradient-card border-border hover:scale-[1.02] transition-transform">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-4">
+                <div className={`rounded-xl p-3 ${card.bg}`}>
+                  <card.icon className={`h-6 w-6 ${card.color}`} />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold font-display">{card.value}</p>
+                  <p className="text-xs text-muted-foreground">{card.title}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       <Card className="gradient-card border-border">
@@ -111,18 +150,21 @@ function OverviewTab() {
         </CardHeader>
         <CardContent>
           {onlineProfiles?.length ? (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {onlineProfiles.map((p: any) => (
-                <div key={p.id} className="flex items-center gap-3 p-2 rounded-lg bg-secondary/50">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={p.avatar_url} />
-                    <AvatarFallback className="bg-primary/20 text-primary text-xs">{(p.name || p.username || "?")[0].toUpperCase()}</AvatarFallback>
-                  </Avatar>
+                <div key={p.id} className="flex items-center gap-3 p-3 rounded-lg bg-secondary/50">
+                  <div className="relative">
+                    <Avatar className="h-9 w-9">
+                      <AvatarImage src={p.avatar_url} />
+                      <AvatarFallback className="bg-primary/20 text-primary text-xs">{(p.name || p.username || "?")[0].toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                    <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-green-500 border-2 border-card" />
+                  </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{p.name || p.username}</p>
                     <p className="text-xs text-muted-foreground">@{p.username}</p>
                   </div>
-                  <Badge variant="outline" className="text-green-400 border-green-400/30 text-[10px]">Online</Badge>
+                  <span className="text-xs text-muted-foreground">{p.last_seen_at ? formatRelativeTime(p.last_seen_at) : "agora"}</span>
                 </div>
               ))}
             </div>
@@ -135,6 +177,7 @@ function OverviewTab() {
   );
 }
 
+/* ─── Users Tab ─── */
 function UsersTab() {
   const [search, setSearch] = useState("");
   const [subTab, setSubTab] = useState<"all" | "new" | "active">("all");
@@ -182,10 +225,26 @@ function UsersTab() {
     return r?.role || "user";
   };
 
+  const getLastSeen = (userId: string) => {
+    const s = (sessions || []).find((s: any) => s.user_id === userId);
+    if (!s?.last_seen_at) return null;
+    return s.last_seen_at;
+  };
+
+  const formatRelativeTime = (dateStr: string) => {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    if (diff < 60_000) return "agora";
+    const mins = Math.floor(diff / 60_000);
+    if (mins < 60) return `${mins}min atrás`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}h atrás`;
+    return `${Math.floor(hours / 24)}d atrás`;
+  };
+
   const roleBadge = (role: string) => {
     if (role === "admin") return <Badge className="bg-red-500/20 text-red-400 border-red-400/30 text-[10px]"><Crown className="h-3 w-3 mr-1" />Admin</Badge>;
     if (role === "moderator") return <Badge className="bg-blue-500/20 text-blue-400 border-blue-400/30 text-[10px]"><GraduationCap className="h-3 w-3 mr-1" />Professor</Badge>;
-    return <Badge variant="outline" className="text-muted-foreground text-[10px]">Aluno</Badge>;
+    return null;
   };
 
   return (
@@ -201,52 +260,66 @@ function UsersTab() {
         </div>
       </div>
 
-      <Card className="gradient-card border-border overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Usuário</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Score</TableHead>
-              <TableHead className="hidden md:table-cell">Streak</TableHead>
-              <TableHead className="hidden md:table-cell">Status</TableHead>
-              <TableHead className="hidden md:table-cell">Cadastro</TableHead>
-              <TableHead></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredUsers.map((u: any) => (
-              <TableRow key={u.id} className="cursor-pointer hover:bg-secondary/80" onClick={() => setSelectedUser(u)}>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <Avatar className="h-7 w-7">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {filteredUsers.map((u: any) => {
+          const role = getUserRole(u.id);
+          const isOnline = onlineIds.has(u.id);
+          const lastSeen = getLastSeen(u.id);
+          return (
+            <Card key={u.id} className="gradient-card border-border hover:border-primary/30 transition-colors">
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3 mb-3">
+                  <div className="relative">
+                    <Avatar className="h-11 w-11">
                       <AvatarImage src={u.avatar_url} />
-                      <AvatarFallback className="bg-primary/20 text-primary text-[10px]">{(u.name || u.username || "?")[0].toUpperCase()}</AvatarFallback>
+                      <AvatarFallback className="bg-primary/20 text-primary text-sm">{(u.name || u.username || "?")[0].toUpperCase()}</AvatarFallback>
                     </Avatar>
-                    <div>
-                      <p className="text-sm font-medium">{u.name || u.username}</p>
-                      <p className="text-xs text-muted-foreground">@{u.username}</p>
+                    {isOnline && <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-green-500 border-2 border-card" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-sm font-semibold truncate">{u.name || u.username}</p>
+                      {roleBadge(role)}
+                      <Badge variant="outline" className="text-[10px] text-muted-foreground">Free</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">@{u.username}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      {isOnline ? (
+                        <span className="text-[10px] text-green-400 font-medium">● Ativo</span>
+                      ) : (
+                        <span className="text-[10px] text-muted-foreground">● Inativo</span>
+                      )}
+                      {lastSeen && <span className="text-[10px] text-muted-foreground">· Visto {formatRelativeTime(lastSeen)}</span>}
                     </div>
                   </div>
-                </TableCell>
-                <TableCell>{roleBadge(getUserRole(u.id))}</TableCell>
-                <TableCell className="text-sm">{u.total_score ?? 0}</TableCell>
-                <TableCell className="text-sm hidden md:table-cell">{u.streak ?? 0}🔥</TableCell>
-                <TableCell className="hidden md:table-cell">
-                  {onlineIds.has(u.id) ? (
-                    <Badge variant="outline" className="text-green-400 border-green-400/30 text-[10px]">Online</Badge>
-                  ) : (
-                    <Badge variant="outline" className="text-muted-foreground text-[10px]">Offline</Badge>
-                  )}
-                </TableCell>
-                <TableCell className="text-xs text-muted-foreground hidden md:table-cell">{u.created_at ? new Date(u.created_at).toLocaleDateString("pt-BR") : "—"}</TableCell>
-                <TableCell><ChevronRight className="h-4 w-4 text-muted-foreground" /></TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-        {!filteredUsers.length && <p className="text-sm text-muted-foreground text-center py-8">Nenhum usuário encontrado.</p>}
-      </Card>
+                </div>
+
+                <div className="flex flex-wrap gap-1.5">
+                  <Button variant="outline" size="sm" className="h-7 text-[11px] px-2" onClick={() => setSelectedUser(u)}>
+                    <Eye className="h-3 w-3 mr-1" />Acompanhar
+                  </Button>
+                  <Button variant="outline" size="sm" className="h-7 text-[11px] px-2" onClick={() => setSelectedUser(u)}>
+                    <Crown className="h-3 w-3 mr-1" />Admin
+                  </Button>
+                  <Button variant="outline" size="sm" className="h-7 text-[11px] px-2" onClick={() => setSelectedUser(u)}>
+                    <GraduationCap className="h-3 w-3 mr-1" />Professor
+                  </Button>
+                  <Button variant="outline" size="sm" className="h-7 text-[11px] px-2" onClick={() => setSelectedUser(u)}>
+                    <CreditCard className="h-3 w-3 mr-1" />Plano
+                  </Button>
+                  <Button variant="outline" size="sm" className="h-7 text-[11px] px-2" onClick={() => setSelectedUser(u)}>
+                    <KeyRound className="h-3 w-3 mr-1" />Senha
+                  </Button>
+                  <Button variant="outline" size="sm" className="h-7 text-[11px] px-2 text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => setSelectedUser(u)}>
+                    <Trash2 className="h-3 w-3 mr-1" />Deletar
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+      {!filteredUsers.length && <p className="text-sm text-muted-foreground text-center py-8">Nenhum usuário encontrado.</p>}
 
       {selectedUser && (
         <UserDetailDrawer
@@ -260,6 +333,7 @@ function UsersTab() {
   );
 }
 
+/* ─── User Detail Drawer ─── */
 function UserDetailDrawer({ user, role, isOnline, onClose }: { user: any; role: string; isOnline: boolean; onClose: () => void }) {
   const queryClient = useQueryClient();
 
@@ -273,9 +347,7 @@ function UserDetailDrawer({ user, role, isOnline, onClose }: { user: any; role: 
 
   const roleMutation = useMutation({
     mutationFn: async (newRole: string) => {
-      // Remove existing role
       await supabase.from("user_roles").delete().eq("user_id", user.id);
-      // Insert new role if not "user" (default)
       if (newRole !== "user") {
         const { error } = await supabase.from("user_roles").insert({ user_id: user.id, role: newRole as any });
         if (error) throw error;
@@ -303,6 +375,29 @@ function UserDetailDrawer({ user, role, isOnline, onClose }: { user: any; role: 
       return result;
     },
     onSuccess: () => toast({ title: "Email de reset enviado!", description: "O usuário receberá um email para redefinir a senha." }),
+    onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
+  });
+
+  const deleteUserMutation = useMutation({
+    mutationFn: async () => {
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      const res = await fetch(`https://${projectId}.supabase.co/functions/v1/admin-delete-user`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ user_id: user.id }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Erro ao deletar usuário");
+      return result;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-stats"] });
+      toast({ title: "Conta deletada", description: "O usuário foi removido permanentemente." });
+      onClose();
+    },
     onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
   });
 
@@ -389,6 +484,34 @@ function UserDetailDrawer({ user, role, isOnline, onClose }: { user: any; role: 
                 </Button>
               </div>
             </div>
+
+            {/* Delete account */}
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" className="w-full border-destructive/30 text-destructive hover:bg-destructive/10">
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Deletar Conta do Usuário
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Esta ação é <strong>irreversível</strong>. A conta de <strong>@{user.username}</strong> será permanentemente deletada, incluindo perfil, comentários e dados associados.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    onClick={() => deleteUserMutation.mutate()}
+                    disabled={deleteUserMutation.isPending}
+                  >
+                    {deleteUserMutation.isPending ? "Deletando..." : "Sim, deletar conta"}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
 
           <Separator />
@@ -413,6 +536,7 @@ function UserDetailDrawer({ user, role, isOnline, onClose }: { user: any; role: 
   );
 }
 
+/* ─── Announcements Tab ─── */
 function AnnouncementsTab() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -508,6 +632,7 @@ function AnnouncementsTab() {
   );
 }
 
+/* ─── Content Tab ─── */
 function ContentTab() {
   const queryClient = useQueryClient();
 
