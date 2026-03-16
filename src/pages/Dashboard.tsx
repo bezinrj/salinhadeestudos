@@ -86,6 +86,24 @@ export default function Dashboard() {
           </button>
         </motion.div>
       ))}
+
+      {/* Weekly Challenge Notification */}
+      {weeklyNotification && (
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="rounded-lg border border-primary/30 bg-primary/10 p-4 flex items-start gap-3">
+          <span className="text-2xl shrink-0">🏆</span>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <Badge className="bg-primary text-primary-foreground hover:bg-primary/90 border-none text-[10px] px-2 py-0.5">NOVO DESAFIO</Badge>
+              <p className="text-sm font-semibold text-primary">Nova questão da semana disponível!</p>
+            </div>
+            <p className="text-sm text-foreground/80 mt-1">{weeklyNotification.question.title}</p>
+          </div>
+          <Button size="sm" variant="outline" className="shrink-0 border-primary/30 hover:bg-primary/10" onClick={() => navigate("/desafio-semanal")}>
+            Ver desafio
+          </Button>
+        </motion.div>
+      )}
+
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-2xl md:text-3xl font-display font-bold">
           Olá, <span className="text-primary">{(profile.name || profile.username).split(" ")[0]}</span> 👋
