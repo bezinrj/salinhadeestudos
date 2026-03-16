@@ -16,6 +16,7 @@ export default function Discursivas() {
   const [difficulty, setDifficulty] = useState<string>("Todas");
   const [career, setCareer] = useState<string>("Todas");
   const [type, setType] = useState<string>("Todas");
+  const [selectedDiscipline, setSelectedDiscipline] = useState<string>("Todas");
 
   const allQuestions = [...questions, ...getExpiredWeeklyQuestions()];
 
