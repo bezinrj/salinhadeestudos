@@ -92,6 +92,26 @@ export default function Discursivas() {
           </div>
         </div>
         <div>
+          <p className="text-xs text-muted-foreground mb-2 uppercase tracking-wider">Matéria</p>
+          <div className="flex flex-wrap gap-2">
+            {disciplineOptions.map(d => (
+              <Badge
+                key={d}
+                variant="outline"
+                className={cn(
+                  "cursor-pointer transition-colors text-xs px-3 py-1",
+                  selectedDiscipline === d
+                    ? "bg-primary/10 text-primary border-primary/30"
+                    : "border-border text-muted-foreground hover:border-primary/20 hover:text-foreground"
+                )}
+                onClick={() => setSelectedDiscipline(d)}
+              >
+                {d}
+              </Badge>
+            ))}
+          </div>
+        </div>
+        <div>
           <p className="text-xs text-muted-foreground mb-2 uppercase tracking-wider">Tipo</p>
           <div className="flex flex-wrap gap-2">
             {types.map(t => (
