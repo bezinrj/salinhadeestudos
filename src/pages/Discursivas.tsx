@@ -3,6 +3,8 @@ import { questions, getExpiredWeeklyQuestions } from "@/data/mockData";
 import { QuestionCard } from "@/components/QuestionCard";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Download } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const difficulties = ["Todas", "Fácil", "Médio", "Difícil"] as const;
@@ -30,6 +32,18 @@ export default function Discursivas() {
       <div>
         <h1 className="text-2xl font-display font-bold">Discursivas</h1>
         <p className="text-sm text-muted-foreground mt-1">Escolha uma questão e envie sua resposta para correção</p>
+      </div>
+
+      <div>
+        <a href="/Folha_de_Resposta_30_linhas.pdf" download>
+          <Button variant="outline" className="gap-2">
+            <Download className="h-4 w-4" />
+            Rascunho - 30 linhas
+          </Button>
+        </a>
+        <p className="text-xs text-muted-foreground mt-2">
+          Treine a escrita, Aproveite a oportunidade e façam honestamente apenas com a lei seca.
+        </p>
       </div>
 
       {/* Filters */}
