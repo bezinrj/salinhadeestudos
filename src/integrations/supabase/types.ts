@@ -270,11 +270,14 @@ export type Database = {
           career: string
           created_at: string | null
           created_by: string | null
-          deadline: string
+          deadline: string | null
           difficulty: string
           discipline: string
           id: string
           is_active: boolean
+          is_premium: boolean
+          is_weekly: boolean
+          participants: number
           statement: string
           title: string
         }
@@ -283,11 +286,14 @@ export type Database = {
           career: string
           created_at?: string | null
           created_by?: string | null
-          deadline: string
+          deadline?: string | null
           difficulty?: string
           discipline: string
           id?: string
           is_active?: boolean
+          is_premium?: boolean
+          is_weekly?: boolean
+          participants?: number
           statement: string
           title: string
         }
@@ -296,11 +302,14 @@ export type Database = {
           career?: string
           created_at?: string | null
           created_by?: string | null
-          deadline?: string
+          deadline?: string | null
           difficulty?: string
           discipline?: string
           id?: string
           is_active?: boolean
+          is_premium?: boolean
+          is_weekly?: boolean
+          participants?: number
           statement?: string
           title?: string
         }
