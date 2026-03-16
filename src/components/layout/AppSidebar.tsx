@@ -32,6 +32,7 @@ export function AppSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { logout } = useAuth();
+  const { isAdmin } = useIsAdmin();
 
   const handleLogout = () => {
     logout();
