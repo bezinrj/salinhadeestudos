@@ -782,7 +782,49 @@ function WeeklyQuestionsTab() {
           <Textarea placeholder="Enunciado completo da questão..." value={statement} onChange={(e) => setStatement(e.target.value)} rows={6} />
           
           <div className="space-y-2">
-            <label className="text-sm font-medium">Gabarito / Barema (JSON)</label>
+            <label className="text-sm font-medium">Diretrizes / Gabarito (texto livre)</label>
+            <Textarea
+              placeholder="Cole aqui as diretrizes de correção ou gabarito em texto livre. Ex: O candidato deve abordar os seguintes pontos: 1) Conceito de legítima defesa (art. 25 CP)..."
+              value={guidelines}
+              onChange={(e) => setGuidelines(e.target.value)}
+              rows={6}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              onClick={async () => {
+                if (!statement.trim() || !guidelines.trim()) {
+                  toast({ title: "Preencha o enunciado e as diretrizes primeiro.", variant: "destructive" });
+                  return;
+                }
+                setGeneratingBarema(true);
+                try {
+                  const { data, error } = await supabase.functions.invoke('generate-barema', {
+                    body: { statement, guidelines },
+                  });
+                  if (error) throw error;
+                  if (data?.error) throw new Error(data.error);
+                  setBaremaJson(JSON.stringify(data.barema, null, 2));
+                  toast({ title: "Barema gerado com sucesso!", description: "Revise o JSON e teste a correção." });
+                } catch (e: any) {
+                  toast({ title: "Erro ao gerar barema", description: e.message, variant: "destructive" });
+                } finally {
+                  setGeneratingBarema(false);
+                }
+              }}
+              disabled={generatingBarema || !statement.trim() || !guidelines.trim()}
+              className="gap-2"
+            >
+              {generatingBarema ? (
+                <><Clock className="h-4 w-4 animate-spin" /> Gerando...</>
+              ) : (
+                <><GraduationCap className="h-4 w-4" /> Gerar Barema com IA</>
+              )}
+            </Button>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Barema (JSON) — gerado automaticamente ou editável</label>
             <Textarea
               placeholder={`[
   {
@@ -804,7 +846,7 @@ function WeeklyQuestionsTab() {
               rows={8}
               className="font-mono text-xs"
             />
-            <p className="text-xs text-muted-foreground">Formato JSON com itens do barema. Cada subitem precisa de keywords para a correção automática.</p>
+            <p className="text-xs text-muted-foreground">JSON gerado pela IA ou editado manualmente. Cada subitem precisa de keywords para a correção automática.</p>
           </div>
 
           {baremaJson.trim() && (
