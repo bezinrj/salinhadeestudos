@@ -686,30 +686,32 @@ function WeeklyQuestionsTab() {
 
   const publishMutation = useMutation({
     mutationFn: async () => {
-      const deadline = getNextSundayDeadline();
-      // Deactivate previous questions
-      await supabase.from("weekly_questions").update({ is_active: false }).eq("is_active", true);
-      // Insert new
       const baremaData = baremaJson.trim() ? JSON.parse(baremaJson) : null;
-      const { error } = await supabase.from("weekly_questions").insert({
-        title,
-        career,
-        discipline,
-        statement,
-        difficulty,
-        deadline,
-        is_active: true,
-        created_by: user?.id,
-        barema: baremaData,
-      } as any);
-      if (error) throw error;
-      // Reset waitlist notifications so users get notified
-      await supabase.from("weekly_waitlist").update({ notified: false }).eq("notified", true);
+      if (isWeekly) {
+        const deadline = getNextSundayDeadline();
+        // Deactivate previous weekly questions
+        await supabase.from("weekly_questions").update({ is_active: false }).eq("is_active", true).eq("is_weekly" as any, true);
+        const { error } = await supabase.from("weekly_questions").insert({
+          title, career, discipline, statement, difficulty, deadline,
+          is_active: true, created_by: user?.id, barema: baremaData,
+          is_weekly: true, is_premium: true,
+        } as any);
+        if (error) throw error;
+        await supabase.from("weekly_waitlist").update({ notified: false }).eq("notified", true);
+      } else {
+        const { error } = await supabase.from("weekly_questions").insert({
+          title, career, discipline, statement, difficulty,
+          deadline: null, is_active: true, created_by: user?.id, barema: baremaData,
+          is_weekly: false, is_premium: isPremiumQ,
+        } as any);
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-weekly-questions"] });
-      setTitle(""); setCareer("Delegado"); setDiscipline(""); setStatement(""); setDifficulty("Médio"); setBaremaJson(""); setTestResult(null); setTestAnswer(""); setShowTest(false); setGuidelines("");
-      toast({ title: "Questão semanal publicada!", description: "Os usuários na lista de espera serão notificados." });
+      queryClient.invalidateQueries({ queryKey: ["discursivas-questions"] });
+      setTitle(""); setCareer("Delegado"); setDiscipline(""); setStatement(""); setDifficulty("Médio"); setBaremaJson(""); setTestResult(null); setTestAnswer(""); setShowTest(false); setGuidelines(""); setIsWeekly(true); setIsPremiumQ(false);
+      toast({ title: isWeekly ? "Questão semanal publicada!" : "Questão discursiva publicada!", description: isWeekly ? "Os usuários na lista de espera serão notificados." : undefined });
     },
     onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
   });
