@@ -12,6 +12,7 @@ import type { RankingEntry } from "@/data/mockData";
 
 export default function Ranking() {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   // Fetch general ranking: sum of weekly_answers scores per user
   const { data: ranking = [] } = useQuery({
