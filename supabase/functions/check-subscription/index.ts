@@ -48,12 +48,42 @@ serve(async (req) => {
         status: 200,
       });
     }
-    const user = userData.user;
-    if (!user?.email) throw new Error("User not authenticated or email not available");
-    logStep("User authenticated", { userId: user.id, email: user.email });
+    const caller = userData.user;
+    if (!caller?.email) throw new Error("User not authenticated or email not available");
+    logStep("Caller authenticated", { userId: caller.id, email: caller.email });
+
+    // Check if admin is querying another user
+    let targetEmail = caller.email;
+    let body: any = {};
+    try {
+      body = await req.json();
+    } catch {
+      // no body — self-check
+    }
+
+    if (body.user_id && body.user_id !== caller.id) {
+      // Verify caller is admin
+      const { data: isAdmin } = await supabaseClient.rpc("has_role", {
+        _user_id: caller.id,
+        _role: "admin",
+      });
+      if (!isAdmin) {
+        return new Response(JSON.stringify({ error: "Forbidden" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 403,
+        });
+      }
+      // Get target user's email
+      const { data: targetUser, error: targetErr } = await supabaseClient.auth.admin.getUserById(body.user_id);
+      if (targetErr || !targetUser?.user?.email) {
+        throw new Error("Target user not found or has no email");
+      }
+      targetEmail = targetUser.user.email;
+      logStep("Admin lookup for user", { targetUserId: body.user_id, targetEmail });
+    }
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
-    const customers = await stripe.customers.list({ email: user.email, limit: 1 });
+    const customers = await stripe.customers.list({ email: targetEmail, limit: 1 });
 
     if (customers.data.length === 0) {
       logStep("No Stripe customer found");

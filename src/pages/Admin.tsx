@@ -12,7 +12,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Shield, Users, MessageSquare, Bell, Trash2, Plus, Activity, Crown, GraduationCap, KeyRound, X, UserCheck, UserX, CreditCard, Ban, Eye, Clock } from "lucide-react";
+import { Shield, Users, MessageSquare, Bell, Trash2, Plus, Activity, Crown, GraduationCap, KeyRound, X, UserCheck, UserX, CreditCard, Ban, Eye, Clock, CalendarDays } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { getPlanByPriceId } from "@/lib/stripe";
 import { toast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerClose } from "@/components/ui/drawer";
@@ -457,6 +459,9 @@ function UserDetailDrawer({ user, role, isOnline, onClose }: { user: any; role: 
             ))}
           </div>
 
+          {/* Subscription Info */}
+          <UserSubscriptionInfo userId={user.id} />
+
           <Separator />
 
           {/* Actions */}
@@ -684,5 +689,102 @@ function ContentTab() {
         {!comments?.length && <p className="text-sm text-muted-foreground text-center py-4">Nenhum comentário encontrado.</p>}
       </CardContent>
     </Card>
+  );
+}
+
+/* ─── User Subscription Info ─── */
+function UserSubscriptionInfo({ userId }: { userId: string }) {
+  const { data: subData, isLoading } = useQuery({
+    queryKey: ["admin-user-subscription", userId],
+    queryFn: async () => {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      const { data, error } = await supabase.functions.invoke("check-subscription", {
+        headers: { Authorization: `Bearer ${token}` },
+        body: { user_id: userId },
+      });
+      if (error) throw error;
+      return data as { subscribed: boolean; price_id?: string; product_id?: string; subscription_end?: string };
+    },
+  });
+
+  if (isLoading) {
+    return (
+      <div className="p-3 rounded-lg bg-secondary/50 animate-pulse">
+        <div className="h-4 bg-muted rounded w-1/3 mb-2" />
+        <div className="h-3 bg-muted rounded w-2/3" />
+      </div>
+    );
+  }
+
+  const plan = subData?.price_id ? getPlanByPriceId(subData.price_id) : null;
+  const isSubscribed = subData?.subscribed ?? false;
+
+  let daysRemaining = 0;
+  let totalDays = 0;
+  let progressPercent = 0;
+
+  if (isSubscribed && subData?.subscription_end) {
+    const endDate = new Date(subData.subscription_end);
+    const now = new Date();
+    daysRemaining = Math.max(0, Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+
+    // Estimate total cycle days based on plan
+    if (plan?.billingCycle === "monthly") totalDays = 30;
+    else if (plan?.billingCycle === "quarterly") totalDays = 90;
+    else if (plan?.billingCycle === "annual") totalDays = 365;
+    else totalDays = 30;
+
+    progressPercent = totalDays > 0 ? Math.round((daysRemaining / totalDays) * 100) : 0;
+  }
+
+  return (
+    <div className="rounded-lg border border-border bg-secondary/30 p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <CreditCard className="h-4 w-4 text-muted-foreground" />
+          <h4 className="text-sm font-medium">Assinatura</h4>
+        </div>
+        {isSubscribed ? (
+          <Badge className="bg-green-500/20 text-green-400 border-green-400/30 text-[10px]">Assinante</Badge>
+        ) : (
+          <Badge variant="outline" className="text-muted-foreground text-[10px]">Gratuito</Badge>
+        )}
+      </div>
+
+      {isSubscribed && plan ? (
+        <>
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-muted-foreground">Plano</span>
+            <span className="font-semibold">{plan.name}</span>
+          </div>
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-muted-foreground flex items-center gap-1">
+              <CalendarDays className="h-3.5 w-3.5" /> Vencimento
+            </span>
+            <span>{new Date(subData.subscription_end!).toLocaleDateString("pt-BR")}</span>
+          </div>
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Dias restantes</span>
+              <span className="font-bold text-primary">{daysRemaining} dias</span>
+            </div>
+            <Progress value={progressPercent} className="h-2" />
+            <p className="text-[10px] text-muted-foreground text-right">{progressPercent}% do ciclo restante</p>
+          </div>
+        </>
+      ) : !isSubscribed ? (
+        <p className="text-xs text-muted-foreground">Este usuário não possui assinatura ativa.</p>
+      ) : (
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-muted-foreground">Dias restantes</span>
+          <span className="font-bold text-primary">
+            {subData?.subscription_end
+              ? `${Math.max(0, Math.ceil((new Date(subData.subscription_end).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))} dias`
+              : "—"}
+          </span>
+        </div>
+      )}
+    </div>
   );
 }
