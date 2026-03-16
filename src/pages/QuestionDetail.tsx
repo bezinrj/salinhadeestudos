@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { evaluateAnswer, type CorrectionResult, type BaremaItem } from "@/data/mockData";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,6 +13,7 @@ import { ArrowLeft, CheckCircle2, XCircle, AlertTriangle, Lightbulb, FileText, S
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { QuestionComments } from "@/components/QuestionComments";
+import { toast } from "@/hooks/use-toast";
 
 export default function QuestionDetail() {
   const { id } = useParams();
@@ -20,6 +21,7 @@ export default function QuestionDetail() {
   const { user, subscribed } = useAuth();
   const [answer, setAnswer] = useState("");
   const [correction, setCorrection] = useState<CorrectionResult | null>(null);
+  const [lockedScore, setLockedScore] = useState<number | null>(null);
 
   const { data: question, isLoading } = useQuery({
     queryKey: ["question-detail", id],
@@ -42,22 +44,74 @@ export default function QuestionDetail() {
         isPremium: (data as any).is_premium || (data as any).is_weekly,
         deadline: data.deadline,
         barema: data.barema as unknown as BaremaItem[] | undefined,
+        mirrorText: (data as any).mirror_text as string | null,
+        idealAnswer: (data as any).ideal_answer as string | null,
       };
     },
     enabled: !!id,
   });
+
+  // Check if user already answered this weekly question
+  const { data: existingAnswer } = useQuery({
+    queryKey: ["weekly-answer-check", id, user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("weekly_answers" as any)
+        .select("score")
+        .eq("user_id", user!.id)
+        .eq("question_id", id!)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!id && !!user && !!question?.isWeekly,
+  });
+
+  useEffect(() => {
+    if (existingAnswer) {
+      setLockedScore((existingAnswer as any).score);
+    }
+  }, [existingAnswer]);
 
   if (isLoading) return <div className="text-center py-16 text-muted-foreground">Carregando...</div>;
   if (!question) return <div className="text-center py-16 text-muted-foreground">Questão não encontrada.</div>;
 
   const isPremium = question.isPremium || question.isWeekly;
   const canAnswer = !isPremium || subscribed;
+  const isLocked = question.isWeekly && lockedScore !== null;
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (answer.trim().length < 50) return;
     if (!question.barema) return;
-    const result = evaluateAnswer(answer, question.barema);
+    
+    const result = evaluateAnswer(answer, question.barema, {
+      mirror: question.mirrorText || undefined,
+      idealAnswer: question.idealAnswer || undefined,
+    });
     setCorrection(result);
+
+    if (question.isWeekly && user) {
+      // Save to weekly_answers
+      const { error } = await (supabase.from("weekly_answers" as any) as any).insert({
+        user_id: user.id,
+        question_id: question.id,
+        answer_text: answer,
+        score: result.grade,
+      });
+      if (error && error.code === "23505") {
+        // Already answered - ignore duplicate
+      } else if (error) {
+        toast({ title: "Erro ao salvar resposta", description: error.message, variant: "destructive" });
+      } else {
+        setLockedScore(result.grade);
+        toast({ title: "Resposta registrada!", description: "Sua nota foi salva para o ranking." });
+      }
+    } else if (user) {
+      // Regular question: increment total_essays for badges
+      await supabase
+        .from("profiles")
+        .update({ total_essays: (await supabase.from("profiles").select("total_essays").eq("id", user.id).single()).data?.total_essays! + 1 })
+        .eq("id", user.id);
+    }
   };
 
   const getGradeColor = (grade: number) => {
@@ -99,7 +153,17 @@ export default function QuestionDetail() {
         </CardContent>
       </Card>
 
-      {!correction ? (
+      {/* Locked state - already answered weekly */}
+      {isLocked && !correction ? (
+        <Card className="gradient-card border-green-500/20">
+          <CardContent className="p-8 text-center space-y-4">
+            <CheckCircle2 className="h-10 w-10 text-green-400 mx-auto" />
+            <p className="text-lg font-display font-bold">Você já respondeu esta questão</p>
+            <p className="text-3xl font-display font-bold text-primary">{Number(lockedScore).toFixed(1)} <span className="text-base text-muted-foreground">/ 10</span></p>
+            <p className="text-sm text-muted-foreground">Questões semanais podem ser respondidas apenas uma vez. Sua nota já foi registrada no ranking.</p>
+          </CardContent>
+        </Card>
+      ) : !correction ? (
         canAnswer ? (
         <Card className="gradient-card border-border">
           <CardHeader>
@@ -134,7 +198,7 @@ export default function QuestionDetail() {
           </CardContent>
         </Card>
         )
-        ) : (
+      ) : (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
           {/* Grade Card */}
           <Card className="gradient-card border-primary/20 glow-electric">
@@ -259,9 +323,11 @@ export default function QuestionDetail() {
             </CardContent>
           </Card>
 
-          <Button variant="outline" onClick={() => { setCorrection(null); setAnswer(""); }} className="border-border">
-            Responder novamente
-          </Button>
+          {!question.isWeekly && (
+            <Button variant="outline" onClick={() => { setCorrection(null); setAnswer(""); }} className="border-border">
+              Responder novamente
+            </Button>
+          )}
         </motion.div>
       )}
 

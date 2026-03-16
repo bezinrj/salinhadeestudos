@@ -264,6 +264,41 @@ export type Database = {
           },
         ]
       }
+      weekly_answers: {
+        Row: {
+          answer_text: string
+          created_at: string
+          id: string
+          question_id: string
+          score: number
+          user_id: string
+        }
+        Insert: {
+          answer_text: string
+          created_at?: string
+          id?: string
+          question_id: string
+          score?: number
+          user_id: string
+        }
+        Update: {
+          answer_text?: string
+          created_at?: string
+          id?: string
+          question_id?: string
+          score?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "weekly_answers_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "weekly_questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       weekly_questions: {
         Row: {
           barema: Json | null
@@ -274,9 +309,11 @@ export type Database = {
           difficulty: string
           discipline: string
           id: string
+          ideal_answer: string | null
           is_active: boolean
           is_premium: boolean
           is_weekly: boolean
+          mirror_text: string | null
           participants: number
           statement: string
           title: string
@@ -290,9 +327,11 @@ export type Database = {
           difficulty?: string
           discipline: string
           id?: string
+          ideal_answer?: string | null
           is_active?: boolean
           is_premium?: boolean
           is_weekly?: boolean
+          mirror_text?: string | null
           participants?: number
           statement: string
           title: string
@@ -306,9 +345,11 @@ export type Database = {
           difficulty?: string
           discipline?: string
           id?: string
+          ideal_answer?: string | null
           is_active?: boolean
           is_premium?: boolean
           is_weekly?: boolean
+          mirror_text?: string | null
           participants?: number
           statement?: string
           title?: string
