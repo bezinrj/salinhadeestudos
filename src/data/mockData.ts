@@ -348,7 +348,7 @@ export function addRegularAnswer(userId: string, questionId: string, score: numb
 
 // ========== CORRECTION ENGINE ==========
 
-export function evaluateAnswer(answer: string, barema: BaremaItem[]): CorrectionResult {
+export function evaluateAnswer(answer: string, barema: BaremaItem[], options?: { mirror?: string; idealAnswer?: string }): CorrectionResult {
   const normalizedAnswer = answer.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   const baremaBreakdown: BaremaScore[] = [];
   let totalEarned = 0;
@@ -404,6 +404,12 @@ export function evaluateAnswer(answer: string, barema: BaremaItem[]): Correction
     feedback = "Sua resposta apresenta muitas lacunas. Recomendo estudar o tema com profundidade antes de tentar novamente. Foque nos conceitos básicos e na estrutura do espelho.";
   }
 
+  // Build mirror summary from barema if not provided
+  const mirrorText = options?.mirror || barema.map(item => `(${item.letter}) ${item.title}: ${item.subitems.map(s => s.description).join("; ")}`).join(". ");
+  
+  // Build ideal answer from barema if not provided
+  const idealAnswerText = options?.idealAnswer || barema.map(item => `${item.letter}) ${item.title}: ${item.subitems.map(s => s.description).join(". ")}.`).join("\n\n");
+
   return {
     id: `corr-${Date.now()}`,
     questionId: "q1",
@@ -411,17 +417,11 @@ export function evaluateAnswer(answer: string, barema: BaremaItem[]): Correction
     answer,
     grade: totalEarned,
     maxGrade: 10,
-    mirror: "O espelho exigia: (a) diferenciação entre prova ilegal (gênero), ilícita (violação material/fundamental) e ilegítima (violação processual), com consequências jurídicas; (b) conceito de serendipidade, espécies objetiva e subjetiva, e análise de não incidência no caso por origem ilícita; (c) teoria dos frutos da árvore envenenada (art. 157, §1º, CPP) e exceções (fonte independente, descoberta inevitável, nexo atenuado); (d) possibilidade de reconhecer licitude pela teoria da fonte independente, dado o caminho probatório autônomo via denúncia anônima corroborada e decisão judicial fundamentada.",
+    mirror: mirrorText,
     positives: allPositives.length > 0 ? allPositives : ["Nenhum ponto do espelho foi adequadamente abordado."],
     errors: allErrors.length > 0 ? allErrors : [],
     omissions: allOmissions.length > 0 ? allOmissions : [],
-    idealAnswer: `a) Prova ilegal é gênero que abrange toda prova obtida em desconformidade com o ordenamento jurídico. A prova ilícita, espécie do gênero, resulta da violação a normas de direito material ou direitos fundamentais (CF, art. 5º, LVI), como interceptação sem autorização judicial. Já a prova ilegítima decorre de violação a normas processuais, de forma, rito ou garantias. A consequência da prova ilícita é sua inadmissibilidade e desentranhamento dos autos; para a ilegítima, aplica-se o regime das nulidades processuais.
-
-b) Serendipidade é o achado fortuito de prova de crime ou pessoa diversa no curso de diligência lícita. Divide-se em objetiva (crime diverso do investigado) e subjetiva (pessoa diversa da investigada). No caso concreto, NÃO incide serendipidade válida, pois o achado decorreu de atuação irregular e ilícita do investigador, sem autorização judicial, não de diligência lícita.
-
-c) A Teoria dos Frutos da Árvore Envenenada (fruits of the poisonous tree) estabelece que a prova derivada de prova ilícita também é ilícita, por contaminação. No Brasil, está positivada no art. 157, §1º do CPP, com matriz no art. 5º, LVI da CF. As exceções são: (i) fonte independente – quando a prova derivada puder ser obtida por fonte autônoma; (ii) descoberta inevitável – quando a prova seria inevitavelmente descoberta por meios lícitos; (iii) nexo causal atenuado (mancha purgada) – quando circunstâncias supervenientes rompem o vínculo com a ilicitude originária.
-
-d) Sim, é possível reconhecer a licitude das provas da busca e apreensão. A teoria aplicável é a da fonte independente. No caso, outra equipe policial, atuando autonomamente, recebeu denúncia anônima detalhada, realizou diligências preliminares independentes e obteve decisão judicial fundamentada, sem qualquer utilização da prova ilícita originária. Houve caminho probatório inteiramente autônomo, rompendo o nexo causal com a ilicitude. Importante observar que a denúncia anônima isolada não bastaria – foi necessária sua corroboração por diligências independentes.`,
+    idealAnswer: idealAnswerText,
     feedback,
     createdAt: new Date().toISOString().split("T")[0],
     baremaBreakdown,
