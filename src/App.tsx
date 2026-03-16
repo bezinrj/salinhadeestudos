@@ -44,6 +44,7 @@ const App = () => (
               <Route path="/discursivas" element={<Discursivas />} />
               <Route path="/discursivas/:id" element={<QuestionDetail />} />
               <Route path="/semanal" element={<WeeklyChallenge />} />
+              <Route path="/semanal/:id" element={<QuestionDetail />} />
               <Route path="/ranking" element={<Ranking />} />
               <Route path="/cronometro" element={<StudyTimerPage />} />
               <Route path="/perfil" element={<Profile />} />
