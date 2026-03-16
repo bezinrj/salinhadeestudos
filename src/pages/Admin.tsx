@@ -793,6 +793,7 @@ function WeeklyQuestionsTab() {
     setEditIsPremium(q.is_premium);
     setEditMirrorText(q.mirror_text || "");
     setEditIdealAnswer(q.ideal_answer || "");
+    setEditGuidelines("");
   };
 
   return (
