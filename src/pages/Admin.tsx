@@ -750,12 +750,23 @@ function WeeklyQuestionsTab() {
         </CardContent>
       </Card>
 
-      {/* New question form */}
       <Card className="gradient-card border-border">
         <CardHeader>
-          <CardTitle className="text-sm font-medium flex items-center gap-2"><Plus className="h-4 w-4" /> Nova Questão Semanal</CardTitle>
+          <CardTitle className="text-sm font-medium flex items-center gap-2"><Plus className="h-4 w-4" /> Nova Questão</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
+          <div className="flex items-center gap-4 p-3 rounded-lg bg-secondary/50">
+            <div className="flex items-center gap-2">
+              <Switch checked={isWeekly} onCheckedChange={setIsWeekly} />
+              <span className="text-sm font-medium">{isWeekly ? "Questão Semanal" : "Questão Regular"}</span>
+            </div>
+            {!isWeekly && (
+              <div className="flex items-center gap-2">
+                <Switch checked={isPremiumQ} onCheckedChange={setIsPremiumQ} />
+                <span className="text-sm">Premium</span>
+              </div>
+            )}
+          </div>
           <Input placeholder="Título da questão" value={title} onChange={(e) => setTitle(e.target.value)} />
           <div className="grid grid-cols-2 gap-3">
             <Select value={career} onValueChange={setCareer}>
