@@ -128,7 +128,7 @@ export default function WeeklyChallenge() {
                   </div>
                 </div>
 
-                <Button onClick={() => navigate(`/discursivas/${activeQuestion.id}`)} className="gradient-electric text-white font-semibold">
+                <Button onClick={() => navigate(`/semanal/${activeQuestion.id}`)} className="gradient-electric text-white font-semibold">
                   Responder desafio
                 </Button>
               </CardContent>
