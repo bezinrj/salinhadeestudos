@@ -1,5 +1,6 @@
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
+import { useNavigate } from "react-router-dom";
 import type { RankingEntry } from "@/data/mockData";
 
 interface RankingTableProps {
@@ -9,15 +10,15 @@ interface RankingTableProps {
   valueFormatter?: (val: number) => string;
 }
 
+const MEDAL_EMOTES: Record<number, string> = {
+  1: "🥇",
+  2: "🥈",
+  3: "🥉",
+};
+
 export function RankingTable({ entries, currentUserId = "u1", valueLabel = "Pontos", valueFormatter }: RankingTableProps) {
   const formatValue = valueFormatter || ((v: number) => v.toLocaleString("pt-BR"));
-
-  const getMedalColor = (pos: number) => {
-    if (pos === 1) return "text-gold bg-gold/10 border-gold/30";
-    if (pos === 2) return "text-muted-foreground bg-muted/50 border-muted-foreground/30";
-    if (pos === 3) return "text-orange-400 bg-orange-400/10 border-orange-400/30";
-    return "";
-  };
+  const navigate = useNavigate();
 
   return (
     <div className="space-y-2">
@@ -36,16 +37,24 @@ export function RankingTable({ entries, currentUserId = "u1", valueLabel = "Pont
           >
             <div className={cn(
               "flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold",
-              isTop3 ? cn("border", getMedalColor(entry.position)) : "text-muted-foreground"
+              !isTop3 && "text-muted-foreground"
             )}>
-              {entry.position}
+              {isTop3 ? (
+                <span className="text-lg">{MEDAL_EMOTES[entry.position]}</span>
+              ) : (
+                entry.position
+              )}
             </div>
-            <Avatar className="h-8 w-8">
+            <Avatar className="h-8 w-8 cursor-pointer" onClick={() => navigate(`/perfil/${entry.userId}`)}>
+              {entry.avatarUrl && <AvatarImage src={entry.avatarUrl} />}
               <AvatarFallback className={cn("text-xs font-semibold", isTop3 ? "bg-secondary text-foreground" : "bg-muted text-muted-foreground")}>
                 {entry.avatar}
               </AvatarFallback>
             </Avatar>
-            <span className={cn("flex-1 text-sm font-medium", isCurrentUser && "text-primary")}>
+            <span
+              className={cn("flex-1 text-sm font-medium cursor-pointer hover:underline", isCurrentUser && "text-primary")}
+              onClick={() => navigate(`/perfil/${entry.userId}`)}
+            >
               {entry.name}
               {isCurrentUser && <span className="ml-1.5 text-xs text-primary/70">(você)</span>}
             </span>
