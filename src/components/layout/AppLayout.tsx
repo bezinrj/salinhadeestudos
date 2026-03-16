@@ -2,6 +2,7 @@ import { Outlet } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { BottomNav } from "./BottomNav";
+import { useOnlineTracker } from "@/hooks/useOnlineTracker";
 
 export function AppLayout() {
   return (
