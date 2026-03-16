@@ -706,7 +706,7 @@ function WeeklyQuestionsTab() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-weekly-questions"] });
-      setTitle(""); setCareer("Delegado"); setDiscipline(""); setStatement(""); setDifficulty("Médio"); setBaremaJson(""); setTestResult(null); setTestAnswer(""); setShowTest(false);
+      setTitle(""); setCareer("Delegado"); setDiscipline(""); setStatement(""); setDifficulty("Médio"); setBaremaJson(""); setTestResult(null); setTestAnswer(""); setShowTest(false); setGuidelines("");
       toast({ title: "Questão semanal publicada!", description: "Os usuários na lista de espera serão notificados." });
     },
     onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
