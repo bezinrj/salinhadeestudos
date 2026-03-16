@@ -639,7 +639,181 @@ function AnnouncementsTab() {
   );
 }
 
-/* ─── Content Tab ─── */
+/* ─── Weekly Questions Tab ─── */
+function WeeklyQuestionsTab() {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const [title, setTitle] = useState("");
+  const [career, setCareer] = useState("Delegado");
+  const [discipline, setDiscipline] = useState("");
+  const [statement, setStatement] = useState("");
+  const [difficulty, setDifficulty] = useState("Médio");
+
+  const { data: questions } = useQuery({
+    queryKey: ["admin-weekly-questions"],
+    queryFn: async () => {
+      const { data } = await supabase.from("weekly_questions").select("*").order("created_at", { ascending: false });
+      return data || [];
+    },
+  });
+
+  const { data: waitlistCount } = useQuery({
+    queryKey: ["admin-waitlist-count"],
+    queryFn: async () => {
+      const { count } = await supabase.from("weekly_waitlist").select("*", { count: "exact", head: true });
+      return count || 0;
+    },
+  });
+
+  // Calculate next Sunday 00:00 BRT (UTC-3)
+  function getNextSundayDeadline(): string {
+    const now = new Date();
+    // Convert to BRT
+    const brt = new Date(now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+    const dayOfWeek = brt.getDay(); // 0 = Sunday
+    const daysUntilSunday = dayOfWeek === 0 ? 7 : 7 - dayOfWeek;
+    const nextSunday = new Date(brt);
+    nextSunday.setDate(nextSunday.getDate() + daysUntilSunday);
+    nextSunday.setHours(0, 0, 0, 0);
+    // Convert back: BRT is UTC-3
+    const utcTime = new Date(nextSunday.getTime() + 3 * 60 * 60 * 1000);
+    return utcTime.toISOString();
+  }
+
+  const publishMutation = useMutation({
+    mutationFn: async () => {
+      const deadline = getNextSundayDeadline();
+      // Deactivate previous questions
+      await supabase.from("weekly_questions").update({ is_active: false }).eq("is_active", true);
+      // Insert new
+      const { error } = await supabase.from("weekly_questions").insert({
+        title,
+        career,
+        discipline,
+        statement,
+        difficulty,
+        deadline,
+        is_active: true,
+        created_by: user?.id,
+      });
+      if (error) throw error;
+      // Reset waitlist notifications so users get notified
+      await supabase.from("weekly_waitlist").update({ notified: false }).eq("notified", true);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-weekly-questions"] });
+      setTitle(""); setCareer("Delegado"); setDiscipline(""); setStatement(""); setDifficulty("Médio");
+      toast({ title: "Questão semanal publicada!", description: "Os usuários na lista de espera serão notificados." });
+    },
+    onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
+  });
+
+  const toggleMutation = useMutation({
+    mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
+      const { error } = await supabase.from("weekly_questions").update({ is_active }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-weekly-questions"] }),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("weekly_questions").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-weekly-questions"] });
+      toast({ title: "Questão removida." });
+    },
+  });
+
+  return (
+    <div className="space-y-6">
+      {/* Waitlist info */}
+      <Card className="gradient-card border-border">
+        <CardContent className="p-5 flex items-center gap-3">
+          <div className="rounded-lg bg-gold/10 p-2.5">
+            <Users className="h-5 w-5 text-gold" />
+          </div>
+          <div>
+            <p className="font-display font-bold text-lg">{waitlistCount}</p>
+            <p className="text-xs text-muted-foreground">Pessoas na lista de espera</p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* New question form */}
+      <Card className="gradient-card border-border">
+        <CardHeader>
+          <CardTitle className="text-sm font-medium flex items-center gap-2"><Plus className="h-4 w-4" /> Nova Questão Semanal</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Input placeholder="Título da questão" value={title} onChange={(e) => setTitle(e.target.value)} />
+          <div className="grid grid-cols-2 gap-3">
+            <Select value={career} onValueChange={setCareer}>
+              <SelectTrigger><SelectValue placeholder="Carreira" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Delegado">Delegado</SelectItem>
+                <SelectItem value="Magistratura">Magistratura</SelectItem>
+                <SelectItem value="Promotoria">Promotoria</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={difficulty} onValueChange={setDifficulty}>
+              <SelectTrigger><SelectValue placeholder="Dificuldade" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Fácil">Fácil</SelectItem>
+                <SelectItem value="Médio">Médio</SelectItem>
+                <SelectItem value="Difícil">Difícil</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <Input placeholder="Disciplina (ex: Processo Penal)" value={discipline} onChange={(e) => setDiscipline(e.target.value)} />
+          <Textarea placeholder="Enunciado completo da questão..." value={statement} onChange={(e) => setStatement(e.target.value)} rows={6} />
+          <p className="text-xs text-muted-foreground">O prazo será automaticamente definido para o próximo domingo às 00:00 (horário de Brasília).</p>
+          <Button onClick={() => publishMutation.mutate()} disabled={!title.trim() || !statement.trim() || !discipline.trim() || publishMutation.isPending} className="w-full sm:w-auto">
+            <Trophy className="h-4 w-4 mr-2" /> Publicar Questão Semanal
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Existing questions */}
+      <Card className="gradient-card border-border">
+        <CardHeader>
+          <CardTitle className="text-sm font-medium">Questões Semanais</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {questions?.length ? questions.map((q: any) => (
+            <div key={q.id} className="flex items-start gap-3 p-3 rounded-lg bg-secondary/50">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="text-sm font-medium">{q.title}</p>
+                  {q.is_active && new Date(q.deadline) > new Date() && (
+                    <Badge className="bg-green-500/20 text-green-400 border-green-400/30 text-[10px]">Ativa</Badge>
+                  )}
+                  {new Date(q.deadline) <= new Date() && (
+                    <Badge variant="outline" className="text-muted-foreground text-[10px]">Encerrada</Badge>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">{q.career} · {q.discipline} · {q.difficulty}</p>
+                <p className="text-[10px] text-muted-foreground mt-1">Prazo: {new Date(q.deadline).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}</p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <Switch checked={q.is_active} onCheckedChange={(checked) => toggleMutation.mutate({ id: q.id, is_active: checked })} />
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => deleteMutation.mutate(q.id)}>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )) : (
+            <p className="text-sm text-muted-foreground text-center py-4">Nenhuma questão semanal criada ainda.</p>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+
 function ContentTab() {
   const queryClient = useQueryClient();
 
