@@ -1,11 +1,15 @@
 import { useState } from "react";
-import { questions, getExpiredWeeklyQuestions, disciplines } from "@/data/mockData";
+import { disciplines } from "@/data/mockData";
 import { QuestionCard } from "@/components/QuestionCard";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { toast } from "sonner";
 
 const difficulties = ["Todas", "Fácil", "Médio", "Difícil"] as const;
 const careers = ["Todas", "Delegado", "Magistratura", "Promotoria"] as const;
@@ -17,8 +21,44 @@ export default function Discursivas() {
   const [career, setCareer] = useState<string>("Todas");
   const [type, setType] = useState<string>("Todas");
   const [selectedDiscipline, setSelectedDiscipline] = useState<string>("Todas");
+  const { isAdmin } = useIsAdmin();
+  const queryClient = useQueryClient();
 
-  const allQuestions = [...questions, ...getExpiredWeeklyQuestions()];
+  const { data: allQuestions = [], isLoading } = useQuery({
+    queryKey: ["discursivas-questions"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("weekly_questions")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data || []).map((q: any) => ({
+        id: q.id,
+        title: q.title,
+        career: q.career,
+        discipline: q.discipline,
+        statement: q.statement,
+        difficulty: q.difficulty,
+        participants: q.participants || 0,
+        isWeekly: q.is_weekly,
+        isPremium: q.is_premium || q.is_weekly,
+        deadline: q.deadline,
+        barema: q.barema,
+      }));
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("weekly_questions").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["discursivas-questions"] });
+      toast.success("Questão excluída com sucesso.");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
 
   const filtered = allQuestions.filter(q => {
     if (difficulty !== "Todas" && q.difficulty !== difficulty) return false;
@@ -134,15 +174,22 @@ export default function Discursivas() {
       </div>
 
       {/* Questions Grid */}
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filtered.map((q, i) => (
-          <motion.div key={q.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-            <QuestionCard question={q} />
-          </motion.div>
-        ))}
-      </div>
+      {isLoading ? (
+        <div className="text-center py-16 text-muted-foreground"><p>Carregando questões...</p></div>
+      ) : (
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filtered.map((q, i) => (
+            <motion.div key={q.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
+              <QuestionCard
+                question={q}
+                onDelete={isAdmin ? (id) => deleteMutation.mutate(id) : undefined}
+              />
+            </motion.div>
+          ))}
+        </div>
+      )}
 
-      {filtered.length === 0 && (
+      {!isLoading && filtered.length === 0 && (
         <div className="text-center py-16 text-muted-foreground">
           <p>Nenhuma questão encontrada com esses filtros.</p>
         </div>

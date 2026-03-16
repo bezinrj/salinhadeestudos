@@ -650,6 +650,8 @@ function WeeklyQuestionsTab() {
   const [showTest, setShowTest] = useState(false);
   const [guidelines, setGuidelines] = useState("");
   const [generatingBarema, setGeneratingBarema] = useState(false);
+  const [isWeekly, setIsWeekly] = useState(true);
+  const [isPremiumQ, setIsPremiumQ] = useState(false);
 
   const { data: questions } = useQuery({
     queryKey: ["admin-weekly-questions"],
@@ -684,30 +686,32 @@ function WeeklyQuestionsTab() {
 
   const publishMutation = useMutation({
     mutationFn: async () => {
-      const deadline = getNextSundayDeadline();
-      // Deactivate previous questions
-      await supabase.from("weekly_questions").update({ is_active: false }).eq("is_active", true);
-      // Insert new
       const baremaData = baremaJson.trim() ? JSON.parse(baremaJson) : null;
-      const { error } = await supabase.from("weekly_questions").insert({
-        title,
-        career,
-        discipline,
-        statement,
-        difficulty,
-        deadline,
-        is_active: true,
-        created_by: user?.id,
-        barema: baremaData,
-      } as any);
-      if (error) throw error;
-      // Reset waitlist notifications so users get notified
-      await supabase.from("weekly_waitlist").update({ notified: false }).eq("notified", true);
+      if (isWeekly) {
+        const deadline = getNextSundayDeadline();
+        // Deactivate previous weekly questions
+        await (supabase.from("weekly_questions") as any).update({ is_active: false }).eq("is_active", true).eq("is_weekly", true);
+        const { error } = await (supabase.from("weekly_questions") as any).insert({
+          title, career, discipline, statement, difficulty, deadline,
+          is_active: true, created_by: user?.id, barema: baremaData,
+          is_weekly: true, is_premium: true,
+        });
+        if (error) throw error;
+        await supabase.from("weekly_waitlist").update({ notified: false }).eq("notified", true);
+      } else {
+        const { error } = await (supabase.from("weekly_questions") as any).insert({
+          title, career, discipline, statement, difficulty,
+          deadline: null, is_active: true, created_by: user?.id, barema: baremaData,
+          is_weekly: false, is_premium: isPremiumQ,
+        });
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-weekly-questions"] });
-      setTitle(""); setCareer("Delegado"); setDiscipline(""); setStatement(""); setDifficulty("Médio"); setBaremaJson(""); setTestResult(null); setTestAnswer(""); setShowTest(false); setGuidelines("");
-      toast({ title: "Questão semanal publicada!", description: "Os usuários na lista de espera serão notificados." });
+      queryClient.invalidateQueries({ queryKey: ["discursivas-questions"] });
+      setTitle(""); setCareer("Delegado"); setDiscipline(""); setStatement(""); setDifficulty("Médio"); setBaremaJson(""); setTestResult(null); setTestAnswer(""); setShowTest(false); setGuidelines(""); setIsWeekly(true); setIsPremiumQ(false);
+      toast({ title: isWeekly ? "Questão semanal publicada!" : "Questão discursiva publicada!", description: isWeekly ? "Os usuários na lista de espera serão notificados." : undefined });
     },
     onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
   });
@@ -746,12 +750,23 @@ function WeeklyQuestionsTab() {
         </CardContent>
       </Card>
 
-      {/* New question form */}
       <Card className="gradient-card border-border">
         <CardHeader>
-          <CardTitle className="text-sm font-medium flex items-center gap-2"><Plus className="h-4 w-4" /> Nova Questão Semanal</CardTitle>
+          <CardTitle className="text-sm font-medium flex items-center gap-2"><Plus className="h-4 w-4" /> Nova Questão</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
+          <div className="flex items-center gap-4 p-3 rounded-lg bg-secondary/50">
+            <div className="flex items-center gap-2">
+              <Switch checked={isWeekly} onCheckedChange={setIsWeekly} />
+              <span className="text-sm font-medium">{isWeekly ? "Questão Semanal" : "Questão Regular"}</span>
+            </div>
+            {!isWeekly && (
+              <div className="flex items-center gap-2">
+                <Switch checked={isPremiumQ} onCheckedChange={setIsPremiumQ} />
+                <span className="text-sm">Premium</span>
+              </div>
+            )}
+          </div>
           <Input placeholder="Título da questão" value={title} onChange={(e) => setTitle(e.target.value)} />
           <div className="grid grid-cols-2 gap-3">
             <Select value={career} onValueChange={setCareer}>
@@ -915,9 +930,9 @@ function WeeklyQuestionsTab() {
             </div>
           )}
 
-          <p className="text-xs text-muted-foreground">O prazo será automaticamente definido para o próximo domingo às 00:00 (horário de Brasília).</p>
+          {isWeekly && <p className="text-xs text-muted-foreground">O prazo será automaticamente definido para o próximo domingo às 00:00 (horário de Brasília).</p>}
           <Button onClick={() => publishMutation.mutate()} disabled={!title.trim() || !statement.trim() || !discipline.trim() || publishMutation.isPending} className="w-full sm:w-auto">
-            <Trophy className="h-4 w-4 mr-2" /> Publicar Questão Semanal
+            <Trophy className="h-4 w-4 mr-2" /> {isWeekly ? "Publicar Questão Semanal" : "Publicar Questão"}
           </Button>
         </CardContent>
       </Card>
@@ -925,7 +940,7 @@ function WeeklyQuestionsTab() {
       {/* Existing questions */}
       <Card className="gradient-card border-border">
         <CardHeader>
-          <CardTitle className="text-sm font-medium">Questões Semanais</CardTitle>
+          <CardTitle className="text-sm font-medium">Todas as Questões</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           {questions?.length ? questions.map((q: any) => (
@@ -933,15 +948,21 @@ function WeeklyQuestionsTab() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <p className="text-sm font-medium">{q.title}</p>
-                  {q.is_active && new Date(q.deadline) > new Date() && (
+                  {q.is_weekly && (
+                    <Badge className="bg-gold/10 text-gold border-gold/20 text-[10px]">Semanal</Badge>
+                  )}
+                  {q.is_premium && !q.is_weekly && (
+                    <Badge className="bg-purple-500/20 text-purple-400 border-purple-400/30 text-[10px]">Premium</Badge>
+                  )}
+                  {q.is_active && (
                     <Badge className="bg-green-500/20 text-green-400 border-green-400/30 text-[10px]">Ativa</Badge>
                   )}
-                  {new Date(q.deadline) <= new Date() && (
+                  {q.deadline && new Date(q.deadline) <= new Date() && (
                     <Badge variant="outline" className="text-muted-foreground text-[10px]">Encerrada</Badge>
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">{q.career} · {q.discipline} · {q.difficulty}</p>
-                <p className="text-[10px] text-muted-foreground mt-1">Prazo: {new Date(q.deadline).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}</p>
+                {q.deadline && <p className="text-[10px] text-muted-foreground mt-1">Prazo: {new Date(q.deadline).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}</p>}
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 <Switch checked={q.is_active} onCheckedChange={(checked) => toggleMutation.mutate({ id: q.id, is_active: checked })} />
@@ -951,7 +972,7 @@ function WeeklyQuestionsTab() {
               </div>
             </div>
           )) : (
-            <p className="text-sm text-muted-foreground text-center py-4">Nenhuma questão semanal criada ainda.</p>
+            <p className="text-sm text-muted-foreground text-center py-4">Nenhuma questão criada ainda.</p>
           )}
         </CardContent>
       </Card>

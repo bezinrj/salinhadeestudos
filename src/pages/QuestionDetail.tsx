@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { questions, weeklyQuestion, evaluateAnswer, addWeeklyScore, addRegularAnswer, hasAnsweredWeekly, getWeeklyAnswerScore, type CorrectionResult } from "@/data/mockData";
+import { evaluateAnswer, type CorrectionResult, type BaremaItem } from "@/data/mockData";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,32 +17,47 @@ import { QuestionComments } from "@/components/QuestionComments";
 export default function QuestionDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user, profile, subscribed } = useAuth();
+  const { user, subscribed } = useAuth();
   const [answer, setAnswer] = useState("");
   const [correction, setCorrection] = useState<CorrectionResult | null>(null);
 
-  const question = [...questions, weeklyQuestion].find(q => q.id === id);
+  const { data: question, isLoading } = useQuery({
+    queryKey: ["question-detail", id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("weekly_questions")
+        .select("*")
+        .eq("id", id!)
+        .single();
+      if (error) throw error;
+      return {
+        id: data.id,
+        title: data.title,
+        career: data.career as any,
+        discipline: data.discipline,
+        statement: data.statement,
+        difficulty: data.difficulty as any,
+        participants: (data as any).participants || 0,
+        isWeekly: (data as any).is_weekly,
+        isPremium: (data as any).is_premium || (data as any).is_weekly,
+        deadline: data.deadline,
+        barema: data.barema as unknown as BaremaItem[] | undefined,
+      };
+    },
+    enabled: !!id,
+  });
+
+  if (isLoading) return <div className="text-center py-16 text-muted-foreground">Carregando...</div>;
   if (!question) return <div className="text-center py-16 text-muted-foreground">Questão não encontrada.</div>;
 
   const isPremium = question.isPremium || question.isWeekly;
   const canAnswer = !isPremium || subscribed;
-
-  const alreadyAnsweredWeekly = question.isWeekly && user ? hasAnsweredWeekly(user.id, question.id) : false;
-  const previousWeeklyScore = question.isWeekly && user ? getWeeklyAnswerScore(user.id, question.id) : null;
 
   const handleSubmit = () => {
     if (answer.trim().length < 50) return;
     if (!question.barema) return;
     const result = evaluateAnswer(answer, question.barema);
     setCorrection(result);
-
-    if (question.isWeekly && user) {
-      // Weekly: adds to ranking (only once, enforced in addWeeklyScore)
-      addWeeklyScore(user.id, question.id, result.grade, answer, result.feedback);
-    } else if (user) {
-      // Regular: only counts for badges/totalEssays, NOT ranking
-      addRegularAnswer(user.id, question.id, result.grade);
-    }
   };
 
   const getGradeColor = (grade: number) => {
@@ -83,18 +100,7 @@ export default function QuestionDetail() {
       </Card>
 
       {!correction ? (
-        alreadyAnsweredWeekly ? (
-        <Card className="gradient-card border-gold/20">
-          <CardContent className="p-8 text-center space-y-4">
-            <CheckCircle2 className="h-10 w-10 text-gold mx-auto" />
-            <p className="text-lg font-display font-bold">Você já respondeu esta questão da semana</p>
-            {previousWeeklyScore !== null && (
-              <p className="text-2xl font-display font-bold text-primary">{previousWeeklyScore.toFixed(1)} / 10</p>
-            )}
-            <p className="text-sm text-muted-foreground">Questões da semana só podem ser respondidas uma vez. Sua nota foi adicionada ao ranking.</p>
-          </CardContent>
-        </Card>
-        ) : canAnswer ? (
+        canAnswer ? (
         <Card className="gradient-card border-border">
           <CardHeader>
             <CardTitle className="text-base font-display flex items-center gap-2">
@@ -137,9 +143,6 @@ export default function QuestionDetail() {
               <p className={cn("text-5xl font-display font-bold", getGradeColor(correction.grade))}>{correction.grade.toFixed(1)}</p>
               <p className="text-sm text-muted-foreground">de {correction.maxGrade}</p>
               <Progress value={(correction.grade / correction.maxGrade) * 100} className="h-2 mt-4 max-w-xs mx-auto" />
-              {question.isWeekly && (
-                <p className="text-xs text-gold mt-3">🏆 Pontuação adicionada ao ranking semanal!</p>
-              )}
             </CardContent>
           </Card>
 
