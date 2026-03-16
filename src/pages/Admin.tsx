@@ -930,9 +930,9 @@ function WeeklyQuestionsTab() {
             </div>
           )}
 
-          <p className="text-xs text-muted-foreground">O prazo será automaticamente definido para o próximo domingo às 00:00 (horário de Brasília).</p>
+          {isWeekly && <p className="text-xs text-muted-foreground">O prazo será automaticamente definido para o próximo domingo às 00:00 (horário de Brasília).</p>}
           <Button onClick={() => publishMutation.mutate()} disabled={!title.trim() || !statement.trim() || !discipline.trim() || publishMutation.isPending} className="w-full sm:w-auto">
-            <Trophy className="h-4 w-4 mr-2" /> Publicar Questão Semanal
+            <Trophy className="h-4 w-4 mr-2" /> {isWeekly ? "Publicar Questão Semanal" : "Publicar Questão"}
           </Button>
         </CardContent>
       </Card>
