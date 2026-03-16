@@ -34,10 +34,13 @@ export default function Dashboard() {
     <div className="space-y-6">
       {/* Announcement Banners */}
       {activeAnnouncements.map((a: any) => (
-        <motion.div key={a.id} initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="rounded-lg border border-primary/30 bg-primary/10 p-4 flex items-start gap-3">
-          <Bell className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+        <motion.div key={a.id} initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="rounded-lg border border-gold/30 bg-gold/10 p-4 flex items-start gap-3">
+          <span className="text-2xl shrink-0">📢</span>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-primary">{a.title}</p>
+            <div className="flex items-center gap-2">
+              <Badge className="bg-gold text-gold-foreground hover:bg-gold/90 border-none text-[10px] px-2 py-0.5">AVISO</Badge>
+              <p className="text-sm font-semibold text-gold">{a.title}</p>
+            </div>
             <p className="text-sm text-foreground/80 mt-1">{a.message}</p>
           </div>
           <button onClick={() => setDismissedAnnouncements((prev) => [...prev, a.id])} className="text-muted-foreground hover:text-foreground shrink-0">
