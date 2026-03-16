@@ -667,6 +667,8 @@ function WeeklyQuestionsTab() {
   const [editIdealAnswer, setEditIdealAnswer] = useState("");
   const [editIsWeekly, setEditIsWeekly] = useState(false);
   const [editIsPremium, setEditIsPremium] = useState(false);
+  const [editGuidelines, setEditGuidelines] = useState("");
+  const [editGeneratingBarema, setEditGeneratingBarema] = useState(false);
 
   const { data: questions } = useQuery({
     queryKey: ["admin-weekly-questions"],
@@ -791,6 +793,7 @@ function WeeklyQuestionsTab() {
     setEditIsPremium(q.is_premium);
     setEditMirrorText(q.mirror_text || "");
     setEditIdealAnswer(q.ideal_answer || "");
+    setEditGuidelines("");
   };
 
   return (
@@ -1096,6 +1099,47 @@ function WeeklyQuestionsTab() {
                 </SelectContent>
               </Select>
               <Textarea placeholder="Enunciado" value={editStatement} onChange={(e) => setEditStatement(e.target.value)} rows={5} />
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Diretrizes / Gabarito (texto livre)</label>
+                <Textarea
+                  placeholder="Cole aqui as diretrizes de correção ou gabarito em texto livre para gerar o barema..."
+                  value={editGuidelines}
+                  onChange={(e) => setEditGuidelines(e.target.value)}
+                  rows={5}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={async () => {
+                    if (!editStatement.trim() || !editGuidelines.trim()) {
+                      toast({ title: "Preencha o enunciado e as diretrizes primeiro.", variant: "destructive" });
+                      return;
+                    }
+                    setEditGeneratingBarema(true);
+                    try {
+                      const { data, error } = await supabase.functions.invoke('generate-barema', {
+                        body: { statement: editStatement, guidelines: editGuidelines },
+                      });
+                      if (error) throw error;
+                      if (data?.error) throw new Error(data.error);
+                      setEditBaremaJson(JSON.stringify(data.barema, null, 2));
+                      toast({ title: "Barema gerado com sucesso!" });
+                    } catch (e: any) {
+                      toast({ title: "Erro ao gerar barema", description: e.message, variant: "destructive" });
+                    } finally {
+                      setEditGeneratingBarema(false);
+                    }
+                  }}
+                  disabled={editGeneratingBarema || !editStatement.trim() || !editGuidelines.trim()}
+                  className="gap-2"
+                >
+                  {editGeneratingBarema ? (
+                    <><Clock className="h-4 w-4 animate-spin" /> Gerando...</>
+                  ) : (
+                    <><GraduationCap className="h-4 w-4" /> Gerar Barema com IA</>
+                  )}
+                </Button>
+              </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Barema (JSON)</label>
                 <Textarea value={editBaremaJson} onChange={(e) => setEditBaremaJson(e.target.value)} rows={6} className="font-mono text-xs" />

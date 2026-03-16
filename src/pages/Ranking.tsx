@@ -7,10 +7,12 @@ import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 import type { RankingEntry } from "@/data/mockData";
 
 export default function Ranking() {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   // Fetch general ranking: sum of weekly_answers scores per user
   const { data: ranking = [] } = useQuery({
@@ -68,39 +70,39 @@ export default function Ranking() {
         <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}>
           <Card className="gradient-card border-border overflow-hidden">
             <CardContent className="p-6">
-              <div className="flex items-end justify-center gap-4 md:gap-8">
+               <div className="flex items-end justify-center gap-4 md:gap-8">
                 <div className="text-center">
-                  <Avatar className="h-14 w-14 mx-auto mb-2 border-2 border-muted-foreground/30">
+                  <Avatar className="h-14 w-14 mx-auto mb-2 border-2 border-muted-foreground/30 cursor-pointer" onClick={() => navigate(`/perfil/${top3[1].userId}`)}>
                     {top3[1].avatarUrl && <AvatarImage src={top3[1].avatarUrl} />}
                     <AvatarFallback className="bg-secondary text-sm font-bold">{top3[1].avatar}</AvatarFallback>
                   </Avatar>
-                  <p className="text-sm font-semibold">{top3[1].name.split(" ")[0]}</p>
+                  <p className="text-sm font-semibold cursor-pointer hover:underline" onClick={() => navigate(`/perfil/${top3[1].userId}`)}>{top3[1].name.split(" ")[0]}</p>
                   <p className="text-xs text-muted-foreground">{top3[1].score} pts</p>
                   <div className="mt-2 h-20 w-20 rounded-t-lg bg-secondary/50 flex items-center justify-center">
-                    <span className="text-2xl font-bold text-muted-foreground">2</span>
+                    <span className="text-3xl">🥈</span>
                   </div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl mb-1">👑</div>
-                  <Avatar className="h-16 w-16 mx-auto mb-2 border-2 border-gold/50 glow-gold">
+                  <div className="text-3xl mb-1">🥇</div>
+                  <Avatar className="h-16 w-16 mx-auto mb-2 border-2 border-gold/50 glow-gold cursor-pointer" onClick={() => navigate(`/perfil/${top3[0].userId}`)}>
                     {top3[0].avatarUrl && <AvatarImage src={top3[0].avatarUrl} />}
                     <AvatarFallback className="bg-gold/10 text-gold text-sm font-bold">{top3[0].avatar}</AvatarFallback>
                   </Avatar>
-                  <p className="text-sm font-bold text-gold">{top3[0].name.split(" ")[0]}</p>
+                  <p className="text-sm font-bold text-gold cursor-pointer hover:underline" onClick={() => navigate(`/perfil/${top3[0].userId}`)}>{top3[0].name.split(" ")[0]}</p>
                   <p className="text-xs text-gold/70">{top3[0].score} pts</p>
                   <div className="mt-2 h-28 w-20 rounded-t-lg gradient-gold flex items-center justify-center">
-                    <span className="text-2xl font-bold text-black">1</span>
+                    <span className="text-3xl">👑</span>
                   </div>
                 </div>
                 <div className="text-center">
-                  <Avatar className="h-14 w-14 mx-auto mb-2 border-2 border-orange-400/30">
+                  <Avatar className="h-14 w-14 mx-auto mb-2 border-2 border-orange-400/30 cursor-pointer" onClick={() => navigate(`/perfil/${top3[2].userId}`)}>
                     {top3[2].avatarUrl && <AvatarImage src={top3[2].avatarUrl} />}
                     <AvatarFallback className="bg-secondary text-sm font-bold">{top3[2].avatar}</AvatarFallback>
                   </Avatar>
-                  <p className="text-sm font-semibold">{top3[2].name.split(" ")[0]}</p>
+                  <p className="text-sm font-semibold cursor-pointer hover:underline" onClick={() => navigate(`/perfil/${top3[2].userId}`)}>{top3[2].name.split(" ")[0]}</p>
                   <p className="text-xs text-muted-foreground">{top3[2].score} pts</p>
                   <div className="mt-2 h-14 w-20 rounded-t-lg bg-orange-400/10 flex items-center justify-center">
-                    <span className="text-2xl font-bold text-orange-400">3</span>
+                    <span className="text-3xl">🥉</span>
                   </div>
                 </div>
               </div>
