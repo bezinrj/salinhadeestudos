@@ -67,27 +67,21 @@ function OverviewTab() {
   const { data: stats } = useQuery({
     queryKey: ["admin-stats"],
     queryFn: async () => {
-      const [profiles, comments, sessions] = await Promise.all([
+      const [profiles, sessions, manualSubs] = await Promise.all([
         supabase.from("profiles").select("id, created_at", { count: "exact" }),
-        supabase.from("question_comments").select("id", { count: "exact", head: true }),
         supabase.from("user_sessions").select("*"),
+        supabase.from("manual_subscriptions").select("id", { count: "exact", head: true }).eq("is_active", true).gte("expires_at", new Date().toISOString()),
       ]);
       const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
-      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
       const onlineUsers = (sessions.data || []).filter((s: any) => s.last_seen_at > fiveMinAgo);
-      const allProfiles = profiles.data || [];
-      const newUsers = allProfiles.filter((p: any) => p.created_at && p.created_at > sevenDaysAgo);
-      // "Aguardando" = registered in last 7 days but never had a session
-      const sessionUserIds = new Set((sessions.data || []).map((s: any) => s.user_id));
-      const waitingApproval = newUsers.filter((p: any) => !sessionUserIds.has(p.id));
 
       return {
         totalUsers: profiles.count || 0,
         onlineNow: onlineUsers.length,
-        waitingApproval: waitingApproval.length,
+        manualPlans: manualSubs.count || 0,
         activeUsers: (sessions.data || []).filter((s: any) => s.last_seen_at > new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()).length,
-        blockedUsers: 0, // placeholder
-        activeSubscriptions: 0, // placeholder
+        blockedUsers: 0,
+        activeSubscriptions: 0,
         onlineList: onlineUsers,
       };
     },
