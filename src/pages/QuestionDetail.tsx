@@ -84,14 +84,42 @@ export default function QuestionDetail() {
     if (answer.trim().length < 50) return;
     if (!question.barema) return;
     
-    const result = evaluateAnswer(answer, question.barema, {
-      mirror: question.mirrorText || undefined,
-      idealAnswer: question.idealAnswer || undefined,
-    });
+    setIsEvaluating(true);
+    let result: CorrectionResult;
+
+    try {
+      // Try AI semantic evaluation
+      const { data, error } = await supabase.functions.invoke('evaluate-answer', {
+        body: {
+          answer,
+          barema: question.barema,
+          mirrorText: question.mirrorText || undefined,
+          idealAnswer: question.idealAnswer || undefined,
+        },
+      });
+
+      if (error || data?.error) {
+        console.warn("AI evaluation failed, falling back to local:", error || data?.error);
+        toast({ title: "Usando correção local", description: "A correção com IA não está disponível no momento.", variant: "default" });
+        result = evaluateAnswer(answer, question.barema, {
+          mirror: question.mirrorText || undefined,
+          idealAnswer: question.idealAnswer || undefined,
+        });
+      } else {
+        result = data as CorrectionResult;
+      }
+    } catch (err) {
+      console.warn("AI evaluation error, falling back to local:", err);
+      result = evaluateAnswer(answer, question.barema, {
+        mirror: question.mirrorText || undefined,
+        idealAnswer: question.idealAnswer || undefined,
+      });
+    }
+
     setCorrection(result);
+    setIsEvaluating(false);
 
     if (question.isWeekly && user) {
-      // Save to weekly_answers
       const { error } = await (supabase.from("weekly_answers" as any) as any).insert({
         user_id: user.id,
         question_id: question.id,
@@ -107,7 +135,6 @@ export default function QuestionDetail() {
         toast({ title: "Resposta registrada!", description: "Sua nota foi salva para o ranking." });
       }
     } else if (user) {
-      // Regular question: increment total_essays for badges
       await supabase
         .from("profiles")
         .update({ total_essays: (await supabase.from("profiles").select("total_essays").eq("id", user.id).single()).data?.total_essays! + 1 })
