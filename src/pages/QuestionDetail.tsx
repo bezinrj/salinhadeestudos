@@ -22,6 +22,7 @@ export default function QuestionDetail() {
   const [answer, setAnswer] = useState("");
   const [correction, setCorrection] = useState<CorrectionResult | null>(null);
   const [lockedScore, setLockedScore] = useState<number | null>(null);
+  const [isEvaluating, setIsEvaluating] = useState(false);
 
   const { data: question, isLoading } = useQuery({
     queryKey: ["question-detail", id],
