@@ -964,9 +964,25 @@ function WeeklyQuestionsTab() {
                     <Button
                       type="button"
                       size="sm"
-                      onClick={() => {
+                      onClick={async () => {
                         try {
                           const parsedBarema = JSON.parse(baremaJson);
+                          // Try AI evaluation first
+                          try {
+                            const { data, error } = await supabase.functions.invoke('evaluate-answer', {
+                              body: {
+                                answer: testAnswer,
+                                barema: parsedBarema,
+                                mirrorText: mirrorText || undefined,
+                                idealAnswer: idealAnswer || undefined,
+                              },
+                            });
+                            if (!error && !data?.error) {
+                              setTestResult(data);
+                              return;
+                            }
+                          } catch {}
+                          // Fallback to local
                           const result = evaluateAnswer(testAnswer, parsedBarema, {
                             mirror: mirrorText || undefined,
                             idealAnswer: idealAnswer || undefined,
