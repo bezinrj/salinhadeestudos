@@ -208,8 +208,12 @@ export default function QuestionDetail() {
             />
             <div className="flex items-center justify-between">
               <span className="text-xs text-muted-foreground">{answer.length} caracteres</span>
-              <Button onClick={handleSubmit} disabled={answer.trim().length < 50} className="gradient-electric text-white font-semibold">
-                <Send className="h-4 w-4 mr-2" /> Enviar para correção
+              <Button onClick={handleSubmit} disabled={answer.trim().length < 50 || isEvaluating} className="gradient-electric text-white font-semibold">
+                {isEvaluating ? (
+                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Corrigindo com IA...</>
+                ) : (
+                  <><Send className="h-4 w-4 mr-2" /> Enviar para correção</>
+                )}
               </Button>
             </div>
           </CardContent>
