@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.generate-barema]
 verify_jwt = false
+
+[functions.evaluate-answer]
+verify_jwt = false
