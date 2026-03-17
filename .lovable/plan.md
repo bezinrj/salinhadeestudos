@@ -3,55 +3,46 @@
 # Plano: Correção semântica com IA
 
 ## Problema
-A correção atual usa `string.includes(keyword)` — busca exata de palavras-chave. Se o aluno expressa o conceito com sinônimos ou paráfrases, recebe zero mesmo estando correto.
+A correção atual usa `string.includes(keyword)` — busca exata de palavras-chave no texto. Se o aluno expressa o mesmo conceito com palavras diferentes, recebe zero. Isso impede notas justas mesmo quando a resposta está correta.
 
 ## Solução
-Criar uma edge function `evaluate-answer` que usa IA para avaliar semanticamente cada subitem do barema. O frontend chama essa função em vez da `evaluateAnswer()` local.
+Substituir a correção local por uma **edge function que usa IA (Lovable AI)** para avaliar semanticamente cada subitem do barema contra a resposta do aluno. A IA recebe o barema completo, o espelho, a resposta ideal e a resposta do aluno, e retorna a avaliação estruturada via tool calling.
 
 ## Mudanças
 
-### 1. Nova edge function `supabase/functions/evaluate-answer/index.ts`
+### 1. Nova edge function `evaluate-answer`
 - Recebe: `answer`, `barema`, `mirrorText`, `idealAnswer`
-- Prompt instrui a IA a avaliar cada subitem semanticamente, atribuindo "full", "partial" ou "missed"
-- Usa tool calling para retornar resultado estruturado (mesma shape de `CorrectionResult`)
-- Modelo: `google/gemini-3-flash-preview`
-- Trata erros 429/402
+- Monta prompt instruindo a IA a avaliar semanticamente cada subitem, atribuindo "full", "partial" ou "missed"
+- Usa tool calling para retornar o resultado estruturado (mesma shape de `CorrectionResult`)
+- Modelo: `google/gemini-3-flash-preview` (rápido e capaz)
 
-### 2. `supabase/config.toml` — registrar função
-- Adicionar `[functions.evaluate-answer]` com `verify_jwt = false`
+### 2. `src/pages/QuestionDetail.tsx` — chamar edge function
+- Substituir chamada local `evaluateAnswer()` por `supabase.functions.invoke('evaluate-answer', ...)`
+- Adicionar loading state durante avaliação (spinner/texto "Corrigindo com IA...")
+- Tratar erros (429, 402, falhas)
 
-### 3. `src/pages/QuestionDetail.tsx` — chamar edge function
-- Substituir `evaluateAnswer()` local por `supabase.functions.invoke('evaluate-answer', ...)`
-- Adicionar estado de loading ("Corrigindo com IA...") com spinner durante avaliação
-- Fallback para `evaluateAnswer()` local se a edge function falhar
+### 3. `src/pages/Admin.tsx` — teste de correção
+- Atualizar o teste de correção no admin para também usar a edge function em vez da função local
+- Manter fallback local caso a IA falhe
 
-### 4. `src/pages/Admin.tsx` — teste de correção
-- Atualizar o botão "Testar Correção" para usar a edge function também
-- Fallback local em caso de erro
-
-### 5. `src/data/mockData.ts`
-- Manter `evaluateAnswer` como fallback, sem alterações
+### 4. `src/data/mockData.ts`
+- Manter `evaluateAnswer` como fallback offline, mas não será mais o método principal
 
 ## Prompt da IA (resumo)
 ```
-Você é um corretor de questões discursivas de concursos públicos.
-Avalie a resposta do aluno contra cada subitem do barema.
-Considere sinônimos, paráfrases e expressões equivalentes.
-O aluno NÃO precisa usar as palavras exatas — basta demonstrar
-o mesmo conceito/sentido.
+Você é um corretor de questões discursivas. Avalie a resposta do aluno
+contra cada subitem do barema. Considere sinônimos, paráfrases e
+expressões equivalentes. O aluno NÃO precisa usar as palavras exatas —
+basta demonstrar o mesmo conceito/sentido.
 
 Para cada subitem, atribua:
 - "full" (nota máxima) se o conceito foi adequadamente abordado
-- "partial" (50%) se foi mencionado de forma incompleta  
+- "partial" (50%) se foi mencionado de forma incompleta
 - "missed" (0) se não foi abordado
-
-Gere também: mirror (espelho resumido), positives, errors,
-omissions, idealAnswer e feedback.
 ```
 
 ## Arquivos afetados
 - `supabase/functions/evaluate-answer/index.ts` (novo)
-- `supabase/config.toml` (adicionar entrada)
 - `src/pages/QuestionDetail.tsx`
 - `src/pages/Admin.tsx`
 

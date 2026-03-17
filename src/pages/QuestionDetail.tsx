@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, CheckCircle2, XCircle, AlertTriangle, Lightbulb, FileText, Send, Lock } from "lucide-react";
+import { ArrowLeft, CheckCircle2, XCircle, AlertTriangle, Lightbulb, FileText, Send, Lock, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { QuestionComments } from "@/components/QuestionComments";
@@ -22,6 +22,7 @@ export default function QuestionDetail() {
   const [answer, setAnswer] = useState("");
   const [correction, setCorrection] = useState<CorrectionResult | null>(null);
   const [lockedScore, setLockedScore] = useState<number | null>(null);
+  const [isEvaluating, setIsEvaluating] = useState(false);
 
   const { data: question, isLoading } = useQuery({
     queryKey: ["question-detail", id],
@@ -83,14 +84,42 @@ export default function QuestionDetail() {
     if (answer.trim().length < 50) return;
     if (!question.barema) return;
     
-    const result = evaluateAnswer(answer, question.barema, {
-      mirror: question.mirrorText || undefined,
-      idealAnswer: question.idealAnswer || undefined,
-    });
+    setIsEvaluating(true);
+    let result: CorrectionResult;
+
+    try {
+      // Try AI semantic evaluation
+      const { data, error } = await supabase.functions.invoke('evaluate-answer', {
+        body: {
+          answer,
+          barema: question.barema,
+          mirrorText: question.mirrorText || undefined,
+          idealAnswer: question.idealAnswer || undefined,
+        },
+      });
+
+      if (error || data?.error) {
+        console.warn("AI evaluation failed, falling back to local:", error || data?.error);
+        toast({ title: "Usando correção local", description: "A correção com IA não está disponível no momento.", variant: "default" });
+        result = evaluateAnswer(answer, question.barema, {
+          mirror: question.mirrorText || undefined,
+          idealAnswer: question.idealAnswer || undefined,
+        });
+      } else {
+        result = data as CorrectionResult;
+      }
+    } catch (err) {
+      console.warn("AI evaluation error, falling back to local:", err);
+      result = evaluateAnswer(answer, question.barema, {
+        mirror: question.mirrorText || undefined,
+        idealAnswer: question.idealAnswer || undefined,
+      });
+    }
+
     setCorrection(result);
+    setIsEvaluating(false);
 
     if (question.isWeekly && user) {
-      // Save to weekly_answers
       const { error } = await (supabase.from("weekly_answers" as any) as any).insert({
         user_id: user.id,
         question_id: question.id,
@@ -106,7 +135,6 @@ export default function QuestionDetail() {
         toast({ title: "Resposta registrada!", description: "Sua nota foi salva para o ranking." });
       }
     } else if (user) {
-      // Regular question: increment total_essays for badges
       await supabase
         .from("profiles")
         .update({ total_essays: (await supabase.from("profiles").select("total_essays").eq("id", user.id).single()).data?.total_essays! + 1 })
@@ -180,8 +208,12 @@ export default function QuestionDetail() {
             />
             <div className="flex items-center justify-between">
               <span className="text-xs text-muted-foreground">{answer.length} caracteres</span>
-              <Button onClick={handleSubmit} disabled={answer.trim().length < 50} className="gradient-electric text-white font-semibold">
-                <Send className="h-4 w-4 mr-2" /> Enviar para correção
+              <Button onClick={handleSubmit} disabled={answer.trim().length < 50 || isEvaluating} className="gradient-electric text-white font-semibold">
+                {isEvaluating ? (
+                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Corrigindo com IA...</>
+                ) : (
+                  <><Send className="h-4 w-4 mr-2" /> Enviar para correção</>
+                )}
               </Button>
             </div>
           </CardContent>
