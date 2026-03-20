@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "react-router-dom";
-import { MessageSquare, Trash2 } from "lucide-react";
+import { MessageSquare, Trash2, Crown } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "@/hooks/use-toast";
 import { RichTextEditor } from "@/components/RichTextEditor";
