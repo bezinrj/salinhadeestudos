@@ -1125,12 +1125,23 @@ function WeeklyQuestionsTab() {
                   </SelectContent>
                 </Select>
               </div>
-              <Select value={editDiscipline} onValueChange={setEditDiscipline}>
-                <SelectTrigger><SelectValue placeholder="Matéria" /></SelectTrigger>
-                <SelectContent>
-                  {disciplines.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <div className="grid grid-cols-2 gap-3">
+                <Select value={editDiscipline} onValueChange={setEditDiscipline}>
+                  <SelectTrigger><SelectValue placeholder="Matéria" /></SelectTrigger>
+                  <SelectContent>
+                    {disciplines.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Select value={editBanca} onValueChange={setEditBanca}>
+                  <SelectTrigger><SelectValue placeholder="Banca" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="CEBRASPE">CEBRASPE</SelectItem>
+                    <SelectItem value="FGV">FGV</SelectItem>
+                    <SelectItem value="VUNESP">VUNESP</SelectItem>
+                    <SelectItem value="INÉDITA">INÉDITA</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <Textarea placeholder="Enunciado" value={editStatement} onChange={(e) => setEditStatement(e.target.value)} rows={5} />
               <div className="space-y-2">
                 <label className="text-sm font-medium">Diretrizes / Gabarito (texto livre)</label>
