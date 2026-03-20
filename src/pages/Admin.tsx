@@ -799,6 +799,7 @@ function WeeklyQuestionsTab() {
     setEditMirrorText(q.mirror_text || "");
     setEditIdealAnswer(q.ideal_answer || "");
     setEditGuidelines("");
+    setEditBanca(q.banca || "INÉDITA");
   };
 
   return (
