@@ -723,6 +723,7 @@ function WeeklyQuestionsTab() {
           is_weekly: false, is_premium: isPremiumQ,
           mirror_text: mirrorText.trim() || null,
           ideal_answer: idealAnswer.trim() || null,
+          banca,
         });
         if (error) throw error;
       }
