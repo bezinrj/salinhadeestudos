@@ -163,6 +163,8 @@ serve(async (req) => {
       );
     }
 
+    // Clear subscription_tier if no active sub
+    await supabaseClient.from("profiles").update({ subscription_tier: null }).eq("id", targetUserId);
     logStep("No active subscription found");
     return new Response(
       JSON.stringify({ subscribed: false }),
