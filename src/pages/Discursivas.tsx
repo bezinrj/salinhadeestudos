@@ -22,6 +22,7 @@ export default function Discursivas() {
   const [career, setCareer] = useState<string>("Todas");
   const [type, setType] = useState<string>("Todas");
   const [selectedDiscipline, setSelectedDiscipline] = useState<string>("Todas");
+  const [selectedBanca, setSelectedBanca] = useState<string>("Todas");
   const { isAdmin } = useIsAdmin();
   const queryClient = useQueryClient();
 
