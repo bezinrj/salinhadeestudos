@@ -922,7 +922,7 @@ function WeeklyQuestionsTab() {
               rows={8}
               className="font-mono text-xs"
             />
-            <p className="text-xs text-muted-foreground">JSON gerado pela IA ou editado manualmente. Cada subitem precisa de keywords para a correção automática.</p>
+            <p className="text-xs text-muted-foreground">JSON gerado pela IA ou editado manualmente. A correção é feita semanticamente com IA.</p>
           </div>
 
           {/* Mirror and Ideal Answer */}
