@@ -44,6 +44,7 @@ export default function Discursivas() {
         participants: q.participants || 0,
         isWeekly: q.is_weekly,
         isPremium: q.is_premium || q.is_weekly,
+        banca: q.banca || null,
         deadline: q.deadline,
         barema: q.barema,
       }));
