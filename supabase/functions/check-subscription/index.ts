@@ -111,12 +111,23 @@ serve(async (req) => {
     }
 
     if (hasStripeSub) {
+      // Determine tier from price ID
+      const annualPriceId = "price_1TBMUHLy0axdgWvJInHob9Il";
+      const quarterlyPriceId = "price_1TBMTpLy0axdgWvJjbmiZ92u";
+      let tier = "monthly";
+      if (priceId === annualPriceId) tier = "annual";
+      else if (priceId === quarterlyPriceId) tier = "quarterly";
+
+      // Update profile subscription_tier
+      await supabaseClient.from("profiles").update({ subscription_tier: tier }).eq("id", targetUserId);
+
       return new Response(
         JSON.stringify({
           subscribed: true,
           price_id: priceId,
           product_id: productId,
           subscription_end: subscriptionEnd,
+          subscription_tier: tier,
           manual: false,
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
