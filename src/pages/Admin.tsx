@@ -772,6 +772,7 @@ function WeeklyQuestionsTab() {
           is_premium: editIsPremium,
           mirror_text: editMirrorText.trim() || null,
           ideal_answer: editIdealAnswer.trim() || null,
+          banca: editBanca,
         })
         .eq("id", editingQuestion.id);
       if (error) throw error;
