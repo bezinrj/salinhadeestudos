@@ -64,11 +64,11 @@ export default function Discursivas() {
   });
 
   const filtered = allQuestions.filter(q => {
-    // Hide active weekly questions (deadline not yet passed)
     if (q.isWeekly && q.deadline && new Date(q.deadline) > new Date()) return false;
     if (difficulty !== "Todas" && q.difficulty !== difficulty) return false;
     if (career !== "Todas" && q.career !== career) return false;
     if (selectedDiscipline !== "Todas" && q.discipline !== selectedDiscipline) return false;
+    if (selectedBanca !== "Todas" && q.banca !== selectedBanca) return false;
     const isPremium = q.isPremium || q.isWeekly;
     if (type === "Gratuitas" && isPremium) return false;
     if (type === "Premium" && !isPremium) return false;
