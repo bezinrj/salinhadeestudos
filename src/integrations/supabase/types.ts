@@ -146,6 +146,7 @@ export type Database = {
           name: string | null
           rank_position: number | null
           streak: number | null
+          subscription_tier: string | null
           target_career: string | null
           total_essays: number | null
           total_score: number | null
@@ -163,6 +164,7 @@ export type Database = {
           name?: string | null
           rank_position?: number | null
           streak?: number | null
+          subscription_tier?: string | null
           target_career?: string | null
           total_essays?: number | null
           total_score?: number | null
@@ -180,6 +182,7 @@ export type Database = {
           name?: string | null
           rank_position?: number | null
           streak?: number | null
+          subscription_tier?: string | null
           target_career?: string | null
           total_essays?: number | null
           total_score?: number | null
@@ -301,6 +304,7 @@ export type Database = {
       }
       weekly_questions: {
         Row: {
+          banca: string | null
           barema: Json | null
           career: string
           created_at: string | null
@@ -319,6 +323,7 @@ export type Database = {
           title: string
         }
         Insert: {
+          banca?: string | null
           barema?: Json | null
           career: string
           created_at?: string | null
@@ -337,6 +342,7 @@ export type Database = {
           title: string
         }
         Update: {
+          banca?: string | null
           barema?: Json | null
           career?: string
           created_at?: string | null

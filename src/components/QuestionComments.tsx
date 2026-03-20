@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "react-router-dom";
-import { MessageSquare, Trash2 } from "lucide-react";
+import { MessageSquare, Trash2, Crown } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "@/hooks/use-toast";
 import { RichTextEditor } from "@/components/RichTextEditor";
@@ -22,6 +22,7 @@ interface Comment {
     name: string | null;
     avatar_url: string | null;
     comment_score: number | null;
+    subscription_tier: string | null;
   };
 }
 
@@ -34,7 +35,7 @@ export function QuestionComments({ questionId }: { questionId: string }) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("question_comments")
-        .select("*, profiles(username, name, avatar_url, comment_score)")
+        .select("*, profiles(username, name, avatar_url, comment_score, subscription_tier)")
         .eq("question_id", questionId)
         .order("created_at", { ascending: true });
       if (error) throw error;
@@ -127,6 +128,11 @@ export function QuestionComments({ questionId }: { questionId: string }) {
                     >
                       {c.profiles.name || c.profiles.username}
                     </Link>
+                    {c.profiles.subscription_tier === "annual" && (
+                      <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-gold" title="Assinante Anual">
+                        <Crown className="h-3 w-3 fill-gold text-gold" /> VIP
+                      </span>
+                    )}
                     {(c.profiles.comment_score ?? 0) !== 0 && (
                       <span
                         className={`text-[10px] font-bold ${

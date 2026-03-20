@@ -111,12 +111,23 @@ serve(async (req) => {
     }
 
     if (hasStripeSub) {
+      // Determine tier from price ID
+      const annualPriceId = "price_1TBMUHLy0axdgWvJInHob9Il";
+      const quarterlyPriceId = "price_1TBMTpLy0axdgWvJjbmiZ92u";
+      let tier = "monthly";
+      if (priceId === annualPriceId) tier = "annual";
+      else if (priceId === quarterlyPriceId) tier = "quarterly";
+
+      // Update profile subscription_tier
+      await supabaseClient.from("profiles").update({ subscription_tier: tier }).eq("id", targetUserId);
+
       return new Response(
         JSON.stringify({
           subscribed: true,
           price_id: priceId,
           product_id: productId,
           subscription_end: subscriptionEnd,
+          subscription_tier: tier,
           manual: false,
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
@@ -136,12 +147,15 @@ serve(async (req) => {
     if (manualSubs && manualSubs.length > 0) {
       const ms = manualSubs[0];
       logStep("Active manual subscription found", { plan_type: ms.plan_type, expires_at: ms.expires_at });
+      // Update profile subscription_tier for manual subs
+      await supabaseClient.from("profiles").update({ subscription_tier: ms.plan_type || "premium" }).eq("id", targetUserId);
       return new Response(
         JSON.stringify({
           subscribed: true,
           manual: true,
           plan_type: ms.plan_type,
           subscription_end: ms.expires_at,
+          subscription_tier: ms.plan_type || "premium",
           price_id: null,
           product_id: null,
         }),
@@ -149,6 +163,8 @@ serve(async (req) => {
       );
     }
 
+    // Clear subscription_tier if no active sub
+    await supabaseClient.from("profiles").update({ subscription_tier: null }).eq("id", targetUserId);
     logStep("No active subscription found");
     return new Response(
       JSON.stringify({ subscribed: false }),

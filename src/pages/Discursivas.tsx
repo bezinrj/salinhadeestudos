@@ -14,6 +14,7 @@ import { toast } from "sonner";
 const difficulties = ["Todas", "Fácil", "Médio", "Difícil"] as const;
 const careers = ["Todas", "Delegado", "Magistratura", "Promotoria"] as const;
 const types = ["Todas", "Gratuitas", "Premium"] as const;
+const bancas = ["Todas", "CEBRASPE", "FGV", "VUNESP", "INÉDITA"] as const;
 const disciplineOptions = ["Todas", ...disciplines] as const;
 
 export default function Discursivas() {
@@ -21,6 +22,7 @@ export default function Discursivas() {
   const [career, setCareer] = useState<string>("Todas");
   const [type, setType] = useState<string>("Todas");
   const [selectedDiscipline, setSelectedDiscipline] = useState<string>("Todas");
+  const [selectedBanca, setSelectedBanca] = useState<string>("Todas");
   const { isAdmin } = useIsAdmin();
   const queryClient = useQueryClient();
 
@@ -42,6 +44,7 @@ export default function Discursivas() {
         participants: q.participants || 0,
         isWeekly: q.is_weekly,
         isPremium: q.is_premium || q.is_weekly,
+        banca: q.banca || null,
         deadline: q.deadline,
         barema: q.barema,
       }));
@@ -61,11 +64,11 @@ export default function Discursivas() {
   });
 
   const filtered = allQuestions.filter(q => {
-    // Hide active weekly questions (deadline not yet passed)
     if (q.isWeekly && q.deadline && new Date(q.deadline) > new Date()) return false;
     if (difficulty !== "Todas" && q.difficulty !== difficulty) return false;
     if (career !== "Todas" && q.career !== career) return false;
     if (selectedDiscipline !== "Todas" && q.discipline !== selectedDiscipline) return false;
+    if (selectedBanca !== "Todas" && q.banca !== selectedBanca) return false;
     const isPremium = q.isPremium || q.isWeekly;
     if (type === "Gratuitas" && isPremium) return false;
     if (type === "Premium" && !isPremium) return false;
@@ -149,6 +152,26 @@ export default function Discursivas() {
                 onClick={() => setSelectedDiscipline(d)}
               >
                 {d}
+              </Badge>
+            ))}
+          </div>
+        </div>
+        <div>
+          <p className="text-xs text-muted-foreground mb-2 uppercase tracking-wider">Banca</p>
+          <div className="flex flex-wrap gap-2">
+            {bancas.map(b => (
+              <Badge
+                key={b}
+                variant="outline"
+                className={cn(
+                  "cursor-pointer transition-colors text-xs px-3 py-1",
+                  selectedBanca === b
+                    ? "bg-primary/10 text-primary border-primary/30"
+                    : "border-border text-muted-foreground hover:border-primary/20 hover:text-foreground"
+                )}
+                onClick={() => setSelectedBanca(b)}
+              >
+                {b}
               </Badge>
             ))}
           </div>

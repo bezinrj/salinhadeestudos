@@ -654,6 +654,7 @@ function WeeklyQuestionsTab() {
   const [isPremiumQ, setIsPremiumQ] = useState(false);
   const [mirrorText, setMirrorText] = useState("");
   const [idealAnswer, setIdealAnswer] = useState("");
+  const [banca, setBanca] = useState("INÉDITA");
 
   // Edit state
   const [editingQuestion, setEditingQuestion] = useState<any>(null);
@@ -669,6 +670,7 @@ function WeeklyQuestionsTab() {
   const [editIsPremium, setEditIsPremium] = useState(false);
   const [editGuidelines, setEditGuidelines] = useState("");
   const [editGeneratingBarema, setEditGeneratingBarema] = useState(false);
+  const [editBanca, setEditBanca] = useState("INÉDITA");
 
   const { data: questions } = useQuery({
     queryKey: ["admin-weekly-questions"],
@@ -710,6 +712,7 @@ function WeeklyQuestionsTab() {
           is_weekly: true, is_premium: true,
           mirror_text: mirrorText.trim() || null,
           ideal_answer: idealAnswer.trim() || null,
+          banca,
         });
         if (error) throw error;
         await supabase.from("weekly_waitlist").update({ notified: false }).eq("notified", true);
@@ -720,6 +723,7 @@ function WeeklyQuestionsTab() {
           is_weekly: false, is_premium: isPremiumQ,
           mirror_text: mirrorText.trim() || null,
           ideal_answer: idealAnswer.trim() || null,
+          banca,
         });
         if (error) throw error;
       }
@@ -727,7 +731,7 @@ function WeeklyQuestionsTab() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-weekly-questions"] });
       queryClient.invalidateQueries({ queryKey: ["discursivas-questions"] });
-      setTitle(""); setCareer("Delegado"); setDiscipline(""); setStatement(""); setDifficulty("Médio"); setBaremaJson(""); setTestResult(null); setTestAnswer(""); setShowTest(false); setGuidelines(""); setIsWeekly(true); setIsPremiumQ(false); setMirrorText(""); setIdealAnswer("");
+      setTitle(""); setCareer("Delegado"); setDiscipline(""); setStatement(""); setDifficulty("Médio"); setBaremaJson(""); setTestResult(null); setTestAnswer(""); setShowTest(false); setGuidelines(""); setIsWeekly(true); setIsPremiumQ(false); setMirrorText(""); setIdealAnswer(""); setBanca("INÉDITA");
       toast({ title: isWeekly ? "Questão semanal publicada!" : "Questão discursiva publicada!", description: isWeekly ? "Os usuários na lista de espera serão notificados." : undefined });
     },
     onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
@@ -768,6 +772,7 @@ function WeeklyQuestionsTab() {
           is_premium: editIsPremium,
           mirror_text: editMirrorText.trim() || null,
           ideal_answer: editIdealAnswer.trim() || null,
+          banca: editBanca,
         })
         .eq("id", editingQuestion.id);
       if (error) throw error;
@@ -794,6 +799,7 @@ function WeeklyQuestionsTab() {
     setEditMirrorText(q.mirror_text || "");
     setEditIdealAnswer(q.ideal_answer || "");
     setEditGuidelines("");
+    setEditBanca(q.banca || "INÉDITA");
   };
 
   return (
@@ -847,14 +853,25 @@ function WeeklyQuestionsTab() {
               </SelectContent>
             </Select>
           </div>
-          <Select value={discipline} onValueChange={setDiscipline}>
-            <SelectTrigger><SelectValue placeholder="Matéria / Disciplina" /></SelectTrigger>
-            <SelectContent>
-              {disciplines.map(d => (
-                <SelectItem key={d} value={d}>{d}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="grid grid-cols-2 gap-3">
+            <Select value={discipline} onValueChange={setDiscipline}>
+              <SelectTrigger><SelectValue placeholder="Matéria / Disciplina" /></SelectTrigger>
+              <SelectContent>
+                {disciplines.map(d => (
+                  <SelectItem key={d} value={d}>{d}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={banca} onValueChange={setBanca}>
+              <SelectTrigger><SelectValue placeholder="Banca" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="CEBRASPE">CEBRASPE</SelectItem>
+                <SelectItem value="FGV">FGV</SelectItem>
+                <SelectItem value="VUNESP">VUNESP</SelectItem>
+                <SelectItem value="INÉDITA">INÉDITA</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <Textarea placeholder="Enunciado completo da questão..." value={statement} onChange={(e) => setStatement(e.target.value)} rows={6} />
           
           <div className="space-y-2">
@@ -1061,7 +1078,7 @@ function WeeklyQuestionsTab() {
                     <Badge variant="outline" className="text-muted-foreground text-[10px]">Encerrada</Badge>
                   )}
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">{q.career} · {q.discipline} · {q.difficulty}</p>
+                <p className="text-xs text-muted-foreground mt-1">{q.career} · {q.discipline} · {q.difficulty}{q.banca ? ` · ${q.banca}` : ""}</p>
                 {q.deadline && <p className="text-[10px] text-muted-foreground mt-1">Prazo: {new Date(q.deadline).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}</p>}
               </div>
               <div className="flex items-center gap-2 shrink-0">
@@ -1108,12 +1125,23 @@ function WeeklyQuestionsTab() {
                   </SelectContent>
                 </Select>
               </div>
-              <Select value={editDiscipline} onValueChange={setEditDiscipline}>
-                <SelectTrigger><SelectValue placeholder="Matéria" /></SelectTrigger>
-                <SelectContent>
-                  {disciplines.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <div className="grid grid-cols-2 gap-3">
+                <Select value={editDiscipline} onValueChange={setEditDiscipline}>
+                  <SelectTrigger><SelectValue placeholder="Matéria" /></SelectTrigger>
+                  <SelectContent>
+                    {disciplines.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Select value={editBanca} onValueChange={setEditBanca}>
+                  <SelectTrigger><SelectValue placeholder="Banca" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="CEBRASPE">CEBRASPE</SelectItem>
+                    <SelectItem value="FGV">FGV</SelectItem>
+                    <SelectItem value="VUNESP">VUNESP</SelectItem>
+                    <SelectItem value="INÉDITA">INÉDITA</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <Textarea placeholder="Enunciado" value={editStatement} onChange={(e) => setEditStatement(e.target.value)} rows={5} />
               <div className="space-y-2">
                 <label className="text-sm font-medium">Diretrizes / Gabarito (texto livre)</label>

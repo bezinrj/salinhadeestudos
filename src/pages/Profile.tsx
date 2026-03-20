@@ -13,7 +13,7 @@ import { badges } from "@/data/mockData";
 import { BadgeDisplay } from "@/components/BadgeDisplay";
 import { StatCard } from "@/components/StatCard";
 import { ProfileLikeButton } from "@/components/ProfileLikeButton";
-import { Trophy, FileText, Timer, TrendingUp, Target, Camera, Pencil, Save, X, Heart, MessageSquare } from "lucide-react";
+import { Trophy, FileText, Timer, TrendingUp, Target, Camera, Pencil, Save, X, Heart, MessageSquare, Crown } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function Profile() {
@@ -117,6 +117,11 @@ export default function Profile() {
                   <>
                     <div className="flex items-center gap-2 justify-center sm:justify-start">
                       <h1 className="text-xl font-display font-bold">{profile.name || profile.username}</h1>
+                      {profile.subscription_tier === "annual" && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-gold/10 border border-gold/20 px-2 py-0.5 text-[10px] font-bold text-gold">
+                          <Crown className="h-3 w-3 fill-gold text-gold" /> VIP Anual
+                        </span>
+                      )}
                       {isOwnProfile && (
                         <button onClick={() => { setEditing(true); setBio(myProfile!.bio); setName(myProfile!.name); setUsername(myProfile!.username); setCareer(myProfile!.target_career); setProfileError(""); }} className="text-muted-foreground hover:text-foreground">
                           <Pencil className="h-3.5 w-3.5" />

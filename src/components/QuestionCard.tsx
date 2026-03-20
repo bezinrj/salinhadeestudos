@@ -67,7 +67,10 @@ export function QuestionCard({ question, onDelete }: QuestionCardProps) {
         </CardTitle>
       </CardHeader>
       <CardContent className="pt-0">
-        <p className="text-xs text-muted-foreground mb-3">{question.discipline}</p>
+        <p className="text-xs text-muted-foreground mb-3">
+          {question.discipline}
+          {(question as any).banca && <span className="ml-1">· {(question as any).banca}</span>}
+        </p>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1 text-xs text-muted-foreground">
             <Users className="h-3.5 w-3.5" />
