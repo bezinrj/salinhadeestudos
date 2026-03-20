@@ -147,12 +147,15 @@ serve(async (req) => {
     if (manualSubs && manualSubs.length > 0) {
       const ms = manualSubs[0];
       logStep("Active manual subscription found", { plan_type: ms.plan_type, expires_at: ms.expires_at });
+      // Update profile subscription_tier for manual subs
+      await supabaseClient.from("profiles").update({ subscription_tier: ms.plan_type || "premium" }).eq("id", targetUserId);
       return new Response(
         JSON.stringify({
           subscribed: true,
           manual: true,
           plan_type: ms.plan_type,
           subscription_end: ms.expires_at,
+          subscription_tier: ms.plan_type || "premium",
           price_id: null,
           product_id: null,
         }),
