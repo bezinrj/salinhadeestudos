@@ -654,6 +654,7 @@ function WeeklyQuestionsTab() {
   const [isPremiumQ, setIsPremiumQ] = useState(false);
   const [mirrorText, setMirrorText] = useState("");
   const [idealAnswer, setIdealAnswer] = useState("");
+  const [banca, setBanca] = useState("INÉDITA");
 
   // Edit state
   const [editingQuestion, setEditingQuestion] = useState<any>(null);
