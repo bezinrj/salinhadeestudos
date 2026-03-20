@@ -35,7 +35,7 @@ export function QuestionComments({ questionId }: { questionId: string }) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("question_comments")
-        .select("*, profiles(username, name, avatar_url, comment_score)")
+        .select("*, profiles(username, name, avatar_url, comment_score, subscription_tier)")
         .eq("question_id", questionId)
         .order("created_at", { ascending: true });
       if (error) throw error;
