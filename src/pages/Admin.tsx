@@ -853,14 +853,25 @@ function WeeklyQuestionsTab() {
               </SelectContent>
             </Select>
           </div>
-          <Select value={discipline} onValueChange={setDiscipline}>
-            <SelectTrigger><SelectValue placeholder="Matéria / Disciplina" /></SelectTrigger>
-            <SelectContent>
-              {disciplines.map(d => (
-                <SelectItem key={d} value={d}>{d}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="grid grid-cols-2 gap-3">
+            <Select value={discipline} onValueChange={setDiscipline}>
+              <SelectTrigger><SelectValue placeholder="Matéria / Disciplina" /></SelectTrigger>
+              <SelectContent>
+                {disciplines.map(d => (
+                  <SelectItem key={d} value={d}>{d}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={banca} onValueChange={setBanca}>
+              <SelectTrigger><SelectValue placeholder="Banca" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="CEBRASPE">CEBRASPE</SelectItem>
+                <SelectItem value="FGV">FGV</SelectItem>
+                <SelectItem value="VUNESP">VUNESP</SelectItem>
+                <SelectItem value="INÉDITA">INÉDITA</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <Textarea placeholder="Enunciado completo da questão..." value={statement} onChange={(e) => setStatement(e.target.value)} rows={6} />
           
           <div className="space-y-2">
