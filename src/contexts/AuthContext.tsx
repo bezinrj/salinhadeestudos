@@ -17,6 +17,7 @@ export interface Profile {
   streak: number;
   likes_count: number;
   comment_score: number;
+  subscription_tier: string | null;
   created_at: string;
 }
 
