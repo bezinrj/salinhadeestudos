@@ -22,6 +22,7 @@ interface Comment {
     name: string | null;
     avatar_url: string | null;
     comment_score: number | null;
+    subscription_tier: string | null;
   };
 }
 
