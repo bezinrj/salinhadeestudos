@@ -14,6 +14,7 @@ import { toast } from "sonner";
 const difficulties = ["Todas", "Fácil", "Médio", "Difícil"] as const;
 const careers = ["Todas", "Delegado", "Magistratura", "Promotoria"] as const;
 const types = ["Todas", "Gratuitas", "Premium"] as const;
+const bancas = ["Todas", "CEBRASPE", "FGV", "VUNESP", "INÉDITA"] as const;
 const disciplineOptions = ["Todas", ...disciplines] as const;
 
 export default function Discursivas() {
