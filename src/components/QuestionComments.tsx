@@ -128,6 +128,11 @@ export function QuestionComments({ questionId }: { questionId: string }) {
                     >
                       {c.profiles.name || c.profiles.username}
                     </Link>
+                    {c.profiles.subscription_tier === "annual" && (
+                      <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-gold" title="Assinante Anual">
+                        <Crown className="h-3 w-3 fill-gold text-gold" /> VIP
+                      </span>
+                    )}
                     {(c.profiles.comment_score ?? 0) !== 0 && (
                       <span
                         className={`text-[10px] font-bold ${
