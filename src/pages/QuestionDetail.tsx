@@ -95,6 +95,7 @@ export default function QuestionDetail() {
           barema: question.barema,
           mirrorText: question.mirrorText || undefined,
           idealAnswer: question.idealAnswer || undefined,
+          statement: question.statement || undefined,
         },
       });
 
