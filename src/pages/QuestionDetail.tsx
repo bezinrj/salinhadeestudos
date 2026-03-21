@@ -82,39 +82,34 @@ export default function QuestionDetail() {
 
   const handleSubmit = async () => {
     if (answer.trim().length < 50) return;
-    if (!question.barema) return;
+    if (!question.mirrorText && !question.idealAnswer) return;
     
     setIsEvaluating(true);
     let result: CorrectionResult;
 
     try {
-      // Try AI semantic evaluation
       const { data, error } = await supabase.functions.invoke('evaluate-answer', {
         body: {
           answer,
-          barema: question.barema,
-          mirrorText: question.mirrorText || undefined,
-          idealAnswer: question.idealAnswer || undefined,
+          baremaText: question.mirrorText || undefined,
+          gabarito: question.idealAnswer || undefined,
           statement: question.statement || undefined,
         },
       });
 
       if (error || data?.error) {
-        console.warn("AI evaluation failed, falling back to local:", error || data?.error);
-        toast({ title: "Usando correção local", description: "A correção com IA não está disponível no momento.", variant: "default" });
-        result = evaluateAnswer(answer, question.barema, {
-          mirror: question.mirrorText || undefined,
-          idealAnswer: question.idealAnswer || undefined,
-        });
+        console.warn("AI evaluation failed:", error || data?.error);
+        toast({ title: "Erro na correção", description: data?.error || "Tente novamente.", variant: "destructive" });
+        setIsEvaluating(false);
+        return;
       } else {
         result = data as CorrectionResult;
       }
     } catch (err) {
-      console.warn("AI evaluation error, falling back to local:", err);
-      result = evaluateAnswer(answer, question.barema, {
-        mirror: question.mirrorText || undefined,
-        idealAnswer: question.idealAnswer || undefined,
-      });
+      console.warn("AI evaluation error:", err);
+      toast({ title: "Erro na correção", description: "Não foi possível corrigir. Tente novamente.", variant: "destructive" });
+      setIsEvaluating(false);
+      return;
     }
 
     setCorrection(result);
