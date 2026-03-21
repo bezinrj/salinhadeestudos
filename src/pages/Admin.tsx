@@ -752,7 +752,6 @@ function WeeklyQuestionsTab() {
   const updateMutation = useMutation({
     mutationFn: async () => {
       if (!editingQuestion) return;
-      const baremaData = editBaremaJson.trim() ? JSON.parse(editBaremaJson) : null;
       const { error } = await (supabase.from("weekly_questions") as any)
         .update({
           title: editTitle,
@@ -760,7 +759,6 @@ function WeeklyQuestionsTab() {
           discipline: editDiscipline,
           statement: editStatement,
           difficulty: editDifficulty,
-          barema: baremaData,
           is_weekly: editIsWeekly,
           is_premium: editIsPremium,
           mirror_text: editMirrorText.trim() || null,
@@ -786,12 +784,10 @@ function WeeklyQuestionsTab() {
     setEditDiscipline(q.discipline);
     setEditStatement(q.statement);
     setEditDifficulty(q.difficulty);
-    setEditBaremaJson(q.barema ? JSON.stringify(q.barema, null, 2) : "");
     setEditIsWeekly(q.is_weekly);
     setEditIsPremium(q.is_premium);
     setEditMirrorText(q.mirror_text || "");
     setEditIdealAnswer(q.ideal_answer || "");
-    setEditGuidelines("");
     setEditBanca(q.banca || "INÉDITA");
   };
 
