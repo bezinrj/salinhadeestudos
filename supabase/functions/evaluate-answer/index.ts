@@ -10,10 +10,17 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { answer, barema, mirrorText, idealAnswer, statement } = await req.json();
+    const { answer, baremaText, gabarito, statement } = await req.json();
 
-    if (!answer || !barema) {
-      return new Response(JSON.stringify({ error: "answer and barema are required" }), {
+    if (!answer) {
+      return new Response(JSON.stringify({ error: "answer is required" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (!baremaText && !gabarito) {
+      return new Response(JSON.stringify({ error: "baremaText or gabarito is required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -22,12 +29,6 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    // Build barema description preserving original structure exactly
-    const baremaDescription = barema.map((item: any) =>
-      `Item ${item.letter} - ${item.title} (máx ${item.maxScore} pts):\n` +
-      item.subitems.map((s: any) => `  • ${s.description} (máx ${s.maxScore} pts)`).join("\n")
-    ).join("\n\n");
-
     const systemPrompt = `Você é um corretor especialista de questões discursivas de concursos públicos brasileiros.
 
 ## ENTRADAS FIXAS (cadastradas pelo sistema — NÃO modifique, NÃO reorganize, NÃO converta):
@@ -35,11 +36,11 @@ serve(async (req) => {
 ### ENUNCIADO DA QUESTÃO:
 ${statement || "(não informado)"}
 
-### BAREMA OFICIAL (espelho de correção):
-${baremaDescription}
+### BAREMA OFICIAL (critérios de correção — espelho oficial):
+${baremaText || "(não informado)"}
 
-${mirrorText ? `### GABARITO OFICIAL (referência de resposta):\n${mirrorText}\n` : ""}
-${idealAnswer ? `### RESPOSTA-MODELO CADASTRADA (referência adicional):\n${idealAnswer}\n` : ""}
+### GABARITO OFICIAL (resposta de referência):
+${gabarito || "(não informado)"}
 
 ## ENTRADA VARIÁVEL (enviada pelo aluno no momento da correção):
 A resposta do aluno será fornecida na próxima mensagem.
@@ -47,19 +48,20 @@ A resposta do aluno será fornecida na próxima mensagem.
 ## FUNÇÃO DO CORRETOR:
 
 1. Ler o enunciado cadastrado
-2. Ler o barema oficial cadastrado (NÃO recriar, NÃO converter, NÃO alterar divisão de pontos)
-3. Ler o gabarito oficial cadastrado
+2. Ler o barema oficial cadastrado — este é o espelho oficial, NÃO recriar, NÃO converter em JSON, NÃO alterar a divisão de pontos
+3. Ler o gabarito oficial cadastrado — esta é a referência oficial
 4. Ler a resposta do aluno
-5. Comparar a resposta com CADA critério/subitem do barema
-6. Atribuir nota por subitem
-7. Justificar acertos, erros e omissões
-8. Calcular a nota final
+5. Identificar os itens/critérios presentes no barema oficial
+6. Comparar a resposta do aluno com CADA critério do barema
+7. Atribuir nota por item/critério
+8. Justificar acertos, erros e omissões
+9. Calcular a nota final (soma das notas por item, máximo 10)
 
 ## REGRAS DE AVALIAÇÃO SEMÂNTICA:
 
 - O aluno NÃO precisa usar as palavras exatas do barema ou do gabarito
 - Considere sinônimos, paráfrases, expressões equivalentes e conceitos demonstrados de forma diferente
-- Se o aluno demonstra claramente o MESMO CONCEITO exigido pelo subitem, mesmo com palavras totalmente diferentes, atribua "full"
+- Se o aluno demonstra claramente o MESMO CONCEITO exigido pelo critério, mesmo com palavras totalmente diferentes, atribua "full"
 - Se o aluno menciona o conceito de forma incompleta, superficial ou tangencial, atribua "partial"
 - Se o conceito NÃO foi abordado de nenhuma forma, atribua "missed"
 - Seja justo e generoso na interpretação — o objetivo é avaliar CONHECIMENTO, não correspondência textual
@@ -67,11 +69,12 @@ A resposta do aluno será fornecida na próxima mensagem.
 ## REGRAS RÍGIDAS:
 
 - NÃO recriar o barema
-- NÃO converter o barema em JSON por iniciativa própria
+- NÃO converter o barema em JSON por iniciativa própria (a estrutura JSON de saída é apenas para a ferramenta de resposta)
 - NÃO inventar critérios que não existam no barema
 - NÃO alterar a divisão de pontos original
 - Tratar o barema como espelho OFICIAL
 - Tratar o gabarito como referência OFICIAL
+- Extrair os itens e pontuações EXATAMENTE como estão no barema de texto
 
 ## RESPOSTA IDEAL PERSONALIZADA (obrigatória):
 
@@ -81,15 +84,20 @@ Essa resposta ideal deve:
 - Ser baseada no barema e no gabarito oficiais
 - Considerar os erros, omissões e inconsistências ESPECÍFICAS da resposta DAQUELE aluno
 - Mostrar como a resposta poderia ser REESCRITA para alcançar nota máxima
-- Ser INDIVIDUALIZADA — não pode ser mera reprodução automática do gabarito
+- Ser INDIVIDUALIZADA — NÃO pode ser mera reprodução automática do gabarito
 - Corrigir os pontos deficientes da resposta apresentada
+- Manter os trechos corretos da resposta do aluno
+- Reescrever apenas os trechos deficientes
 - Manter fidelidade ao espelho oficial da correção
-- Usar a resposta do aluno como BASE para a personalização (manter trechos corretos, reescrever trechos deficientes)`;
+- Usar a resposta do aluno como BASE para a personalização`;
 
     const userPrompt = `RESPOSTA DO ALUNO:
 ${answer}
 
-Avalie cada subitem do barema e retorne o resultado usando a ferramenta fornecida. Lembre-se: a resposta ideal (idealAnswer) deve ser PERSONALIZADA para este aluno, baseada nas falhas concretas identificadas na resposta dele.`;
+Avalie cada critério do barema e retorne o resultado usando a ferramenta fornecida. 
+IMPORTANTE: 
+- Extraia os itens/critérios do barema de texto e use-os no baremaBreakdown
+- A resposta ideal (idealAnswer) deve ser PERSONALIZADA para este aluno, reescrevendo a resposta dele corrigindo erros e omissões`;
 
     const tools = [
       {
@@ -102,21 +110,21 @@ Avalie cada subitem do barema e retorne o resultado usando a ferramenta fornecid
             properties: {
               baremaBreakdown: {
                 type: "array",
-                description: "Evaluation of each barema item — use the EXACT same items from the original barema, do NOT create new ones",
+                description: "Evaluation of each item/criterion extracted from the text barema. Use the EXACT items from the original barema text.",
                 items: {
                   type: "object",
                   properties: {
-                    letter: { type: "string", description: "Item letter (e.g., 'a', 'b') — must match the original barema" },
-                    title: { type: "string", description: "Item title — must match the original barema" },
-                    maxScore: { type: "number", description: "Maximum score — must match the original barema" },
+                    letter: { type: "string", description: "Item identifier (e.g., 'a', 'b', '1', '2') — extracted from the barema text" },
+                    title: { type: "string", description: "Item/criterion title — extracted from the barema text" },
+                    maxScore: { type: "number", description: "Maximum score for this item — extracted from the barema text" },
                     earnedScore: { type: "number", description: "Score earned by the student for this item" },
                     subitems: {
                       type: "array",
                       items: {
                         type: "object",
                         properties: {
-                          description: { type: "string", description: "Subitem description — must match the original barema" },
-                          maxScore: { type: "number", description: "Max score — must match the original barema" },
+                          description: { type: "string", description: "Subitem/sub-criterion description — extracted from the barema text" },
+                          maxScore: { type: "number", description: "Max score for this subitem — extracted from the barema text" },
                           earnedScore: { type: "number", description: "Score earned by the student" },
                           status: { type: "string", enum: ["full", "partial", "missed"] },
                           justification: { type: "string", description: "Brief justification for the score attributed" },

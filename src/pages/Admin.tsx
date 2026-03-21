@@ -644,12 +644,9 @@ function WeeklyQuestionsTab() {
   const [discipline, setDiscipline] = useState("");
   const [statement, setStatement] = useState("");
   const [difficulty, setDifficulty] = useState("Médio");
-  const [baremaJson, setBaremaJson] = useState("");
   const [testAnswer, setTestAnswer] = useState("");
   const [testResult, setTestResult] = useState<any>(null);
   const [showTest, setShowTest] = useState(false);
-  const [guidelines, setGuidelines] = useState("");
-  const [generatingBarema, setGeneratingBarema] = useState(false);
   const [isWeekly, setIsWeekly] = useState(true);
   const [isPremiumQ, setIsPremiumQ] = useState(false);
   const [mirrorText, setMirrorText] = useState("");
@@ -663,13 +660,10 @@ function WeeklyQuestionsTab() {
   const [editDiscipline, setEditDiscipline] = useState("");
   const [editStatement, setEditStatement] = useState("");
   const [editDifficulty, setEditDifficulty] = useState("Médio");
-  const [editBaremaJson, setEditBaremaJson] = useState("");
   const [editMirrorText, setEditMirrorText] = useState("");
   const [editIdealAnswer, setEditIdealAnswer] = useState("");
   const [editIsWeekly, setEditIsWeekly] = useState(false);
   const [editIsPremium, setEditIsPremium] = useState(false);
-  const [editGuidelines, setEditGuidelines] = useState("");
-  const [editGeneratingBarema, setEditGeneratingBarema] = useState(false);
   const [editBanca, setEditBanca] = useState("INÉDITA");
 
   const { data: questions } = useQuery({
@@ -702,13 +696,12 @@ function WeeklyQuestionsTab() {
 
   const publishMutation = useMutation({
     mutationFn: async () => {
-      const baremaData = baremaJson.trim() ? JSON.parse(baremaJson) : null;
       if (isWeekly) {
         const deadline = getNextSundayDeadline();
         await (supabase.from("weekly_questions") as any).update({ is_active: false }).eq("is_active", true).eq("is_weekly", true);
         const { error } = await (supabase.from("weekly_questions") as any).insert({
           title, career, discipline, statement, difficulty, deadline,
-          is_active: true, created_by: user?.id, barema: baremaData,
+          is_active: true, created_by: user?.id,
           is_weekly: true, is_premium: true,
           mirror_text: mirrorText.trim() || null,
           ideal_answer: idealAnswer.trim() || null,
@@ -719,7 +712,7 @@ function WeeklyQuestionsTab() {
       } else {
         const { error } = await (supabase.from("weekly_questions") as any).insert({
           title, career, discipline, statement, difficulty,
-          deadline: null, is_active: true, created_by: user?.id, barema: baremaData,
+          deadline: null, is_active: true, created_by: user?.id,
           is_weekly: false, is_premium: isPremiumQ,
           mirror_text: mirrorText.trim() || null,
           ideal_answer: idealAnswer.trim() || null,
@@ -731,7 +724,7 @@ function WeeklyQuestionsTab() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-weekly-questions"] });
       queryClient.invalidateQueries({ queryKey: ["discursivas-questions"] });
-      setTitle(""); setCareer("Delegado"); setDiscipline(""); setStatement(""); setDifficulty("Médio"); setBaremaJson(""); setTestResult(null); setTestAnswer(""); setShowTest(false); setGuidelines(""); setIsWeekly(true); setIsPremiumQ(false); setMirrorText(""); setIdealAnswer(""); setBanca("INÉDITA");
+      setTitle(""); setCareer("Delegado"); setDiscipline(""); setStatement(""); setDifficulty("Médio"); setTestResult(null); setTestAnswer(""); setShowTest(false); setIsWeekly(true); setIsPremiumQ(false); setMirrorText(""); setIdealAnswer(""); setBanca("INÉDITA");
       toast({ title: isWeekly ? "Questão semanal publicada!" : "Questão discursiva publicada!", description: isWeekly ? "Os usuários na lista de espera serão notificados." : undefined });
     },
     onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
@@ -759,7 +752,6 @@ function WeeklyQuestionsTab() {
   const updateMutation = useMutation({
     mutationFn: async () => {
       if (!editingQuestion) return;
-      const baremaData = editBaremaJson.trim() ? JSON.parse(editBaremaJson) : null;
       const { error } = await (supabase.from("weekly_questions") as any)
         .update({
           title: editTitle,
@@ -767,7 +759,6 @@ function WeeklyQuestionsTab() {
           discipline: editDiscipline,
           statement: editStatement,
           difficulty: editDifficulty,
-          barema: baremaData,
           is_weekly: editIsWeekly,
           is_premium: editIsPremium,
           mirror_text: editMirrorText.trim() || null,
@@ -793,12 +784,10 @@ function WeeklyQuestionsTab() {
     setEditDiscipline(q.discipline);
     setEditStatement(q.statement);
     setEditDifficulty(q.difficulty);
-    setEditBaremaJson(q.barema ? JSON.stringify(q.barema, null, 2) : "");
     setEditIsWeekly(q.is_weekly);
     setEditIsPremium(q.is_premium);
     setEditMirrorText(q.mirror_text || "");
     setEditIdealAnswer(q.ideal_answer || "");
-    setEditGuidelines("");
     setEditBanca(q.banca || "INÉDITA");
   };
 
@@ -875,94 +864,28 @@ function WeeklyQuestionsTab() {
           <Textarea placeholder="Enunciado completo da questão..." value={statement} onChange={(e) => setStatement(e.target.value)} rows={6} />
           
           <div className="space-y-2">
-            <label className="text-sm font-medium">Diretrizes / Gabarito (texto livre)</label>
+            <label className="text-sm font-medium">Barema / Critérios de Correção (texto livre)</label>
             <Textarea
-              placeholder="Cole aqui as diretrizes de correção ou gabarito em texto livre..."
-              value={guidelines}
-              onChange={(e) => setGuidelines(e.target.value)}
-              rows={6}
-            />
-            <Button
-              type="button"
-              variant="outline"
-              onClick={async () => {
-                if (!statement.trim() || !guidelines.trim()) {
-                  toast({ title: "Preencha o enunciado e as diretrizes primeiro.", variant: "destructive" });
-                  return;
-                }
-                setGeneratingBarema(true);
-                try {
-                  const { data, error } = await supabase.functions.invoke('generate-barema', {
-                    body: { statement, guidelines },
-                  });
-                  if (error) throw error;
-                  if (data?.error) throw new Error(data.error);
-                  setBaremaJson(JSON.stringify(data.barema, null, 2));
-                  toast({ title: "Barema gerado com sucesso!", description: "Revise o JSON e teste a correção." });
-                } catch (e: any) {
-                  toast({ title: "Erro ao gerar barema", description: e.message, variant: "destructive" });
-                } finally {
-                  setGeneratingBarema(false);
-                }
-              }}
-              disabled={generatingBarema || !statement.trim() || !guidelines.trim()}
-              className="gap-2"
-            >
-              {generatingBarema ? (
-                <><Clock className="h-4 w-4 animate-spin" /> Gerando...</>
-              ) : (
-                <><GraduationCap className="h-4 w-4" /> Gerar Barema com IA</>
-              )}
-            </Button>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Barema (JSON) — gerado automaticamente ou editável</label>
-            <Textarea
-              placeholder={`[
-  {
-    "letter": "a",
-    "title": "Título do item",
-    "maxScore": 2.5,
-    "subitems": [
-      {
-        "id": "a1",
-        "description": "Descrição do subitem",
-        "maxScore": 1.0,
-        "keywords": ["palavra1", "palavra2"]
-      }
-    ]
-  }
-]`}
-              value={baremaJson}
-              onChange={(e) => setBaremaJson(e.target.value)}
-              rows={8}
-              className="font-mono text-xs"
-            />
-            <p className="text-xs text-muted-foreground">JSON gerado pela IA ou editado manualmente. A correção é feita semanticamente com IA.</p>
-          </div>
-
-          {/* Mirror and Ideal Answer */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Espelho Resumido</label>
-            <Textarea
-              placeholder="Resumo do que a questão exige do candidato. Se vazio, será gerado automaticamente a partir do barema."
+              placeholder="Cole aqui o barema ou os critérios de correção em texto livre. O corretor usará exatamente estes critérios para avaliar a resposta do aluno."
               value={mirrorText}
               onChange={(e) => setMirrorText(e.target.value)}
-              rows={4}
+              rows={6}
             />
+            <p className="text-xs text-muted-foreground">O barema será usado como espelho oficial da correção. Não será convertido em JSON.</p>
           </div>
+
           <div className="space-y-2">
-            <label className="text-sm font-medium">Resposta Ideal</label>
+            <label className="text-sm font-medium">Gabarito (Resposta de Referência)</label>
             <Textarea
-              placeholder="Resposta completa de referência/gabarito. Se vazio, será gerada automaticamente a partir do barema."
+              placeholder="Cole aqui o gabarito oficial ou resposta de referência. A resposta ideal personalizada será gerada automaticamente com base nos erros de cada aluno."
               value={idealAnswer}
               onChange={(e) => setIdealAnswer(e.target.value)}
               rows={6}
             />
+            <p className="text-xs text-muted-foreground">O gabarito será a referência oficial. A resposta ideal é gerada automaticamente para cada aluno.</p>
           </div>
 
-          {baremaJson.trim() && (
+          {(mirrorText.trim() || idealAnswer.trim()) && (
             <div className="space-y-3">
               <Button type="button" variant="outline" onClick={() => setShowTest(!showTest)} className="gap-2">
                 <Eye className="h-4 w-4" /> {showTest ? "Fechar Teste" : "Testar Correção"}
@@ -973,7 +896,7 @@ function WeeklyQuestionsTab() {
                   <CardContent className="p-4 space-y-3">
                     <p className="text-sm font-medium">Teste de Correção</p>
                     <Textarea
-                      placeholder="Cole aqui uma resposta de exemplo para testar o barema..."
+                      placeholder="Cole aqui uma resposta de exemplo para testar a correção..."
                       value={testAnswer}
                       onChange={(e) => setTestAnswer(e.target.value)}
                       rows={6}
@@ -983,31 +906,21 @@ function WeeklyQuestionsTab() {
                       size="sm"
                       onClick={async () => {
                         try {
-                          const parsedBarema = JSON.parse(baremaJson);
-                          // Try AI evaluation first
-                          try {
-                            const { data, error } = await supabase.functions.invoke('evaluate-answer', {
-                              body: {
-                                answer: testAnswer,
-                                barema: parsedBarema,
-                                mirrorText: mirrorText || undefined,
-                                idealAnswer: idealAnswer || undefined,
-                                statement: statement || undefined,
-                              },
-                            });
-                            if (!error && !data?.error) {
-                              setTestResult(data);
-                              return;
-                            }
-                          } catch {}
-                          // Fallback to local
-                          const result = evaluateAnswer(testAnswer, parsedBarema, {
-                            mirror: mirrorText || undefined,
-                            idealAnswer: idealAnswer || undefined,
+                          const { data, error } = await supabase.functions.invoke('evaluate-answer', {
+                            body: {
+                              answer: testAnswer,
+                              baremaText: mirrorText || undefined,
+                              gabarito: idealAnswer || undefined,
+                              statement: statement || undefined,
+                            },
                           });
-                          setTestResult(result);
-                        } catch (e) {
-                          toast({ title: "Erro no JSON", description: "Verifique o formato do barema.", variant: "destructive" });
+                          if (!error && !data?.error) {
+                            setTestResult(data);
+                          } else {
+                            toast({ title: "Erro na correção", description: data?.error || "Tente novamente.", variant: "destructive" });
+                          }
+                        } catch (e: any) {
+                          toast({ title: "Erro na correção", description: e.message, variant: "destructive" });
                         }
                       }}
                       disabled={!testAnswer.trim()}
@@ -1145,57 +1058,22 @@ function WeeklyQuestionsTab() {
               </div>
               <Textarea placeholder="Enunciado" value={editStatement} onChange={(e) => setEditStatement(e.target.value)} rows={5} />
               <div className="space-y-2">
-                <label className="text-sm font-medium">Diretrizes / Gabarito (texto livre)</label>
+                <label className="text-sm font-medium">Barema / Critérios de Correção (texto livre)</label>
                 <Textarea
-                  placeholder="Cole aqui as diretrizes de correção ou gabarito em texto livre para gerar o barema..."
-                  value={editGuidelines}
-                  onChange={(e) => setEditGuidelines(e.target.value)}
-                  rows={5}
+                  placeholder="Cole aqui o barema ou os critérios de correção em texto livre..."
+                  value={editMirrorText}
+                  onChange={(e) => setEditMirrorText(e.target.value)}
+                  rows={6}
                 />
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={async () => {
-                    if (!editStatement.trim() || !editGuidelines.trim()) {
-                      toast({ title: "Preencha o enunciado e as diretrizes primeiro.", variant: "destructive" });
-                      return;
-                    }
-                    setEditGeneratingBarema(true);
-                    try {
-                      const { data, error } = await supabase.functions.invoke('generate-barema', {
-                        body: { statement: editStatement, guidelines: editGuidelines },
-                      });
-                      if (error) throw error;
-                      if (data?.error) throw new Error(data.error);
-                      setEditBaremaJson(JSON.stringify(data.barema, null, 2));
-                      toast({ title: "Barema gerado com sucesso!" });
-                    } catch (e: any) {
-                      toast({ title: "Erro ao gerar barema", description: e.message, variant: "destructive" });
-                    } finally {
-                      setEditGeneratingBarema(false);
-                    }
-                  }}
-                  disabled={editGeneratingBarema || !editStatement.trim() || !editGuidelines.trim()}
-                  className="gap-2"
-                >
-                  {editGeneratingBarema ? (
-                    <><Clock className="h-4 w-4 animate-spin" /> Gerando...</>
-                  ) : (
-                    <><GraduationCap className="h-4 w-4" /> Gerar Barema com IA</>
-                  )}
-                </Button>
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Barema (JSON)</label>
-                <Textarea value={editBaremaJson} onChange={(e) => setEditBaremaJson(e.target.value)} rows={6} className="font-mono text-xs" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Espelho Resumido</label>
-                <Textarea placeholder="Resumo do espelho..." value={editMirrorText} onChange={(e) => setEditMirrorText(e.target.value)} rows={4} />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Resposta Ideal</label>
-                <Textarea placeholder="Resposta de referência..." value={editIdealAnswer} onChange={(e) => setEditIdealAnswer(e.target.value)} rows={6} />
+                <label className="text-sm font-medium">Gabarito (Resposta de Referência)</label>
+                <Textarea
+                  placeholder="Cole aqui o gabarito oficial ou resposta de referência..."
+                  value={editIdealAnswer}
+                  onChange={(e) => setEditIdealAnswer(e.target.value)}
+                  rows={6}
+                />
               </div>
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
