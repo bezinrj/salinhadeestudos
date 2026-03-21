@@ -992,6 +992,7 @@ function WeeklyQuestionsTab() {
                                 barema: parsedBarema,
                                 mirrorText: mirrorText || undefined,
                                 idealAnswer: idealAnswer || undefined,
+                                statement: statement || undefined,
                               },
                             });
                             if (!error && !data?.error) {
