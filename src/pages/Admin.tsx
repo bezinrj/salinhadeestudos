@@ -644,12 +644,9 @@ function WeeklyQuestionsTab() {
   const [discipline, setDiscipline] = useState("");
   const [statement, setStatement] = useState("");
   const [difficulty, setDifficulty] = useState("Médio");
-  const [baremaJson, setBaremaJson] = useState("");
   const [testAnswer, setTestAnswer] = useState("");
   const [testResult, setTestResult] = useState<any>(null);
   const [showTest, setShowTest] = useState(false);
-  const [guidelines, setGuidelines] = useState("");
-  const [generatingBarema, setGeneratingBarema] = useState(false);
   const [isWeekly, setIsWeekly] = useState(true);
   const [isPremiumQ, setIsPremiumQ] = useState(false);
   const [mirrorText, setMirrorText] = useState("");
