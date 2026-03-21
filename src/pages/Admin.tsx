@@ -660,13 +660,10 @@ function WeeklyQuestionsTab() {
   const [editDiscipline, setEditDiscipline] = useState("");
   const [editStatement, setEditStatement] = useState("");
   const [editDifficulty, setEditDifficulty] = useState("Médio");
-  const [editBaremaJson, setEditBaremaJson] = useState("");
   const [editMirrorText, setEditMirrorText] = useState("");
   const [editIdealAnswer, setEditIdealAnswer] = useState("");
   const [editIsWeekly, setEditIsWeekly] = useState(false);
   const [editIsPremium, setEditIsPremium] = useState(false);
-  const [editGuidelines, setEditGuidelines] = useState("");
-  const [editGeneratingBarema, setEditGeneratingBarema] = useState(false);
   const [editBanca, setEditBanca] = useState("INÉDITA");
 
   const { data: questions } = useQuery({
