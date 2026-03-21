@@ -696,13 +696,12 @@ function WeeklyQuestionsTab() {
 
   const publishMutation = useMutation({
     mutationFn: async () => {
-      const baremaData = baremaJson.trim() ? JSON.parse(baremaJson) : null;
       if (isWeekly) {
         const deadline = getNextSundayDeadline();
         await (supabase.from("weekly_questions") as any).update({ is_active: false }).eq("is_active", true).eq("is_weekly", true);
         const { error } = await (supabase.from("weekly_questions") as any).insert({
           title, career, discipline, statement, difficulty, deadline,
-          is_active: true, created_by: user?.id, barema: baremaData,
+          is_active: true, created_by: user?.id,
           is_weekly: true, is_premium: true,
           mirror_text: mirrorText.trim() || null,
           ideal_answer: idealAnswer.trim() || null,
@@ -713,7 +712,7 @@ function WeeklyQuestionsTab() {
       } else {
         const { error } = await (supabase.from("weekly_questions") as any).insert({
           title, career, discipline, statement, difficulty,
-          deadline: null, is_active: true, created_by: user?.id, barema: baremaData,
+          deadline: null, is_active: true, created_by: user?.id,
           is_weekly: false, is_premium: isPremiumQ,
           mirror_text: mirrorText.trim() || null,
           ideal_answer: idealAnswer.trim() || null,
@@ -725,7 +724,7 @@ function WeeklyQuestionsTab() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-weekly-questions"] });
       queryClient.invalidateQueries({ queryKey: ["discursivas-questions"] });
-      setTitle(""); setCareer("Delegado"); setDiscipline(""); setStatement(""); setDifficulty("Médio"); setBaremaJson(""); setTestResult(null); setTestAnswer(""); setShowTest(false); setGuidelines(""); setIsWeekly(true); setIsPremiumQ(false); setMirrorText(""); setIdealAnswer(""); setBanca("INÉDITA");
+      setTitle(""); setCareer("Delegado"); setDiscipline(""); setStatement(""); setDifficulty("Médio"); setTestResult(null); setTestAnswer(""); setShowTest(false); setIsWeekly(true); setIsPremiumQ(false); setMirrorText(""); setIdealAnswer(""); setBanca("INÉDITA");
       toast({ title: isWeekly ? "Questão semanal publicada!" : "Questão discursiva publicada!", description: isWeekly ? "Os usuários na lista de espera serão notificados." : undefined });
     },
     onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
