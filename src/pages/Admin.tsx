@@ -1201,7 +1201,148 @@ function ContentTab() {
   );
 }
 
-/* ─── User Subscription Info ─── */
+/* ─── Subjects Tab ─── */
+function SubjectsTab() {
+  const queryClient = useQueryClient();
+  const [selectedDiscipline, setSelectedDiscipline] = useState(disciplines[0]);
+  const [newSubject, setNewSubject] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingValue, setEditingValue] = useState("");
+
+  const { data: subjects = [], isLoading } = useQuery({
+    queryKey: ["admin-discipline-subjects", selectedDiscipline],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("discipline_subjects")
+        .select("*")
+        .eq("discipline", selectedDiscipline)
+        .order("subject");
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const addMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await (supabase.from("discipline_subjects") as any).insert({
+        discipline: selectedDiscipline,
+        subject: newSubject.trim(),
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-discipline-subjects", selectedDiscipline] });
+      setNewSubject("");
+      toast({ title: "Assunto adicionado!" });
+    },
+    onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, subject }: { id: string; subject: string }) => {
+      const { error } = await (supabase.from("discipline_subjects") as any)
+        .update({ subject: subject.trim() })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-discipline-subjects", selectedDiscipline] });
+      setEditingId(null);
+      toast({ title: "Assunto atualizado!" });
+    },
+    onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("discipline_subjects").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-discipline-subjects", selectedDiscipline] });
+      toast({ title: "Assunto removido." });
+    },
+  });
+
+  return (
+    <div className="space-y-4">
+      <Card className="gradient-card border-border">
+        <CardHeader>
+          <CardTitle className="text-sm font-medium flex items-center gap-2">
+            <GraduationCap className="h-4 w-4" /> Gerenciar Assuntos por Matéria
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Select value={selectedDiscipline} onValueChange={setSelectedDiscipline}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {disciplines.map(d => (
+                <SelectItem key={d} value={d}>{d}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <div className="flex gap-2">
+            <Input
+              placeholder="Novo assunto..."
+              value={newSubject}
+              onChange={(e) => setNewSubject(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && newSubject.trim() && addMutation.mutate()}
+            />
+            <Button
+              onClick={() => addMutation.mutate()}
+              disabled={!newSubject.trim() || addMutation.isPending}
+              size="sm"
+            >
+              <Plus className="h-4 w-4 mr-1" /> Adicionar
+            </Button>
+          </div>
+
+          {isLoading ? (
+            <p className="text-sm text-muted-foreground text-center py-4">Carregando...</p>
+          ) : subjects.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">Nenhum assunto cadastrado para {selectedDiscipline}.</p>
+          ) : (
+            <div className="space-y-2">
+              {subjects.map((s: any) => (
+                <div key={s.id} className="flex items-center gap-2 p-2 rounded-lg bg-secondary/50">
+                  {editingId === s.id ? (
+                    <>
+                      <Input
+                        value={editingValue}
+                        onChange={(e) => setEditingValue(e.target.value)}
+                        className="flex-1 h-8 text-sm"
+                        onKeyDown={(e) => e.key === "Enter" && editingValue.trim() && updateMutation.mutate({ id: s.id, subject: editingValue })}
+                      />
+                      <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => updateMutation.mutate({ id: s.id, subject: editingValue })} disabled={!editingValue.trim()}>
+                        <Check className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditingId(null)}>
+                        <X className="h-3.5 w-3.5" />
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <span className="flex-1 text-sm">{s.subject}</span>
+                      <Button size="icon" variant="ghost" className="h-7 w-7 text-primary" onClick={() => { setEditingId(s.id); setEditingValue(s.subject); }}>
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => deleteMutation.mutate(s.id)}>
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+
 function UserSubscriptionInfo({ userId }: { userId: string }) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
