@@ -869,12 +869,21 @@ function WeeklyQuestionsTab() {
               </SelectContent>
             </Select>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <Select value={discipline} onValueChange={setDiscipline}>
+          <div className="grid grid-cols-3 gap-3">
+            <Select value={discipline} onValueChange={(v) => { setDiscipline(v); setSubject(""); }}>
               <SelectTrigger><SelectValue placeholder="Matéria / Disciplina" /></SelectTrigger>
               <SelectContent>
                 {disciplines.map(d => (
                   <SelectItem key={d} value={d}>{d}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={subject} onValueChange={setSubject} disabled={!discipline}>
+              <SelectTrigger><SelectValue placeholder={discipline ? "Assunto" : "Selecione matéria"} /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Nenhum</SelectItem>
+                {subjectsForDiscipline.map(s => (
+                  <SelectItem key={s} value={s}>{s}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
