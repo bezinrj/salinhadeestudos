@@ -46,12 +46,13 @@ export default function Admin() {
       </motion.div>
 
       <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5 bg-secondary">
+        <TabsList className="grid w-full grid-cols-6 bg-secondary">
           <TabsTrigger value="overview">Visão Geral</TabsTrigger>
           <TabsTrigger value="users">Usuários</TabsTrigger>
           <TabsTrigger value="weekly">Semanal</TabsTrigger>
           <TabsTrigger value="announcements">Avisos</TabsTrigger>
           <TabsTrigger value="content">Conteúdo</TabsTrigger>
+          <TabsTrigger value="subjects">Assuntos</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview"><OverviewTab /></TabsContent>
@@ -59,6 +60,7 @@ export default function Admin() {
         <TabsContent value="weekly"><WeeklyQuestionsTab /></TabsContent>
         <TabsContent value="announcements"><AnnouncementsTab /></TabsContent>
         <TabsContent value="content"><ContentTab /></TabsContent>
+        <TabsContent value="subjects"><SubjectsTab /></TabsContent>
       </Tabs>
     </div>
   );
