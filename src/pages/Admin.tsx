@@ -730,7 +730,7 @@ function WeeklyQuestionsTab() {
           is_weekly: true, is_premium: true,
           mirror_text: mirrorText.trim() || null,
           ideal_answer: idealAnswer.trim() || null,
-          banca,
+          banca, subject: subject.trim() || null,
         });
         if (error) throw error;
         await supabase.from("weekly_waitlist").update({ notified: false }).eq("notified", true);
