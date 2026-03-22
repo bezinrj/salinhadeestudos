@@ -644,6 +644,7 @@ function WeeklyQuestionsTab() {
   const [title, setTitle] = useState("");
   const [career, setCareer] = useState("Delegado");
   const [discipline, setDiscipline] = useState("");
+  const [subject, setSubject] = useState("");
   const [statement, setStatement] = useState("");
   const [difficulty, setDifficulty] = useState("Médio");
   const [testAnswer, setTestAnswer] = useState("");
@@ -660,6 +661,7 @@ function WeeklyQuestionsTab() {
   const [editTitle, setEditTitle] = useState("");
   const [editCareer, setEditCareer] = useState("Delegado");
   const [editDiscipline, setEditDiscipline] = useState("");
+  const [editSubject, setEditSubject] = useState("");
   const [editStatement, setEditStatement] = useState("");
   const [editDifficulty, setEditDifficulty] = useState("Médio");
   const [editMirrorText, setEditMirrorText] = useState("");
