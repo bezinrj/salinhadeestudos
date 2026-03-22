@@ -856,6 +856,8 @@ function WeeklyQuestionsTab() {
                 <SelectItem value="Delegado">Delegado</SelectItem>
                 <SelectItem value="Magistratura">Magistratura</SelectItem>
                 <SelectItem value="Promotoria">Promotoria</SelectItem>
+                <SelectItem value="ENAM">ENAM</SelectItem>
+                <SelectItem value="EMERJ">EMERJ</SelectItem>
               </SelectContent>
             </Select>
             <Select value={difficulty} onValueChange={setDifficulty}>
