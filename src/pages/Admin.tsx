@@ -1066,6 +1066,8 @@ function WeeklyQuestionsTab() {
                     <SelectItem value="Delegado">Delegado</SelectItem>
                     <SelectItem value="Magistratura">Magistratura</SelectItem>
                     <SelectItem value="Promotoria">Promotoria</SelectItem>
+                    <SelectItem value="ENAM">ENAM</SelectItem>
+                    <SelectItem value="EMERJ">EMERJ</SelectItem>
                   </SelectContent>
                 </Select>
                 <Select value={editDifficulty} onValueChange={setEditDifficulty}>
@@ -1077,11 +1079,18 @@ function WeeklyQuestionsTab() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <Select value={editDiscipline} onValueChange={setEditDiscipline}>
+              <div className="grid grid-cols-3 gap-3">
+                <Select value={editDiscipline} onValueChange={(v) => { setEditDiscipline(v); setEditSubject(""); }}>
                   <SelectTrigger><SelectValue placeholder="Matéria" /></SelectTrigger>
                   <SelectContent>
                     {disciplines.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Select value={editSubject} onValueChange={setEditSubject} disabled={!editDiscipline}>
+                  <SelectTrigger><SelectValue placeholder={editDiscipline ? "Assunto" : "Selecione matéria"} /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Nenhum</SelectItem>
+                    {editSubjectsForDiscipline.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                   </SelectContent>
                 </Select>
                 <Select value={editBanca} onValueChange={setEditBanca}>
