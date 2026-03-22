@@ -80,6 +80,27 @@ export type Database = {
           },
         ]
       }
+      discipline_subjects: {
+        Row: {
+          created_at: string | null
+          discipline: string
+          id: string
+          subject: string
+        }
+        Insert: {
+          created_at?: string | null
+          discipline: string
+          id?: string
+          subject: string
+        }
+        Update: {
+          created_at?: string | null
+          discipline?: string
+          id?: string
+          subject?: string
+        }
+        Relationships: []
+      }
       manual_subscriptions: {
         Row: {
           created_at: string | null
@@ -320,6 +341,7 @@ export type Database = {
           mirror_text: string | null
           participants: number
           statement: string
+          subject: string | null
           title: string
         }
         Insert: {
@@ -339,6 +361,7 @@ export type Database = {
           mirror_text?: string | null
           participants?: number
           statement: string
+          subject?: string | null
           title: string
         }
         Update: {
@@ -358,6 +381,7 @@ export type Database = {
           mirror_text?: string | null
           participants?: number
           statement?: string
+          subject?: string | null
           title?: string
         }
         Relationships: []

@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Shield, Users, MessageSquare, Bell, Trash2, Plus, Activity, Crown, GraduationCap, KeyRound, X, UserCheck, UserX, CreditCard, Ban, Eye, Gift, Clock, CalendarDays, Trophy, Pencil } from "lucide-react";
+import { Shield, Users, MessageSquare, Bell, Trash2, Plus, Activity, Crown, GraduationCap, KeyRound, X, UserCheck, UserX, CreditCard, Ban, Eye, Gift, Clock, CalendarDays, Trophy, Pencil, Check } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { getPlanByPriceId } from "@/lib/stripe";
 import { toast } from "@/hooks/use-toast";
@@ -46,12 +46,13 @@ export default function Admin() {
       </motion.div>
 
       <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5 bg-secondary">
+        <TabsList className="grid w-full grid-cols-6 bg-secondary">
           <TabsTrigger value="overview">Visão Geral</TabsTrigger>
           <TabsTrigger value="users">Usuários</TabsTrigger>
           <TabsTrigger value="weekly">Semanal</TabsTrigger>
           <TabsTrigger value="announcements">Avisos</TabsTrigger>
           <TabsTrigger value="content">Conteúdo</TabsTrigger>
+          <TabsTrigger value="subjects">Assuntos</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview"><OverviewTab /></TabsContent>
@@ -59,6 +60,7 @@ export default function Admin() {
         <TabsContent value="weekly"><WeeklyQuestionsTab /></TabsContent>
         <TabsContent value="announcements"><AnnouncementsTab /></TabsContent>
         <TabsContent value="content"><ContentTab /></TabsContent>
+        <TabsContent value="subjects"><SubjectsTab /></TabsContent>
       </Tabs>
     </div>
   );
@@ -642,6 +644,7 @@ function WeeklyQuestionsTab() {
   const [title, setTitle] = useState("");
   const [career, setCareer] = useState("Delegado");
   const [discipline, setDiscipline] = useState("");
+  const [subject, setSubject] = useState("");
   const [statement, setStatement] = useState("");
   const [difficulty, setDifficulty] = useState("Médio");
   const [testAnswer, setTestAnswer] = useState("");
@@ -658,6 +661,7 @@ function WeeklyQuestionsTab() {
   const [editTitle, setEditTitle] = useState("");
   const [editCareer, setEditCareer] = useState("Delegado");
   const [editDiscipline, setEditDiscipline] = useState("");
+  const [editSubject, setEditSubject] = useState("");
   const [editStatement, setEditStatement] = useState("");
   const [editDifficulty, setEditDifficulty] = useState("Médio");
   const [editMirrorText, setEditMirrorText] = useState("");
@@ -680,6 +684,27 @@ function WeeklyQuestionsTab() {
       const { count } = await supabase.from("weekly_waitlist").select("*", { count: "exact", head: true });
       return count || 0;
     },
+  });
+
+  // Fetch subjects for discipline
+  const { data: subjectsForDiscipline = [] } = useQuery({
+    queryKey: ["admin-subjects-for-discipline", discipline],
+    queryFn: async () => {
+      if (!discipline) return [];
+      const { data } = await supabase.from("discipline_subjects").select("subject").eq("discipline", discipline).order("subject");
+      return (data || []).map((s: any) => s.subject);
+    },
+    enabled: !!discipline,
+  });
+
+  const { data: editSubjectsForDiscipline = [] } = useQuery({
+    queryKey: ["admin-subjects-for-discipline", editDiscipline],
+    queryFn: async () => {
+      if (!editDiscipline) return [];
+      const { data } = await supabase.from("discipline_subjects").select("subject").eq("discipline", editDiscipline).order("subject");
+      return (data || []).map((s: any) => s.subject);
+    },
+    enabled: !!editDiscipline,
   });
 
   function getNextSundayDeadline(): string {
@@ -705,7 +730,7 @@ function WeeklyQuestionsTab() {
           is_weekly: true, is_premium: true,
           mirror_text: mirrorText.trim() || null,
           ideal_answer: idealAnswer.trim() || null,
-          banca,
+          banca, subject: subject.trim() || null,
         });
         if (error) throw error;
         await supabase.from("weekly_waitlist").update({ notified: false }).eq("notified", true);
@@ -716,7 +741,7 @@ function WeeklyQuestionsTab() {
           is_weekly: false, is_premium: isPremiumQ,
           mirror_text: mirrorText.trim() || null,
           ideal_answer: idealAnswer.trim() || null,
-          banca,
+          banca, subject: subject.trim() || null,
         });
         if (error) throw error;
       }
@@ -724,7 +749,7 @@ function WeeklyQuestionsTab() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-weekly-questions"] });
       queryClient.invalidateQueries({ queryKey: ["discursivas-questions"] });
-      setTitle(""); setCareer("Delegado"); setDiscipline(""); setStatement(""); setDifficulty("Médio"); setTestResult(null); setTestAnswer(""); setShowTest(false); setIsWeekly(true); setIsPremiumQ(false); setMirrorText(""); setIdealAnswer(""); setBanca("INÉDITA");
+      setTitle(""); setCareer("Delegado"); setDiscipline(""); setSubject(""); setStatement(""); setDifficulty("Médio"); setTestResult(null); setTestAnswer(""); setShowTest(false); setIsWeekly(true); setIsPremiumQ(false); setMirrorText(""); setIdealAnswer(""); setBanca("INÉDITA");
       toast({ title: isWeekly ? "Questão semanal publicada!" : "Questão discursiva publicada!", description: isWeekly ? "Os usuários na lista de espera serão notificados." : undefined });
     },
     onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
@@ -757,6 +782,7 @@ function WeeklyQuestionsTab() {
           title: editTitle,
           career: editCareer,
           discipline: editDiscipline,
+          subject: editSubject.trim() || null,
           statement: editStatement,
           difficulty: editDifficulty,
           is_weekly: editIsWeekly,
@@ -782,6 +808,7 @@ function WeeklyQuestionsTab() {
     setEditTitle(q.title);
     setEditCareer(q.career);
     setEditDiscipline(q.discipline);
+    setEditSubject(q.subject || "");
     setEditStatement(q.statement);
     setEditDifficulty(q.difficulty);
     setEditIsWeekly(q.is_weekly);
@@ -831,6 +858,8 @@ function WeeklyQuestionsTab() {
                 <SelectItem value="Delegado">Delegado</SelectItem>
                 <SelectItem value="Magistratura">Magistratura</SelectItem>
                 <SelectItem value="Promotoria">Promotoria</SelectItem>
+                <SelectItem value="ENAM">ENAM</SelectItem>
+                <SelectItem value="EMERJ">EMERJ</SelectItem>
               </SelectContent>
             </Select>
             <Select value={difficulty} onValueChange={setDifficulty}>
@@ -842,12 +871,21 @@ function WeeklyQuestionsTab() {
               </SelectContent>
             </Select>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <Select value={discipline} onValueChange={setDiscipline}>
+          <div className="grid grid-cols-3 gap-3">
+            <Select value={discipline} onValueChange={(v) => { setDiscipline(v); setSubject(""); }}>
               <SelectTrigger><SelectValue placeholder="Matéria / Disciplina" /></SelectTrigger>
               <SelectContent>
                 {disciplines.map(d => (
                   <SelectItem key={d} value={d}>{d}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={subject} onValueChange={setSubject} disabled={!discipline}>
+              <SelectTrigger><SelectValue placeholder={discipline ? "Assunto" : "Selecione matéria"} /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Nenhum</SelectItem>
+                {subjectsForDiscipline.map(s => (
+                  <SelectItem key={s} value={s}>{s}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -1028,6 +1066,8 @@ function WeeklyQuestionsTab() {
                     <SelectItem value="Delegado">Delegado</SelectItem>
                     <SelectItem value="Magistratura">Magistratura</SelectItem>
                     <SelectItem value="Promotoria">Promotoria</SelectItem>
+                    <SelectItem value="ENAM">ENAM</SelectItem>
+                    <SelectItem value="EMERJ">EMERJ</SelectItem>
                   </SelectContent>
                 </Select>
                 <Select value={editDifficulty} onValueChange={setEditDifficulty}>
@@ -1039,11 +1079,18 @@ function WeeklyQuestionsTab() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <Select value={editDiscipline} onValueChange={setEditDiscipline}>
+              <div className="grid grid-cols-3 gap-3">
+                <Select value={editDiscipline} onValueChange={(v) => { setEditDiscipline(v); setEditSubject(""); }}>
                   <SelectTrigger><SelectValue placeholder="Matéria" /></SelectTrigger>
                   <SelectContent>
                     {disciplines.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Select value={editSubject} onValueChange={setEditSubject} disabled={!editDiscipline}>
+                  <SelectTrigger><SelectValue placeholder={editDiscipline ? "Assunto" : "Selecione matéria"} /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Nenhum</SelectItem>
+                    {editSubjectsForDiscipline.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                   </SelectContent>
                 </Select>
                 <Select value={editBanca} onValueChange={setEditBanca}>
@@ -1154,7 +1201,148 @@ function ContentTab() {
   );
 }
 
-/* ─── User Subscription Info ─── */
+/* ─── Subjects Tab ─── */
+function SubjectsTab() {
+  const queryClient = useQueryClient();
+  const [selectedDiscipline, setSelectedDiscipline] = useState(disciplines[0]);
+  const [newSubject, setNewSubject] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingValue, setEditingValue] = useState("");
+
+  const { data: subjects = [], isLoading } = useQuery({
+    queryKey: ["admin-discipline-subjects", selectedDiscipline],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("discipline_subjects")
+        .select("*")
+        .eq("discipline", selectedDiscipline)
+        .order("subject");
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const addMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await (supabase.from("discipline_subjects") as any).insert({
+        discipline: selectedDiscipline,
+        subject: newSubject.trim(),
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-discipline-subjects", selectedDiscipline] });
+      setNewSubject("");
+      toast({ title: "Assunto adicionado!" });
+    },
+    onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, subject }: { id: string; subject: string }) => {
+      const { error } = await (supabase.from("discipline_subjects") as any)
+        .update({ subject: subject.trim() })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-discipline-subjects", selectedDiscipline] });
+      setEditingId(null);
+      toast({ title: "Assunto atualizado!" });
+    },
+    onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("discipline_subjects").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-discipline-subjects", selectedDiscipline] });
+      toast({ title: "Assunto removido." });
+    },
+  });
+
+  return (
+    <div className="space-y-4">
+      <Card className="gradient-card border-border">
+        <CardHeader>
+          <CardTitle className="text-sm font-medium flex items-center gap-2">
+            <GraduationCap className="h-4 w-4" /> Gerenciar Assuntos por Matéria
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Select value={selectedDiscipline} onValueChange={setSelectedDiscipline}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {disciplines.map(d => (
+                <SelectItem key={d} value={d}>{d}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <div className="flex gap-2">
+            <Input
+              placeholder="Novo assunto..."
+              value={newSubject}
+              onChange={(e) => setNewSubject(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && newSubject.trim() && addMutation.mutate()}
+            />
+            <Button
+              onClick={() => addMutation.mutate()}
+              disabled={!newSubject.trim() || addMutation.isPending}
+              size="sm"
+            >
+              <Plus className="h-4 w-4 mr-1" /> Adicionar
+            </Button>
+          </div>
+
+          {isLoading ? (
+            <p className="text-sm text-muted-foreground text-center py-4">Carregando...</p>
+          ) : subjects.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">Nenhum assunto cadastrado para {selectedDiscipline}.</p>
+          ) : (
+            <div className="space-y-2">
+              {subjects.map((s: any) => (
+                <div key={s.id} className="flex items-center gap-2 p-2 rounded-lg bg-secondary/50">
+                  {editingId === s.id ? (
+                    <>
+                      <Input
+                        value={editingValue}
+                        onChange={(e) => setEditingValue(e.target.value)}
+                        className="flex-1 h-8 text-sm"
+                        onKeyDown={(e) => e.key === "Enter" && editingValue.trim() && updateMutation.mutate({ id: s.id, subject: editingValue })}
+                      />
+                      <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => updateMutation.mutate({ id: s.id, subject: editingValue })} disabled={!editingValue.trim()}>
+                        <Check className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditingId(null)}>
+                        <X className="h-3.5 w-3.5" />
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <span className="flex-1 text-sm">{s.subject}</span>
+                      <Button size="icon" variant="ghost" className="h-7 w-7 text-primary" onClick={() => { setEditingId(s.id); setEditingValue(s.subject); }}>
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => deleteMutation.mutate(s.id)}>
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+
 function UserSubscriptionInfo({ userId }: { userId: string }) {
   const { user } = useAuth();
   const queryClient = useQueryClient();

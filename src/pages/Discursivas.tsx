@@ -7,23 +7,27 @@ import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-const difficulties = ["Todas", "Fácil", "Médio", "Difícil"] as const;
-const careers = ["Todas", "Delegado", "Magistratura", "Promotoria"] as const;
+const careers = ["Todas", "Delegado", "Magistratura", "Promotoria", "ENAM", "EMERJ"] as const;
 const types = ["Todas", "Gratuitas", "Premium"] as const;
 const bancas = ["Todas", "CEBRASPE", "FGV", "VUNESP", "INÉDITA"] as const;
-const disciplineOptions = ["Todas", ...disciplines] as const;
+const statusOptions = ["Todas", "Resolvidas", "Não resolvidas"] as const;
 
 export default function Discursivas() {
-  const [difficulty, setDifficulty] = useState<string>("Todas");
   const [career, setCareer] = useState<string>("Todas");
   const [type, setType] = useState<string>("Todas");
-  const [selectedDiscipline, setSelectedDiscipline] = useState<string>("Todas");
   const [selectedBanca, setSelectedBanca] = useState<string>("Todas");
+  const [statusFilter, setStatusFilter] = useState<string>("Todas");
+  const [selectedDiscipline, setSelectedDiscipline] = useState<string>("Todas");
+  const [selectedSubject, setSelectedSubject] = useState<string>("Todas");
   const { isAdmin } = useIsAdmin();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
 
   const { data: allQuestions = [], isLoading } = useQuery({
@@ -39,6 +43,7 @@ export default function Discursivas() {
         title: q.title,
         career: q.career,
         discipline: q.discipline,
+        subject: q.subject || null,
         statement: q.statement,
         difficulty: q.difficulty,
         participants: q.participants || 0,
@@ -49,6 +54,37 @@ export default function Discursivas() {
         barema: q.barema,
       }));
     },
+  });
+
+  // Fetch user's answered question IDs
+  const { data: answeredIds = [] } = useQuery({
+    queryKey: ["user-answered-ids", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data, error } = await supabase
+        .from("weekly_answers")
+        .select("question_id")
+        .eq("user_id", user.id);
+      if (error) throw error;
+      return (data || []).map((a: any) => a.question_id);
+    },
+    enabled: !!user?.id,
+  });
+
+  // Fetch subjects for selected discipline
+  const { data: subjects = [] } = useQuery({
+    queryKey: ["discipline-subjects", selectedDiscipline],
+    queryFn: async () => {
+      if (selectedDiscipline === "Todas") return [];
+      const { data, error } = await supabase
+        .from("discipline_subjects")
+        .select("subject")
+        .eq("discipline", selectedDiscipline)
+        .order("subject");
+      if (error) throw error;
+      return (data || []).map((s: any) => s.subject);
+    },
+    enabled: selectedDiscipline !== "Todas",
   });
 
   const deleteMutation = useMutation({
@@ -65,15 +101,23 @@ export default function Discursivas() {
 
   const filtered = allQuestions.filter(q => {
     if (q.isWeekly && q.deadline && new Date(q.deadline) > new Date()) return false;
-    if (difficulty !== "Todas" && q.difficulty !== difficulty) return false;
     if (career !== "Todas" && q.career !== career) return false;
     if (selectedDiscipline !== "Todas" && q.discipline !== selectedDiscipline) return false;
+    if (selectedSubject !== "Todas" && q.subject !== selectedSubject) return false;
     if (selectedBanca !== "Todas" && q.banca !== selectedBanca) return false;
     const isPremium = q.isPremium || q.isWeekly;
     if (type === "Gratuitas" && isPremium) return false;
     if (type === "Premium" && !isPremium) return false;
+    // Status filter
+    if (statusFilter === "Resolvidas" && !answeredIds.includes(q.id)) return false;
+    if (statusFilter === "Não resolvidas" && answeredIds.includes(q.id)) return false;
     return true;
   });
+
+  const handleDisciplineChange = (value: string) => {
+    setSelectedDiscipline(value);
+    setSelectedSubject("Todas");
+  };
 
   return (
     <div className="space-y-6">
@@ -96,26 +140,7 @@ export default function Discursivas() {
 
       {/* Filters */}
       <div className="space-y-3">
-        <div>
-          <p className="text-xs text-muted-foreground mb-2 uppercase tracking-wider">Dificuldade</p>
-          <div className="flex flex-wrap gap-2">
-            {difficulties.map(d => (
-              <Badge
-                key={d}
-                variant="outline"
-                className={cn(
-                  "cursor-pointer transition-colors text-xs px-3 py-1",
-                  difficulty === d
-                    ? "bg-primary/10 text-primary border-primary/30"
-                    : "border-border text-muted-foreground hover:border-primary/20 hover:text-foreground"
-                )}
-                onClick={() => setDifficulty(d)}
-              >
-                {d}
-              </Badge>
-            ))}
-          </div>
-        </div>
+        {/* Carreira - chips */}
         <div>
           <p className="text-xs text-muted-foreground mb-2 uppercase tracking-wider">Carreira</p>
           <div className="flex flex-wrap gap-2">
@@ -136,26 +161,8 @@ export default function Discursivas() {
             ))}
           </div>
         </div>
-        <div>
-          <p className="text-xs text-muted-foreground mb-2 uppercase tracking-wider">Matéria</p>
-          <div className="flex flex-wrap gap-2">
-            {disciplineOptions.map(d => (
-              <Badge
-                key={d}
-                variant="outline"
-                className={cn(
-                  "cursor-pointer transition-colors text-xs px-3 py-1",
-                  selectedDiscipline === d
-                    ? "bg-primary/10 text-primary border-primary/30"
-                    : "border-border text-muted-foreground hover:border-primary/20 hover:text-foreground"
-                )}
-                onClick={() => setSelectedDiscipline(d)}
-              >
-                {d}
-              </Badge>
-            ))}
-          </div>
-        </div>
+
+        {/* Banca - chips */}
         <div>
           <p className="text-xs text-muted-foreground mb-2 uppercase tracking-wider">Banca</p>
           <div className="flex flex-wrap gap-2">
@@ -176,6 +183,8 @@ export default function Discursivas() {
             ))}
           </div>
         </div>
+
+        {/* Tipo - chips */}
         <div>
           <p className="text-xs text-muted-foreground mb-2 uppercase tracking-wider">Tipo</p>
           <div className="flex flex-wrap gap-2">
@@ -194,6 +203,66 @@ export default function Discursivas() {
                 {t}
               </Badge>
             ))}
+          </div>
+        </div>
+
+        {/* Status - chips */}
+        <div>
+          <p className="text-xs text-muted-foreground mb-2 uppercase tracking-wider">Status</p>
+          <div className="flex flex-wrap gap-2">
+            {statusOptions.map(s => (
+              <Badge
+                key={s}
+                variant="outline"
+                className={cn(
+                  "cursor-pointer transition-colors text-xs px-3 py-1",
+                  statusFilter === s
+                    ? "bg-primary/10 text-primary border-primary/30"
+                    : "border-border text-muted-foreground hover:border-primary/20 hover:text-foreground"
+                )}
+                onClick={() => setStatusFilter(s)}
+              >
+                {s}
+              </Badge>
+            ))}
+          </div>
+        </div>
+
+        {/* Matéria - dropdown */}
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <p className="text-xs text-muted-foreground mb-2 uppercase tracking-wider">Matéria</p>
+            <Select value={selectedDiscipline} onValueChange={handleDisciplineChange}>
+              <SelectTrigger>
+                <SelectValue placeholder="Todas as matérias" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Todas">Todas</SelectItem>
+                {disciplines.map(d => (
+                  <SelectItem key={d} value={d}>{d}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Assunto - dropdown, depends on Matéria */}
+          <div>
+            <p className="text-xs text-muted-foreground mb-2 uppercase tracking-wider">Assunto</p>
+            <Select
+              value={selectedSubject}
+              onValueChange={setSelectedSubject}
+              disabled={selectedDiscipline === "Todas"}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={selectedDiscipline === "Todas" ? "Selecione uma matéria" : "Todos os assuntos"} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Todas">Todos</SelectItem>
+                {subjects.map(s => (
+                  <SelectItem key={s} value={s}>{s}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
       </div>
