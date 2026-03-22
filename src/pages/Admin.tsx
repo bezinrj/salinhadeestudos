@@ -782,6 +782,7 @@ function WeeklyQuestionsTab() {
           title: editTitle,
           career: editCareer,
           discipline: editDiscipline,
+          subject: editSubject.trim() || null,
           statement: editStatement,
           difficulty: editDifficulty,
           is_weekly: editIsWeekly,
