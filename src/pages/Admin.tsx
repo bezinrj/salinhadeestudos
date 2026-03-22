@@ -808,6 +808,7 @@ function WeeklyQuestionsTab() {
     setEditTitle(q.title);
     setEditCareer(q.career);
     setEditDiscipline(q.discipline);
+    setEditSubject(q.subject || "");
     setEditStatement(q.statement);
     setEditDifficulty(q.difficulty);
     setEditIsWeekly(q.is_weekly);
