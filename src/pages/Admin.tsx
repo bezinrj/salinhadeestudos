@@ -883,7 +883,7 @@ function WeeklyQuestionsTab() {
             <Select value={subject} onValueChange={setSubject} disabled={!discipline}>
               <SelectTrigger><SelectValue placeholder={discipline ? "Assunto" : "Selecione matéria"} /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Nenhum</SelectItem>
+                <SelectItem value="__none__">Nenhum</SelectItem>
                 {subjectsForDiscipline.map(s => (
                   <SelectItem key={s} value={s}>{s}</SelectItem>
                 ))}
