@@ -880,7 +880,7 @@ function WeeklyQuestionsTab() {
                 ))}
               </SelectContent>
             </Select>
-            <Select value={subject} onValueChange={setSubject} disabled={!discipline}>
+            <Select value={subject || "__none__"} onValueChange={(v) => setSubject(v === "__none__" ? "" : v)} disabled={!discipline}>
               <SelectTrigger><SelectValue placeholder={discipline ? "Assunto" : "Selecione matéria"} /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="__none__">Nenhum</SelectItem>
