@@ -880,10 +880,10 @@ function WeeklyQuestionsTab() {
                 ))}
               </SelectContent>
             </Select>
-            <Select value={subject} onValueChange={setSubject} disabled={!discipline}>
+            <Select value={subject || "__none__"} onValueChange={(v) => setSubject(v === "__none__" ? "" : v)} disabled={!discipline}>
               <SelectTrigger><SelectValue placeholder={discipline ? "Assunto" : "Selecione matéria"} /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Nenhum</SelectItem>
+                <SelectItem value="__none__">Nenhum</SelectItem>
                 {subjectsForDiscipline.map(s => (
                   <SelectItem key={s} value={s}>{s}</SelectItem>
                 ))}
@@ -1086,10 +1086,10 @@ function WeeklyQuestionsTab() {
                     {disciplines.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
                   </SelectContent>
                 </Select>
-                <Select value={editSubject} onValueChange={setEditSubject} disabled={!editDiscipline}>
+                <Select value={editSubject || "__none__"} onValueChange={(v) => setEditSubject(v === "__none__" ? "" : v)} disabled={!editDiscipline}>
                   <SelectTrigger><SelectValue placeholder={editDiscipline ? "Assunto" : "Selecione matéria"} /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Nenhum</SelectItem>
+                    <SelectItem value="__none__">Nenhum</SelectItem>
                     {editSubjectsForDiscipline.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                   </SelectContent>
                 </Select>
