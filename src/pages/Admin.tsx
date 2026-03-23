@@ -1086,7 +1086,7 @@ function WeeklyQuestionsTab() {
                     {disciplines.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
                   </SelectContent>
                 </Select>
-                <Select value={editSubject} onValueChange={setEditSubject} disabled={!editDiscipline}>
+                <Select value={editSubject || "__none__"} onValueChange={(v) => setEditSubject(v === "__none__" ? "" : v)} disabled={!editDiscipline}>
                   <SelectTrigger><SelectValue placeholder={editDiscipline ? "Assunto" : "Selecione matéria"} /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="__none__">Nenhum</SelectItem>
