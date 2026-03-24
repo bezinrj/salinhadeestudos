@@ -157,6 +157,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          active_badge_id: string | null
           avatar_url: string | null
           average_grade: number | null
           bio: string | null
@@ -175,6 +176,7 @@ export type Database = {
           weekly_hours: number | null
         }
         Insert: {
+          active_badge_id?: string | null
           avatar_url?: string | null
           average_grade?: number | null
           bio?: string | null
@@ -193,6 +195,7 @@ export type Database = {
           weekly_hours?: number | null
         }
         Update: {
+          active_badge_id?: string | null
           avatar_url?: string | null
           average_grade?: number | null
           bio?: string | null

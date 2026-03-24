@@ -1,4 +1,5 @@
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { Badge as BadgeType } from "@/data/mockData";
 import { useState } from "react";
@@ -6,6 +7,10 @@ import { useState } from "react";
 interface BadgeDisplayProps {
   badges: BadgeType[];
   size?: "sm" | "md";
+  activeBadgeId?: string | null;
+  onActivate?: (badgeId: string) => void;
+  onDeactivate?: () => void;
+  isOwnProfile?: boolean;
 }
 
 const categoryLabels: Record<string, string> = {
@@ -19,7 +24,7 @@ const categoryLabels: Record<string, string> = {
   assinatura: "💎 Assinatura",
 };
 
-export function BadgeDisplay({ badges, size = "md" }: BadgeDisplayProps) {
+export function BadgeDisplay({ badges, size = "md", activeBadgeId, onActivate, onDeactivate, isOwnProfile }: BadgeDisplayProps) {
   const [filter, setFilter] = useState<string>("all");
 
   const categories = Array.from(new Set(badges.map(b => b.category || "outros")));
@@ -62,35 +67,62 @@ export function BadgeDisplay({ badges, size = "md" }: BadgeDisplayProps) {
 
       {/* Badges grid */}
       <div className={cn("grid gap-2", size === "md" ? "grid-cols-1 sm:grid-cols-2" : "flex flex-wrap")}>
-        {filtered.map((badge) => (
-          <div
-            key={badge.id}
-            className={cn(
-              "flex items-center gap-3 rounded-lg border px-3 py-2.5 transition-all",
-              badge.earned
-                ? "border-gold/20 bg-gold/5 hover:bg-gold/10"
-                : "border-border bg-muted/30 opacity-50 grayscale"
-            )}
-          >
-            <span className={cn(size === "sm" ? "text-lg" : "text-2xl")}>{badge.icon}</span>
-            <div className="flex-1 min-w-0">
-              <p className={cn("font-semibold", size === "sm" ? "text-xs" : "text-sm", badge.earned ? "text-foreground" : "text-muted-foreground")}>
-                {badge.name}
-              </p>
-              {size === "md" && (
-                <p className="text-xs text-muted-foreground">{badge.description}</p>
+        {filtered.map((badge) => {
+          const isActive = activeBadgeId === badge.id;
+          return (
+            <div
+              key={badge.id}
+              className={cn(
+                "flex items-center gap-3 rounded-lg border px-3 py-2.5 transition-all",
+                isActive
+                  ? "border-primary/40 bg-primary/10 ring-1 ring-primary/20"
+                  : badge.earned
+                    ? "border-gold/20 bg-gold/5 hover:bg-gold/10"
+                    : "border-border bg-muted/30 opacity-50 grayscale"
               )}
-              {badge.earned && badge.earnedAt && size === "md" && (
-                <p className="text-[10px] text-gold/70 mt-0.5">Desbloqueada em {badge.earnedAt}</p>
-              )}
+            >
+              <span className={cn(size === "sm" ? "text-lg" : "text-2xl")}>{badge.icon}</span>
+              <div className="flex-1 min-w-0">
+                <p className={cn("font-semibold", size === "sm" ? "text-xs" : "text-sm", badge.earned ? "text-foreground" : "text-muted-foreground")}>
+                  {badge.name}
+                </p>
+                {size === "md" && (
+                  <p className="text-xs text-muted-foreground">{badge.description}</p>
+                )}
+                {badge.earned && badge.earnedAt && size === "md" && (
+                  <p className="text-[10px] text-gold/70 mt-0.5">Desbloqueada em {badge.earnedAt}</p>
+                )}
+              </div>
+              <div className="flex items-center gap-1.5 shrink-0">
+                {badge.earned && isOwnProfile && size === "md" ? (
+                  isActive ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-6 text-[10px] px-2 border-primary/30 text-primary"
+                      onClick={() => onDeactivate?.()}
+                    >
+                      Ativada ✓
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 text-[10px] px-2 text-muted-foreground hover:text-primary"
+                      onClick={() => onActivate?.(badge.id)}
+                    >
+                      Ativar
+                    </Button>
+                  )
+                ) : badge.earned ? (
+                  <Badge variant="outline" className="ml-auto border-gold/30 text-gold text-[10px] shrink-0">✓</Badge>
+                ) : (
+                  <span className="text-[10px] text-muted-foreground shrink-0">🔒</span>
+                )}
+              </div>
             </div>
-            {badge.earned ? (
-              <Badge variant="outline" className="ml-auto border-gold/30 text-gold text-[10px] shrink-0">✓</Badge>
-            ) : (
-              <span className="text-[10px] text-muted-foreground shrink-0">🔒</span>
-            )}
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

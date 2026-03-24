@@ -14,6 +14,7 @@ import { useBadges } from "@/hooks/useBadges";
 import { StatCard } from "@/components/StatCard";
 import { ProfileLikeButton } from "@/components/ProfileLikeButton";
 import { Trophy, FileText, Timer, TrendingUp, Target, Camera, Pencil, Save, X, Heart, MessageSquare, Crown } from "lucide-react";
+import { ActiveBadge } from "@/components/ActiveBadge";
 import { motion } from "framer-motion";
 
 export default function Profile() {
@@ -38,7 +39,8 @@ export default function Profile() {
 
   const profile = isOwnProfile ? myProfile : otherProfile;
   const badgeUserId = isOwnProfile ? user?.id : userId;
-  const { badges: userBadges, loading: badgesLoading, checkAndAward } = useBadges(badgeUserId);
+  const { badges: userBadges, activeBadgeId, loading: badgesLoading, checkAndAward, activateBadge, deactivateBadge } = useBadges(badgeUserId);
+  
 
   // Check subscription badge on load
   useEffect(() => {
@@ -132,6 +134,7 @@ export default function Profile() {
                   <>
                     <div className="flex items-center gap-2 justify-center sm:justify-start">
                       <h1 className="text-xl font-display font-bold">{profile.name || profile.username}</h1>
+                      <ActiveBadge badgeId={profile.active_badge_id} size="md" />
                       {profile.subscription_tier === "annual" && (
                         <span className="inline-flex items-center gap-1 rounded-full bg-gold/10 border border-gold/20 px-2 py-0.5 text-[10px] font-bold text-gold">
                           <Crown className="h-3 w-3 fill-gold text-gold" /> VIP Anual
@@ -180,7 +183,13 @@ export default function Profile() {
             <CardTitle className="text-base font-display">🏅 Conquistas</CardTitle>
           </CardHeader>
           <CardContent>
-            <BadgeDisplay badges={userBadges} />
+            <BadgeDisplay
+              badges={userBadges}
+              activeBadgeId={activeBadgeId}
+              onActivate={activateBadge}
+              onDeactivate={deactivateBadge}
+              isOwnProfile={isOwnProfile}
+            />
           </CardContent>
         </Card>
       )}
