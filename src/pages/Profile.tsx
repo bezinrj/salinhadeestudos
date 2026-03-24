@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,8 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth, type Profile as ProfileType } from "@/contexts/AuthContext";
-import { badges } from "@/data/mockData";
 import { BadgeDisplay } from "@/components/BadgeDisplay";
+import { useBadges } from "@/hooks/useBadges";
 import { StatCard } from "@/components/StatCard";
 import { ProfileLikeButton } from "@/components/ProfileLikeButton";
 import { Trophy, FileText, Timer, TrendingUp, Target, Camera, Pencil, Save, X, Heart, MessageSquare, Crown } from "lucide-react";
@@ -37,6 +37,21 @@ export default function Profile() {
   });
 
   const profile = isOwnProfile ? myProfile : otherProfile;
+  const badgeUserId = isOwnProfile ? user?.id : userId;
+  const { badges: userBadges, loading: badgesLoading, checkAndAward } = useBadges(badgeUserId);
+
+  // Check subscription badge on load
+  useEffect(() => {
+    if (isOwnProfile && profile) {
+      checkAndAward({
+        totalEssays: profile.total_essays,
+        rankPosition: profile.rank_position,
+        weeklyHours: profile.weekly_hours,
+        streak: profile.streak,
+        subscriptionTier: profile.subscription_tier,
+      });
+    }
+  }, [isOwnProfile, profile]);
 
   const [editing, setEditing] = useState(false);
   const [bio, setBio] = useState(myProfile?.bio || "");
@@ -165,7 +180,7 @@ export default function Profile() {
             <CardTitle className="text-base font-display">🏅 Conquistas</CardTitle>
           </CardHeader>
           <CardContent>
-            <BadgeDisplay badges={badges} />
+            <BadgeDisplay badges={userBadges} />
           </CardContent>
         </Card>
       )}

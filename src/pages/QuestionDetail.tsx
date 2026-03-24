@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { QuestionComments } from "@/components/QuestionComments";
 import { toast } from "@/hooks/use-toast";
+import { useBadges } from "@/hooks/useBadges";
 
 export default function QuestionDetail() {
   const { id } = useParams();
@@ -23,6 +24,7 @@ export default function QuestionDetail() {
   const [correction, setCorrection] = useState<CorrectionResult | null>(null);
   const [lockedScore, setLockedScore] = useState<number | null>(null);
   const [isEvaluating, setIsEvaluating] = useState(false);
+  const { checkAndAward } = useBadges(user?.id);
 
   const { data: question, isLoading } = useQuery({
     queryKey: ["question-detail", id],
@@ -115,6 +117,9 @@ export default function QuestionDetail() {
     setCorrection(result);
     setIsEvaluating(false);
 
+    // Fetch current profile data for badge checks
+    const { data: currentProfile } = await supabase.from("profiles").select("total_essays, weekly_hours, streak, rank_position, subscription_tier").eq("id", user!.id).single();
+
     if (question.isWeekly && user) {
       const { error } = await (supabase.from("weekly_answers" as any) as any).insert({
         user_id: user.id,
@@ -130,11 +135,30 @@ export default function QuestionDetail() {
         setLockedScore(result.grade);
         toast({ title: "Resposta registrada!", description: "Sua nota foi salva para o ranking." });
       }
+      // Check badges for weekly
+      await checkAndAward({
+        totalEssays: (currentProfile?.total_essays ?? 0) + 1,
+        lastScore: result.grade,
+        answeredWeekly: true,
+        rankPosition: currentProfile?.rank_position ?? 0,
+        weeklyHours: currentProfile?.weekly_hours ?? 0,
+        streak: currentProfile?.streak ?? 0,
+        subscriptionTier: currentProfile?.subscription_tier,
+      });
     } else if (user) {
+      const newTotal = (currentProfile?.total_essays ?? 0) + 1;
       await supabase
         .from("profiles")
-        .update({ total_essays: (await supabase.from("profiles").select("total_essays").eq("id", user.id).single()).data?.total_essays! + 1 })
+        .update({ total_essays: newTotal })
         .eq("id", user.id);
+      // Check badges for regular questions
+      await checkAndAward({
+        totalEssays: newTotal,
+        lastScore: result.grade,
+        weeklyHours: currentProfile?.weekly_hours ?? 0,
+        streak: currentProfile?.streak ?? 0,
+        subscriptionTier: currentProfile?.subscription_tier,
+      });
     }
   };
 
