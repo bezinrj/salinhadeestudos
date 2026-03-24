@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RankingTable } from "@/components/RankingTable";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Trophy, Clock, Calendar } from "lucide-react";
+import { ActiveBadge } from "@/components/ActiveBadge";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,7 +24,7 @@ export default function Ranking() {
         .select("user_id, score");
       
       // Get profiles
-      const { data: profiles } = await supabase.from("profiles").select("id, name, username, avatar_url");
+      const { data: profiles } = await supabase.from("profiles").select("id, name, username, avatar_url, active_badge_id");
       
       if (!answers || !profiles) return [];
 
@@ -46,7 +47,8 @@ export default function Ranking() {
           avatarUrl: profile?.avatar_url || undefined,
           score: Math.round(score * 10) / 10,
           position: 0,
-        });
+          activeBadgeId: (profile as any)?.active_badge_id || null,
+        } as any);
       }
 
       entries.sort((a, b) => b.score - a.score);
@@ -76,7 +78,10 @@ export default function Ranking() {
                     {top3[1].avatarUrl && <AvatarImage src={top3[1].avatarUrl} />}
                     <AvatarFallback className="bg-secondary text-sm font-bold">{top3[1].avatar}</AvatarFallback>
                   </Avatar>
-                  <p className="text-sm font-semibold cursor-pointer hover:underline" onClick={() => navigate(`/perfil/${top3[1].userId}`)}>{top3[1].name.split(" ")[0]}</p>
+                  <p className="text-sm font-semibold cursor-pointer hover:underline" onClick={() => navigate(`/perfil/${top3[1].userId}`)}>
+                    {top3[1].name.split(" ")[0]}
+                    {(top3[1] as any).activeBadgeId && <span className="ml-1"><ActiveBadge badgeId={(top3[1] as any).activeBadgeId} /></span>}
+                  </p>
                   <p className="text-xs text-muted-foreground">{top3[1].score} pts</p>
                   <div className="mt-2 h-20 w-20 rounded-t-lg bg-secondary/50 flex items-center justify-center">
                     <span className="text-3xl">🥈</span>
@@ -88,7 +93,10 @@ export default function Ranking() {
                     {top3[0].avatarUrl && <AvatarImage src={top3[0].avatarUrl} />}
                     <AvatarFallback className="bg-gold/10 text-gold text-sm font-bold">{top3[0].avatar}</AvatarFallback>
                   </Avatar>
-                  <p className="text-sm font-bold text-gold cursor-pointer hover:underline" onClick={() => navigate(`/perfil/${top3[0].userId}`)}>{top3[0].name.split(" ")[0]}</p>
+                  <p className="text-sm font-bold text-gold cursor-pointer hover:underline" onClick={() => navigate(`/perfil/${top3[0].userId}`)}>
+                    {top3[0].name.split(" ")[0]}
+                    {(top3[0] as any).activeBadgeId && <span className="ml-1"><ActiveBadge badgeId={(top3[0] as any).activeBadgeId} /></span>}
+                  </p>
                   <p className="text-xs text-gold/70">{top3[0].score} pts</p>
                   <div className="mt-2 h-28 w-20 rounded-t-lg gradient-gold flex items-center justify-center">
                     <span className="text-3xl">👑</span>
@@ -99,7 +107,10 @@ export default function Ranking() {
                     {top3[2].avatarUrl && <AvatarImage src={top3[2].avatarUrl} />}
                     <AvatarFallback className="bg-secondary text-sm font-bold">{top3[2].avatar}</AvatarFallback>
                   </Avatar>
-                  <p className="text-sm font-semibold cursor-pointer hover:underline" onClick={() => navigate(`/perfil/${top3[2].userId}`)}>{top3[2].name.split(" ")[0]}</p>
+                  <p className="text-sm font-semibold cursor-pointer hover:underline" onClick={() => navigate(`/perfil/${top3[2].userId}`)}>
+                    {top3[2].name.split(" ")[0]}
+                    {(top3[2] as any).activeBadgeId && <span className="ml-1"><ActiveBadge badgeId={(top3[2] as any).activeBadgeId} /></span>}
+                  </p>
                   <p className="text-xs text-muted-foreground">{top3[2].score} pts</p>
                   <div className="mt-2 h-14 w-20 rounded-t-lg bg-orange-400/10 flex items-center justify-center">
                     <span className="text-3xl">🥉</span>
