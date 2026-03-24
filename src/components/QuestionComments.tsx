@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "react-router-dom";
 import { MessageSquare, Trash2, Crown } from "lucide-react";
+import { ActiveBadge } from "@/components/ActiveBadge";
 import { motion } from "framer-motion";
 import { toast } from "@/hooks/use-toast";
 import { RichTextEditor } from "@/components/RichTextEditor";
@@ -23,6 +24,7 @@ interface Comment {
     avatar_url: string | null;
     comment_score: number | null;
     subscription_tier: string | null;
+    active_badge_id: string | null;
   };
 }
 
@@ -35,7 +37,7 @@ export function QuestionComments({ questionId }: { questionId: string }) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("question_comments")
-        .select("*, profiles(username, name, avatar_url, comment_score, subscription_tier)")
+        .select("*, profiles(username, name, avatar_url, comment_score, subscription_tier, active_badge_id)")
         .eq("question_id", questionId)
         .order("created_at", { ascending: true });
       if (error) throw error;
@@ -128,6 +130,9 @@ export function QuestionComments({ questionId }: { questionId: string }) {
                     >
                       {c.profiles.name || c.profiles.username}
                     </Link>
+                    {c.profiles.active_badge_id && (
+                      <ActiveBadge badgeId={c.profiles.active_badge_id} />
+                    )}
                     {c.profiles.subscription_tier === "annual" && (
                       <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-gold" title="Assinante Anual">
                         <Crown className="h-3 w-3 fill-gold text-gold" /> VIP

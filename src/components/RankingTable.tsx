@@ -2,6 +2,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import type { RankingEntry } from "@/data/mockData";
+import { ActiveBadge } from "@/components/ActiveBadge";
 
 interface RankingTableProps {
   entries: RankingEntry[];
@@ -52,10 +53,13 @@ export function RankingTable({ entries, currentUserId = "u1", valueLabel = "Pont
               </AvatarFallback>
             </Avatar>
             <span
-              className={cn("flex-1 text-sm font-medium cursor-pointer hover:underline", isCurrentUser && "text-primary")}
+              className={cn("text-sm font-medium cursor-pointer hover:underline", isCurrentUser && "text-primary")}
               onClick={() => navigate(`/perfil/${entry.userId}`)}
             >
               {entry.name}
+              {(entry as any).activeBadgeId && (
+                <span className="ml-1 inline-flex align-middle"><ActiveBadge badgeId={(entry as any).activeBadgeId} /></span>
+              )}
               {isCurrentUser && <span className="ml-1.5 text-xs text-primary/70">(você)</span>}
             </span>
             <div className="text-right">
