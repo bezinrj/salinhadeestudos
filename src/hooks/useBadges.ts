@@ -7,12 +7,9 @@ interface EarnedBadge {
   earned_at: string;
 }
 
-/**
- * Hook that loads earned badges from DB and merges with definitions.
- * Also provides `checkAndAward` to evaluate criteria after actions.
- */
 export function useBadges(userId: string | undefined) {
   const [earnedBadges, setEarnedBadges] = useState<EarnedBadge[]>([]);
+  const [activeBadgeId, setActiveBadgeId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchEarned = useCallback(async () => {
@@ -22,12 +19,19 @@ export function useBadges(userId: string | undefined) {
       .select("badge_id, earned_at")
       .eq("user_id", userId) as any;
     if (data) setEarnedBadges(data);
+
+    // Fetch active badge from profile
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("active_badge_id")
+      .eq("id", userId)
+      .single();
+    setActiveBadgeId((profile as any)?.active_badge_id || null);
     setLoading(false);
   }, [userId]);
 
   useEffect(() => { fetchEarned(); }, [fetchEarned]);
 
-  // Merge definitions with earned status
   const mergedBadges: Badge[] = badgeDefinitions.map(b => {
     const earned = earnedBadges.find(e => e.badge_id === b.id);
     return {
@@ -37,7 +41,6 @@ export function useBadges(userId: string | undefined) {
     };
   });
 
-  // Award a single badge (idempotent via unique constraint)
   const awardBadge = useCallback(async (badgeId: string) => {
     if (!userId) return;
     if (earnedBadges.some(e => e.badge_id === badgeId)) return;
@@ -45,14 +48,21 @@ export function useBadges(userId: string | undefined) {
       user_id: userId,
       badge_id: badgeId,
     });
-    // Refresh
     await fetchEarned();
   }, [userId, earnedBadges, fetchEarned]);
 
-  /**
-   * Evaluate all badge criteria based on current user data.
-   * Call after answering questions, timer sessions, etc.
-   */
+  const activateBadge = useCallback(async (badgeId: string) => {
+    if (!userId) return;
+    await supabase.from("profiles").update({ active_badge_id: badgeId } as any).eq("id", userId);
+    setActiveBadgeId(badgeId);
+  }, [userId]);
+
+  const deactivateBadge = useCallback(async () => {
+    if (!userId) return;
+    await supabase.from("profiles").update({ active_badge_id: null } as any).eq("id", userId);
+    setActiveBadgeId(null);
+  }, [userId]);
+
   const checkAndAward = useCallback(async (context?: {
     totalEssays?: number;
     lastScore?: number;
@@ -68,7 +78,6 @@ export function useBadges(userId: string | undefined) {
     const toAward: string[] = [];
     const c = context;
 
-    // Discursivas count badges
     if (c.totalEssays !== undefined) {
       if (c.totalEssays >= 1) toAward.push("b1");
       if (c.totalEssays >= 5) toAward.push("b2");
@@ -81,13 +90,11 @@ export function useBadges(userId: string | undefined) {
       if (c.totalEssays >= 5000) toAward.push("b22");
     }
 
-    // Score badges
     if (c.lastScore !== undefined) {
       if (c.lastScore >= 8) toAward.push("b4");
       if (c.lastScore >= 9) toAward.push("b5");
     }
 
-    // Ranking badges
     if (c.rankPosition !== undefined) {
       if (c.rankPosition >= 1 && c.rankPosition <= 10) toAward.push("b6");
       if (c.rankPosition === 1) toAward.push("b8");
@@ -96,38 +103,36 @@ export function useBadges(userId: string | undefined) {
       if (c.weeklyRankPosition >= 1 && c.weeklyRankPosition <= 3) toAward.push("b7");
     }
 
-    // Study hours
     if (c.weeklyHours !== undefined) {
-      const totalHours = c.weeklyHours;
-      if (totalHours >= 10) toAward.push("b9");
-      if (totalHours >= 50) toAward.push("b10");
-      if (totalHours >= 100) toAward.push("b11");
+      if (c.weeklyHours >= 10) toAward.push("b9");
+      if (c.weeklyHours >= 50) toAward.push("b10");
+      if (c.weeklyHours >= 100) toAward.push("b11");
     }
 
-    // Streak
     if (c.streak !== undefined) {
       if (c.streak >= 7) toAward.push("b12");
       if (c.streak >= 30) toAward.push("b13");
       if (c.streak >= 60) toAward.push("b14");
     }
 
-    // Weekly challenge
     if (c.answeredWeekly) toAward.push("b15");
-
-    // Subscription
     if (c.subscriptionTier === "annual") toAward.push("b23");
 
-    // Award only new ones
     const newBadges = toAward.filter(id => !earnedBadges.some(e => e.badge_id === id));
     if (newBadges.length === 0) return;
 
-    // Insert all at once
     const rows = newBadges.map(badge_id => ({ user_id: userId, badge_id }));
     await (supabase.from("user_badges" as any) as any).insert(rows);
     await fetchEarned();
-
     return newBadges;
   }, [userId, earnedBadges, fetchEarned]);
 
-  return { badges: mergedBadges, loading, checkAndAward, awardBadge, refetch: fetchEarned };
+  return { badges: mergedBadges, activeBadgeId, loading, checkAndAward, awardBadge, activateBadge, deactivateBadge, refetch: fetchEarned };
+}
+
+/** Helper: get badge icon by ID */
+export function getBadgeIconById(badgeId: string | null | undefined): string | null {
+  if (!badgeId) return null;
+  const badge = badgeDefinitions.find(b => b.id === badgeId);
+  return badge?.icon || null;
 }

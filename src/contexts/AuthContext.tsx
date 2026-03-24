@@ -18,6 +18,7 @@ export interface Profile {
   likes_count: number;
   comment_score: number;
   subscription_tier: string | null;
+  active_badge_id: string | null;
   created_at: string;
 }
 
