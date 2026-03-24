@@ -40,7 +40,7 @@ export default function Profile() {
   const profile = isOwnProfile ? myProfile : otherProfile;
   const badgeUserId = isOwnProfile ? user?.id : userId;
   const { badges: userBadges, activeBadgeId, loading: badgesLoading, checkAndAward, activateBadge, deactivateBadge } = useBadges(badgeUserId);
-  const { badges: userBadges, loading: badgesLoading, checkAndAward } = useBadges(badgeUserId);
+  
 
   // Check subscription badge on load
   useEffect(() => {
