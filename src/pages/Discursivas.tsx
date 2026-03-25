@@ -188,7 +188,28 @@ export default function Discursivas() {
           </div>
         </div>
 
-        {/* Tipo - chips */}
+        {/* Ano - chips */}
+        <div>
+          <p className="text-xs text-muted-foreground mb-2 uppercase tracking-wider">Ano</p>
+          <div className="flex flex-wrap gap-2">
+            {years.map(y => (
+              <Badge
+                key={y}
+                variant="outline"
+                className={cn(
+                  "cursor-pointer transition-colors text-xs px-3 py-1",
+                  selectedYear === y
+                    ? "bg-primary/10 text-primary border-primary/30"
+                    : "border-border text-muted-foreground hover:border-primary/20 hover:text-foreground"
+                )}
+                onClick={() => setSelectedYear(y)}
+              >
+                {y}
+              </Badge>
+            ))}
+          </div>
+        </div>
+
         <div>
           <p className="text-xs text-muted-foreground mb-2 uppercase tracking-wider">Tipo</p>
           <div className="flex flex-wrap gap-2">
