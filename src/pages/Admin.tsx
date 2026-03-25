@@ -875,7 +875,7 @@ function WeeklyQuestionsTab() {
               </SelectContent>
             </Select>
           </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-4 gap-3">
             <Select value={discipline} onValueChange={(v) => { setDiscipline(v); setSubject(""); }}>
               <SelectTrigger><SelectValue placeholder="Matéria / Disciplina" /></SelectTrigger>
               <SelectContent>
@@ -900,6 +900,14 @@ function WeeklyQuestionsTab() {
                 <SelectItem value="FGV">FGV</SelectItem>
                 <SelectItem value="VUNESP">VUNESP</SelectItem>
                 <SelectItem value="INÉDITA">INÉDITA</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={year} onValueChange={setYear}>
+              <SelectTrigger><SelectValue placeholder="Ano" /></SelectTrigger>
+              <SelectContent>
+                {["2021","2022","2023","2024","2025","2026"].map(y => (
+                  <SelectItem key={y} value={y}>{y}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
