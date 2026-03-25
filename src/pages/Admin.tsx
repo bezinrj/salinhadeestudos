@@ -1032,7 +1032,7 @@ function WeeklyQuestionsTab() {
                     <Badge variant="outline" className="text-muted-foreground text-[10px]">Encerrada</Badge>
                   )}
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">{q.career} · {q.discipline} · {q.difficulty}{q.banca ? ` · ${q.banca}` : ""}{q.year ? ` · ${q.year}` : ""}</p>
+                <p className="text-xs text-muted-foreground mt-1">{q.career} · {q.discipline}{q.banca ? ` · ${q.banca}` : ""}{q.year ? ` · ${q.year}` : ""}</p>
                 {q.deadline && <p className="text-[10px] text-muted-foreground mt-1">Prazo: {new Date(q.deadline).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}</p>}
               </div>
               <div className="flex items-center gap-2 shrink-0">
