@@ -646,7 +646,7 @@ function WeeklyQuestionsTab() {
   const [discipline, setDiscipline] = useState("");
   const [subject, setSubject] = useState("");
   const [statement, setStatement] = useState("");
-  const [difficulty, setDifficulty] = useState("Médio");
+  
   const [testAnswer, setTestAnswer] = useState("");
   const [testResult, setTestResult] = useState<any>(null);
   const [showTest, setShowTest] = useState(false);
@@ -663,7 +663,7 @@ function WeeklyQuestionsTab() {
   const [editDiscipline, setEditDiscipline] = useState("");
   const [editSubject, setEditSubject] = useState("");
   const [editStatement, setEditStatement] = useState("");
-  const [editDifficulty, setEditDifficulty] = useState("Médio");
+  
   const [editMirrorText, setEditMirrorText] = useState("");
   const [editIdealAnswer, setEditIdealAnswer] = useState("");
   const [editIsWeekly, setEditIsWeekly] = useState(false);
@@ -725,7 +725,7 @@ function WeeklyQuestionsTab() {
         const deadline = getNextSundayDeadline();
         await (supabase.from("weekly_questions") as any).update({ is_active: false }).eq("is_active", true).eq("is_weekly", true);
         const { error } = await (supabase.from("weekly_questions") as any).insert({
-          title, career, discipline, statement, difficulty, deadline,
+          title, career, discipline, statement, deadline,
           is_active: true, created_by: user?.id,
           is_weekly: true, is_premium: true,
           mirror_text: mirrorText.trim() || null,
@@ -737,7 +737,7 @@ function WeeklyQuestionsTab() {
         await supabase.from("weekly_waitlist").update({ notified: false }).eq("notified", true);
       } else {
         const { error } = await (supabase.from("weekly_questions") as any).insert({
-          title, career, discipline, statement, difficulty,
+          title, career, discipline, statement,
           deadline: null, is_active: true, created_by: user?.id,
           is_weekly: false, is_premium: isPremiumQ,
           mirror_text: mirrorText.trim() || null,
@@ -751,7 +751,7 @@ function WeeklyQuestionsTab() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-weekly-questions"] });
       queryClient.invalidateQueries({ queryKey: ["discursivas-questions"] });
-      setTitle(""); setCareer("Delegado"); setDiscipline(""); setSubject(""); setStatement(""); setDifficulty("Médio"); setTestResult(null); setTestAnswer(""); setShowTest(false); setIsWeekly(true); setIsPremiumQ(false); setMirrorText(""); setIdealAnswer(""); setBanca("INÉDITA"); setYear(String(new Date().getFullYear()));
+      setTitle(""); setCareer("Delegado"); setDiscipline(""); setSubject(""); setStatement(""); setTestResult(null); setTestAnswer(""); setShowTest(false); setIsWeekly(true); setIsPremiumQ(false); setMirrorText(""); setIdealAnswer(""); setBanca("INÉDITA"); setYear(String(new Date().getFullYear()));
       toast({ title: isWeekly ? "Questão semanal publicada!" : "Questão discursiva publicada!", description: isWeekly ? "Os usuários na lista de espera serão notificados." : undefined });
     },
     onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
@@ -786,7 +786,7 @@ function WeeklyQuestionsTab() {
           discipline: editDiscipline,
           subject: editSubject.trim() || null,
           statement: editStatement,
-          difficulty: editDifficulty,
+          
           is_weekly: editIsWeekly,
           is_premium: editIsPremium,
           mirror_text: editMirrorText.trim() || null,
@@ -813,7 +813,7 @@ function WeeklyQuestionsTab() {
     setEditDiscipline(q.discipline);
     setEditSubject(q.subject || "");
     setEditStatement(q.statement);
-    setEditDifficulty(q.difficulty);
+    
     setEditIsWeekly(q.is_weekly);
     setEditIsPremium(q.is_premium);
     setEditMirrorText(q.mirror_text || "");
@@ -855,26 +855,16 @@ function WeeklyQuestionsTab() {
             )}
           </div>
           <Input placeholder="Título da questão" value={title} onChange={(e) => setTitle(e.target.value)} />
-          <div className="grid grid-cols-2 gap-3">
-            <Select value={career} onValueChange={setCareer}>
-              <SelectTrigger><SelectValue placeholder="Carreira" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Delegado">Delegado</SelectItem>
-                <SelectItem value="Magistratura">Magistratura</SelectItem>
-                <SelectItem value="Promotoria">Promotoria</SelectItem>
-                <SelectItem value="ENAM">ENAM</SelectItem>
-                <SelectItem value="EMERJ">EMERJ</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={difficulty} onValueChange={setDifficulty}>
-              <SelectTrigger><SelectValue placeholder="Dificuldade" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Fácil">Fácil</SelectItem>
-                <SelectItem value="Médio">Médio</SelectItem>
-                <SelectItem value="Difícil">Difícil</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <Select value={career} onValueChange={setCareer}>
+            <SelectTrigger><SelectValue placeholder="Carreira" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Delegado">Delegado</SelectItem>
+              <SelectItem value="Magistratura">Magistratura</SelectItem>
+              <SelectItem value="Promotoria">Promotoria</SelectItem>
+              <SelectItem value="ENAM">ENAM</SelectItem>
+              <SelectItem value="EMERJ">EMERJ</SelectItem>
+            </SelectContent>
+          </Select>
           <div className="grid grid-cols-4 gap-3">
             <Select value={discipline} onValueChange={(v) => { setDiscipline(v); setSubject(""); }}>
               <SelectTrigger><SelectValue placeholder="Matéria / Disciplina" /></SelectTrigger>
@@ -1042,7 +1032,7 @@ function WeeklyQuestionsTab() {
                     <Badge variant="outline" className="text-muted-foreground text-[10px]">Encerrada</Badge>
                   )}
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">{q.career} · {q.discipline} · {q.difficulty}{q.banca ? ` · ${q.banca}` : ""}{q.year ? ` · ${q.year}` : ""}</p>
+                <p className="text-xs text-muted-foreground mt-1">{q.career} · {q.discipline}{q.banca ? ` · ${q.banca}` : ""}{q.year ? ` · ${q.year}` : ""}</p>
                 {q.deadline && <p className="text-[10px] text-muted-foreground mt-1">Prazo: {new Date(q.deadline).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}</p>}
               </div>
               <div className="flex items-center gap-2 shrink-0">
@@ -1071,26 +1061,16 @@ function WeeklyQuestionsTab() {
             </DrawerHeader>
             <div className="px-4 pb-6 space-y-3 overflow-y-auto">
               <Input placeholder="Título" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
-              <div className="grid grid-cols-2 gap-3">
-                <Select value={editCareer} onValueChange={setEditCareer}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Delegado">Delegado</SelectItem>
-                    <SelectItem value="Magistratura">Magistratura</SelectItem>
-                    <SelectItem value="Promotoria">Promotoria</SelectItem>
-                    <SelectItem value="ENAM">ENAM</SelectItem>
-                    <SelectItem value="EMERJ">EMERJ</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select value={editDifficulty} onValueChange={setEditDifficulty}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Fácil">Fácil</SelectItem>
-                    <SelectItem value="Médio">Médio</SelectItem>
-                    <SelectItem value="Difícil">Difícil</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              <Select value={editCareer} onValueChange={setEditCareer}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Delegado">Delegado</SelectItem>
+                  <SelectItem value="Magistratura">Magistratura</SelectItem>
+                  <SelectItem value="Promotoria">Promotoria</SelectItem>
+                  <SelectItem value="ENAM">ENAM</SelectItem>
+                  <SelectItem value="EMERJ">EMERJ</SelectItem>
+                </SelectContent>
+              </Select>
               <div className="grid grid-cols-4 gap-3">
                 <Select value={editDiscipline} onValueChange={(v) => { setEditDiscipline(v); setEditSubject(""); }}>
                   <SelectTrigger><SelectValue placeholder="Matéria" /></SelectTrigger>
