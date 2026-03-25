@@ -655,7 +655,7 @@ function WeeklyQuestionsTab() {
   const [mirrorText, setMirrorText] = useState("");
   const [idealAnswer, setIdealAnswer] = useState("");
   const [banca, setBanca] = useState("INÉDITA");
-
+  const [year, setYear] = useState(String(new Date().getFullYear()));
   // Edit state
   const [editingQuestion, setEditingQuestion] = useState<any>(null);
   const [editTitle, setEditTitle] = useState("");
@@ -669,7 +669,7 @@ function WeeklyQuestionsTab() {
   const [editIsWeekly, setEditIsWeekly] = useState(false);
   const [editIsPremium, setEditIsPremium] = useState(false);
   const [editBanca, setEditBanca] = useState("INÉDITA");
-
+  const [editYear, setEditYear] = useState(String(new Date().getFullYear()));
   const { data: questions } = useQuery({
     queryKey: ["admin-weekly-questions"],
     queryFn: async () => {
@@ -731,6 +731,7 @@ function WeeklyQuestionsTab() {
           mirror_text: mirrorText.trim() || null,
           ideal_answer: idealAnswer.trim() || null,
           banca, subject: subject.trim() || null,
+          year: parseInt(year),
         });
         if (error) throw error;
         await supabase.from("weekly_waitlist").update({ notified: false }).eq("notified", true);
@@ -742,6 +743,7 @@ function WeeklyQuestionsTab() {
           mirror_text: mirrorText.trim() || null,
           ideal_answer: idealAnswer.trim() || null,
           banca, subject: subject.trim() || null,
+          year: parseInt(year),
         });
         if (error) throw error;
       }
@@ -749,7 +751,7 @@ function WeeklyQuestionsTab() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-weekly-questions"] });
       queryClient.invalidateQueries({ queryKey: ["discursivas-questions"] });
-      setTitle(""); setCareer("Delegado"); setDiscipline(""); setSubject(""); setStatement(""); setDifficulty("Médio"); setTestResult(null); setTestAnswer(""); setShowTest(false); setIsWeekly(true); setIsPremiumQ(false); setMirrorText(""); setIdealAnswer(""); setBanca("INÉDITA");
+      setTitle(""); setCareer("Delegado"); setDiscipline(""); setSubject(""); setStatement(""); setDifficulty("Médio"); setTestResult(null); setTestAnswer(""); setShowTest(false); setIsWeekly(true); setIsPremiumQ(false); setMirrorText(""); setIdealAnswer(""); setBanca("INÉDITA"); setYear(String(new Date().getFullYear()));
       toast({ title: isWeekly ? "Questão semanal publicada!" : "Questão discursiva publicada!", description: isWeekly ? "Os usuários na lista de espera serão notificados." : undefined });
     },
     onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
@@ -790,6 +792,7 @@ function WeeklyQuestionsTab() {
           mirror_text: editMirrorText.trim() || null,
           ideal_answer: editIdealAnswer.trim() || null,
           banca: editBanca,
+          year: parseInt(editYear),
         })
         .eq("id", editingQuestion.id);
       if (error) throw error;
@@ -816,6 +819,7 @@ function WeeklyQuestionsTab() {
     setEditMirrorText(q.mirror_text || "");
     setEditIdealAnswer(q.ideal_answer || "");
     setEditBanca(q.banca || "INÉDITA");
+    setEditYear(q.year ? String(q.year) : String(new Date().getFullYear()));
   };
 
   return (
@@ -871,7 +875,7 @@ function WeeklyQuestionsTab() {
               </SelectContent>
             </Select>
           </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-4 gap-3">
             <Select value={discipline} onValueChange={(v) => { setDiscipline(v); setSubject(""); }}>
               <SelectTrigger><SelectValue placeholder="Matéria / Disciplina" /></SelectTrigger>
               <SelectContent>
@@ -896,6 +900,14 @@ function WeeklyQuestionsTab() {
                 <SelectItem value="FGV">FGV</SelectItem>
                 <SelectItem value="VUNESP">VUNESP</SelectItem>
                 <SelectItem value="INÉDITA">INÉDITA</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={year} onValueChange={setYear}>
+              <SelectTrigger><SelectValue placeholder="Ano" /></SelectTrigger>
+              <SelectContent>
+                {["2021","2022","2023","2024","2025","2026"].map(y => (
+                  <SelectItem key={y} value={y}>{y}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -1030,7 +1042,7 @@ function WeeklyQuestionsTab() {
                     <Badge variant="outline" className="text-muted-foreground text-[10px]">Encerrada</Badge>
                   )}
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">{q.career} · {q.discipline} · {q.difficulty}{q.banca ? ` · ${q.banca}` : ""}</p>
+                <p className="text-xs text-muted-foreground mt-1">{q.career} · {q.discipline} · {q.difficulty}{q.banca ? ` · ${q.banca}` : ""}{q.year ? ` · ${q.year}` : ""}</p>
                 {q.deadline && <p className="text-[10px] text-muted-foreground mt-1">Prazo: {new Date(q.deadline).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}</p>}
               </div>
               <div className="flex items-center gap-2 shrink-0">
@@ -1079,7 +1091,7 @@ function WeeklyQuestionsTab() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-4 gap-3">
                 <Select value={editDiscipline} onValueChange={(v) => { setEditDiscipline(v); setEditSubject(""); }}>
                   <SelectTrigger><SelectValue placeholder="Matéria" /></SelectTrigger>
                   <SelectContent>
@@ -1100,6 +1112,14 @@ function WeeklyQuestionsTab() {
                     <SelectItem value="FGV">FGV</SelectItem>
                     <SelectItem value="VUNESP">VUNESP</SelectItem>
                     <SelectItem value="INÉDITA">INÉDITA</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={editYear} onValueChange={setEditYear}>
+                  <SelectTrigger><SelectValue placeholder="Ano" /></SelectTrigger>
+                  <SelectContent>
+                    {["2021","2022","2023","2024","2025","2026"].map(y => (
+                      <SelectItem key={y} value={y}>{y}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

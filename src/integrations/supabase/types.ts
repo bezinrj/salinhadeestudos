@@ -375,6 +375,7 @@ export type Database = {
           statement: string
           subject: string | null
           title: string
+          year: number | null
         }
         Insert: {
           banca?: string | null
@@ -395,6 +396,7 @@ export type Database = {
           statement: string
           subject?: string | null
           title: string
+          year?: number | null
         }
         Update: {
           banca?: string | null
@@ -415,6 +417,7 @@ export type Database = {
           statement?: string
           subject?: string | null
           title?: string
+          year?: number | null
         }
         Relationships: []
       }
