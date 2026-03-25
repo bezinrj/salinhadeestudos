@@ -1,0 +1,1 @@
+ALTER TABLE public.weekly_questions ADD COLUMN year integer DEFAULT NULL;
