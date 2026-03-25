@@ -655,7 +655,7 @@ function WeeklyQuestionsTab() {
   const [mirrorText, setMirrorText] = useState("");
   const [idealAnswer, setIdealAnswer] = useState("");
   const [banca, setBanca] = useState("INÉDITA");
-
+  const [year, setYear] = useState(String(new Date().getFullYear()));
   // Edit state
   const [editingQuestion, setEditingQuestion] = useState<any>(null);
   const [editTitle, setEditTitle] = useState("");
@@ -669,7 +669,7 @@ function WeeklyQuestionsTab() {
   const [editIsWeekly, setEditIsWeekly] = useState(false);
   const [editIsPremium, setEditIsPremium] = useState(false);
   const [editBanca, setEditBanca] = useState("INÉDITA");
-
+  const [editYear, setEditYear] = useState(String(new Date().getFullYear()));
   const { data: questions } = useQuery({
     queryKey: ["admin-weekly-questions"],
     queryFn: async () => {
@@ -731,6 +731,7 @@ function WeeklyQuestionsTab() {
           mirror_text: mirrorText.trim() || null,
           ideal_answer: idealAnswer.trim() || null,
           banca, subject: subject.trim() || null,
+          year: parseInt(year),
         });
         if (error) throw error;
         await supabase.from("weekly_waitlist").update({ notified: false }).eq("notified", true);
@@ -742,6 +743,7 @@ function WeeklyQuestionsTab() {
           mirror_text: mirrorText.trim() || null,
           ideal_answer: idealAnswer.trim() || null,
           banca, subject: subject.trim() || null,
+          year: parseInt(year),
         });
         if (error) throw error;
       }
@@ -749,7 +751,7 @@ function WeeklyQuestionsTab() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-weekly-questions"] });
       queryClient.invalidateQueries({ queryKey: ["discursivas-questions"] });
-      setTitle(""); setCareer("Delegado"); setDiscipline(""); setSubject(""); setStatement(""); setDifficulty("Médio"); setTestResult(null); setTestAnswer(""); setShowTest(false); setIsWeekly(true); setIsPremiumQ(false); setMirrorText(""); setIdealAnswer(""); setBanca("INÉDITA");
+      setTitle(""); setCareer("Delegado"); setDiscipline(""); setSubject(""); setStatement(""); setDifficulty("Médio"); setTestResult(null); setTestAnswer(""); setShowTest(false); setIsWeekly(true); setIsPremiumQ(false); setMirrorText(""); setIdealAnswer(""); setBanca("INÉDITA"); setYear(String(new Date().getFullYear()));
       toast({ title: isWeekly ? "Questão semanal publicada!" : "Questão discursiva publicada!", description: isWeekly ? "Os usuários na lista de espera serão notificados." : undefined });
     },
     onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
