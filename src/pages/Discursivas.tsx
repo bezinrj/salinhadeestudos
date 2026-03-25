@@ -18,6 +18,7 @@ const careers = ["Todas", "Delegado", "Magistratura", "Promotoria", "ENAM", "EME
 const types = ["Todas", "Gratuitas", "Premium"] as const;
 const bancas = ["Todas", "CEBRASPE", "FGV", "VUNESP", "INÉDITA"] as const;
 const statusOptions = ["Todas", "Resolvidas", "Não resolvidas"] as const;
+const years = ["Todos", "2021", "2022", "2023", "2024", "2025", "2026"] as const;
 
 export default function Discursivas() {
   const [career, setCareer] = useState<string>("Todas");
@@ -26,6 +27,7 @@ export default function Discursivas() {
   const [statusFilter, setStatusFilter] = useState<string>("Todas");
   const [selectedDiscipline, setSelectedDiscipline] = useState<string>("Todas");
   const [selectedSubject, setSelectedSubject] = useState<string>("Todas");
+  const [selectedYear, setSelectedYear] = useState<string>("Todos");
   const { isAdmin } = useIsAdmin();
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -50,6 +52,7 @@ export default function Discursivas() {
         isWeekly: q.is_weekly,
         isPremium: q.is_premium || q.is_weekly,
         banca: q.banca || null,
+        year: q.year || null,
         deadline: q.deadline,
         barema: q.barema,
       }));
@@ -105,6 +108,7 @@ export default function Discursivas() {
     if (selectedDiscipline !== "Todas" && q.discipline !== selectedDiscipline) return false;
     if (selectedSubject !== "Todas" && q.subject !== selectedSubject) return false;
     if (selectedBanca !== "Todas" && q.banca !== selectedBanca) return false;
+    if (selectedYear !== "Todos" && String(q.year) !== selectedYear) return false;
     const isPremium = q.isPremium || q.isWeekly;
     if (type === "Gratuitas" && isPremium) return false;
     if (type === "Premium" && !isPremium) return false;
