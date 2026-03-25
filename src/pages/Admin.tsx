@@ -792,6 +792,7 @@ function WeeklyQuestionsTab() {
           mirror_text: editMirrorText.trim() || null,
           ideal_answer: editIdealAnswer.trim() || null,
           banca: editBanca,
+          year: parseInt(editYear),
         })
         .eq("id", editingQuestion.id);
       if (error) throw error;
@@ -818,6 +819,7 @@ function WeeklyQuestionsTab() {
     setEditMirrorText(q.mirror_text || "");
     setEditIdealAnswer(q.ideal_answer || "");
     setEditBanca(q.banca || "INÉDITA");
+    setEditYear(q.year ? String(q.year) : String(new Date().getFullYear()));
   };
 
   return (
