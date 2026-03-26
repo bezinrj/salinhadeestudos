@@ -23,6 +23,7 @@ import { Separator } from "@/components/ui/separator";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { disciplines, evaluateAnswer } from "@/data/mockData";
 import { cn } from "@/lib/utils";
+import { SubjectTreeSelect } from "@/components/SubjectTreeSelect";
 
 export default function Admin() {
   const { isAdmin, loading: adminLoading } = useIsAdmin();
@@ -874,15 +875,13 @@ function WeeklyQuestionsTab() {
                 ))}
               </SelectContent>
             </Select>
-            <Select value={subject || "__none__"} onValueChange={(v) => setSubject(v === "__none__" ? "" : v)} disabled={!discipline}>
-              <SelectTrigger><SelectValue placeholder={discipline ? "Assunto" : "Selecione matéria"} /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__none__">Nenhum</SelectItem>
-                {subjectsForDiscipline.map(s => (
-                  <SelectItem key={s} value={s}>{s}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SubjectTreeSelect
+              discipline={discipline}
+              value={subject || "Todas"}
+              onValueChange={(v) => setSubject(v === "Todas" ? "" : v)}
+              disabled={!discipline}
+              placeholder={discipline ? "Assunto" : "Selecione matéria"}
+            />
             <Select value={banca} onValueChange={setBanca}>
               <SelectTrigger><SelectValue placeholder="Banca" /></SelectTrigger>
               <SelectContent>
@@ -1078,13 +1077,13 @@ function WeeklyQuestionsTab() {
                     {disciplines.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
                   </SelectContent>
                 </Select>
-                <Select value={editSubject || "__none__"} onValueChange={(v) => setEditSubject(v === "__none__" ? "" : v)} disabled={!editDiscipline}>
-                  <SelectTrigger><SelectValue placeholder={editDiscipline ? "Assunto" : "Selecione matéria"} /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__none__">Nenhum</SelectItem>
-                    {editSubjectsForDiscipline.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <SubjectTreeSelect
+                  discipline={editDiscipline}
+                  value={editSubject || "Todas"}
+                  onValueChange={(v) => setEditSubject(v === "Todas" ? "" : v)}
+                  disabled={!editDiscipline}
+                  placeholder={editDiscipline ? "Assunto" : "Selecione matéria"}
+                />
                 <Select value={editBanca} onValueChange={setEditBanca}>
                   <SelectTrigger><SelectValue placeholder="Banca" /></SelectTrigger>
                   <SelectContent>

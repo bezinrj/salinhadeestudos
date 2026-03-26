@@ -13,6 +13,7 @@ import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SubjectTreeSelect } from "@/components/SubjectTreeSelect";
 
 const careers = ["Todas", "Delegado", "Magistratura", "Promotoria", "ENAM", "EMERJ"] as const;
 const types = ["Todas", "Gratuitas", "Premium"] as const;
