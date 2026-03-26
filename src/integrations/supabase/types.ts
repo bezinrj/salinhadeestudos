@@ -82,18 +82,21 @@ export type Database = {
       }
       discipline_subjects: {
         Row: {
+          category: string | null
           created_at: string | null
           discipline: string
           id: string
           subject: string
         }
         Insert: {
+          category?: string | null
           created_at?: string | null
           discipline: string
           id?: string
           subject: string
         }
         Update: {
+          category?: string | null
           created_at?: string | null
           discipline?: string
           id?: string

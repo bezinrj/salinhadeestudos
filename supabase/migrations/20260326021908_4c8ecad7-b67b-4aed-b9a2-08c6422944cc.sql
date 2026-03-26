@@ -1,0 +1,1 @@
+ALTER TABLE public.discipline_subjects ADD COLUMN category text DEFAULT NULL;

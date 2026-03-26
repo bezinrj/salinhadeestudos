@@ -13,6 +13,7 @@ import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SubjectTreeSelect } from "@/components/SubjectTreeSelect";
 
 const careers = ["Todas", "Delegado", "Magistratura", "Promotoria", "ENAM", "EMERJ"] as const;
 const types = ["Todas", "Gratuitas", "Premium"] as const;
@@ -74,21 +75,6 @@ export default function Discursivas() {
     enabled: !!user?.id,
   });
 
-  // Fetch subjects for selected discipline
-  const { data: subjects = [] } = useQuery({
-    queryKey: ["discipline-subjects", selectedDiscipline],
-    queryFn: async () => {
-      if (selectedDiscipline === "Todas") return [];
-      const { data, error } = await supabase
-        .from("discipline_subjects")
-        .select("subject")
-        .eq("discipline", selectedDiscipline)
-        .order("subject");
-      if (error) throw error;
-      return (data || []).map((s: any) => s.subject);
-    },
-    enabled: selectedDiscipline !== "Todas",
-  });
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -270,24 +256,16 @@ export default function Discursivas() {
             </Select>
           </div>
 
-          {/* Assunto - dropdown, depends on Matéria */}
+          {/* Assunto - tree select, depends on Matéria */}
           <div>
             <p className="text-xs text-muted-foreground mb-2 uppercase tracking-wider">Assunto</p>
-            <Select
+            <SubjectTreeSelect
+              discipline={selectedDiscipline === "Todas" ? "" : selectedDiscipline}
               value={selectedSubject}
               onValueChange={setSelectedSubject}
               disabled={selectedDiscipline === "Todas"}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder={selectedDiscipline === "Todas" ? "Selecione uma matéria" : "Todos os assuntos"} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Todas">Todos</SelectItem>
-                {subjects.map(s => (
-                  <SelectItem key={s} value={s}>{s}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              placeholder={selectedDiscipline === "Todas" ? "Selecione uma matéria" : "Todos os assuntos"}
+            />
           </div>
         </div>
       </div>
