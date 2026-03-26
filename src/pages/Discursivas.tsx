@@ -75,21 +75,6 @@ export default function Discursivas() {
     enabled: !!user?.id,
   });
 
-  // Fetch subjects for selected discipline
-  const { data: subjects = [] } = useQuery({
-    queryKey: ["discipline-subjects", selectedDiscipline],
-    queryFn: async () => {
-      if (selectedDiscipline === "Todas") return [];
-      const { data, error } = await supabase
-        .from("discipline_subjects")
-        .select("subject")
-        .eq("discipline", selectedDiscipline)
-        .order("subject");
-      if (error) throw error;
-      return (data || []).map((s: any) => s.subject);
-    },
-    enabled: selectedDiscipline !== "Todas",
-  });
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
