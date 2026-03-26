@@ -271,24 +271,16 @@ export default function Discursivas() {
             </Select>
           </div>
 
-          {/* Assunto - dropdown, depends on Matéria */}
+          {/* Assunto - tree select, depends on Matéria */}
           <div>
             <p className="text-xs text-muted-foreground mb-2 uppercase tracking-wider">Assunto</p>
-            <Select
+            <SubjectTreeSelect
+              discipline={selectedDiscipline === "Todas" ? "" : selectedDiscipline}
               value={selectedSubject}
               onValueChange={setSelectedSubject}
               disabled={selectedDiscipline === "Todas"}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder={selectedDiscipline === "Todas" ? "Selecione uma matéria" : "Todos os assuntos"} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Todas">Todos</SelectItem>
-                {subjects.map(s => (
-                  <SelectItem key={s} value={s}>{s}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              placeholder={selectedDiscipline === "Todas" ? "Selecione uma matéria" : "Todos os assuntos"}
+            />
           </div>
         </div>
       </div>
