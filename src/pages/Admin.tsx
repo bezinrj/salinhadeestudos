@@ -1205,8 +1205,10 @@ function SubjectsTab() {
   const queryClient = useQueryClient();
   const [selectedDiscipline, setSelectedDiscipline] = useState(disciplines[0]);
   const [newSubject, setNewSubject] = useState("");
+  const [newCategory, setNewCategory] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingValue, setEditingValue] = useState("");
+  const [editingCategory, setEditingCategory] = useState("");
 
   const { data: subjects = [], isLoading } = useQuery({
     queryKey: ["admin-discipline-subjects", selectedDiscipline],
@@ -1215,17 +1217,22 @@ function SubjectsTab() {
         .from("discipline_subjects")
         .select("*")
         .eq("discipline", selectedDiscipline)
+        .order("category")
         .order("subject");
       if (error) throw error;
       return data || [];
     },
   });
 
+  // Get unique categories for autocomplete
+  const existingCategories = [...new Set(subjects.filter((s: any) => s.category).map((s: any) => s.category))];
+
   const addMutation = useMutation({
     mutationFn: async () => {
       const { error } = await (supabase.from("discipline_subjects") as any).insert({
         discipline: selectedDiscipline,
         subject: newSubject.trim(),
+        category: newCategory.trim() || null,
       });
       if (error) throw error;
     },
@@ -1238,9 +1245,9 @@ function SubjectsTab() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, subject }: { id: string; subject: string }) => {
+    mutationFn: async ({ id, subject, category }: { id: string; subject: string; category: string }) => {
       const { error } = await (supabase.from("discipline_subjects") as any)
-        .update({ subject: subject.trim() })
+        .update({ subject: subject.trim(), category: category.trim() || null })
         .eq("id", id);
       if (error) throw error;
     },
@@ -1263,6 +1270,60 @@ function SubjectsTab() {
     },
   });
 
+  // Group for display
+  const grouped: Record<string, any[]> = {};
+  const uncategorized: any[] = [];
+  subjects.forEach((s: any) => {
+    if (s.category) {
+      if (!grouped[s.category]) grouped[s.category] = [];
+      grouped[s.category].push(s);
+    } else {
+      uncategorized.push(s);
+    }
+  });
+
+  const renderSubjectRow = (s: any) => (
+    <div key={s.id} className="flex items-center gap-2 p-2 rounded-lg bg-secondary/50">
+      {editingId === s.id ? (
+        <>
+          <Input
+            value={editingCategory}
+            onChange={(e) => setEditingCategory(e.target.value)}
+            className="w-32 h-8 text-sm"
+            placeholder="Categoria"
+            list="categories-list"
+          />
+          <Input
+            value={editingValue}
+            onChange={(e) => setEditingValue(e.target.value)}
+            className="flex-1 h-8 text-sm"
+            placeholder="Assunto"
+            onKeyDown={(e) => e.key === "Enter" && editingValue.trim() && updateMutation.mutate({ id: s.id, subject: editingValue, category: editingCategory })}
+          />
+          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => updateMutation.mutate({ id: s.id, subject: editingValue, category: editingCategory })} disabled={!editingValue.trim()}>
+            <Check className="h-3.5 w-3.5" />
+          </Button>
+          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditingId(null)}>
+            <X className="h-3.5 w-3.5" />
+          </Button>
+        </>
+      ) : (
+        <>
+          {s.category && (
+            <Badge variant="outline" className="text-xs shrink-0">{s.category}</Badge>
+          )}
+          <span className="flex-1 text-sm">{s.subject}</span>
+          <Button size="icon" variant="ghost" className="h-7 w-7 text-primary" onClick={() => { setEditingId(s.id); setEditingValue(s.subject); setEditingCategory(s.category || ""); }}>
+            <Pencil className="h-3.5 w-3.5" />
+          </Button>
+          <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => deleteMutation.mutate(s.id)}>
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+        </>
+      )}
+    </div>
+  );
+
   return (
     <div className="space-y-4">
       <Card className="gradient-card border-border">
@@ -1281,11 +1342,23 @@ function SubjectsTab() {
             </SelectContent>
           </Select>
 
+          <datalist id="categories-list">
+            {existingCategories.map(c => <option key={c} value={c} />)}
+          </datalist>
+
           <div className="flex gap-2">
+            <Input
+              placeholder="Categoria (opcional)"
+              value={newCategory}
+              onChange={(e) => setNewCategory(e.target.value)}
+              className="w-40"
+              list="categories-list"
+            />
             <Input
               placeholder="Novo assunto..."
               value={newSubject}
               onChange={(e) => setNewSubject(e.target.value)}
+              className="flex-1"
               onKeyDown={(e) => e.key === "Enter" && newSubject.trim() && addMutation.mutate()}
             />
             <Button
@@ -1302,37 +1375,21 @@ function SubjectsTab() {
           ) : subjects.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-4">Nenhum assunto cadastrado para {selectedDiscipline}.</p>
           ) : (
-            <div className="space-y-2">
-              {subjects.map((s: any) => (
-                <div key={s.id} className="flex items-center gap-2 p-2 rounded-lg bg-secondary/50">
-                  {editingId === s.id ? (
-                    <>
-                      <Input
-                        value={editingValue}
-                        onChange={(e) => setEditingValue(e.target.value)}
-                        className="flex-1 h-8 text-sm"
-                        onKeyDown={(e) => e.key === "Enter" && editingValue.trim() && updateMutation.mutate({ id: s.id, subject: editingValue })}
-                      />
-                      <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => updateMutation.mutate({ id: s.id, subject: editingValue })} disabled={!editingValue.trim()}>
-                        <Check className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditingId(null)}>
-                        <X className="h-3.5 w-3.5" />
-                      </Button>
-                    </>
-                  ) : (
-                    <>
-                      <span className="flex-1 text-sm">{s.subject}</span>
-                      <Button size="icon" variant="ghost" className="h-7 w-7 text-primary" onClick={() => { setEditingId(s.id); setEditingValue(s.subject); }}>
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => deleteMutation.mutate(s.id)}>
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </>
-                  )}
+            <div className="space-y-3">
+              {/* Grouped subjects */}
+              {Object.entries(grouped).map(([cat, items]) => (
+                <div key={cat}>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1 pl-1">{cat}</p>
+                  <div className="space-y-1 ml-3 border-l-2 border-border pl-3">
+                    {items.map(renderSubjectRow)}
+                  </div>
                 </div>
               ))}
+              {/* Uncategorized */}
+              {uncategorized.length > 0 && Object.keys(grouped).length > 0 && (
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1 pl-1">Sem categoria</p>
+              )}
+              {uncategorized.map(renderSubjectRow)}
             </div>
           )}
         </CardContent>
