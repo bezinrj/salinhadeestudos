@@ -687,26 +687,6 @@ function WeeklyQuestionsTab() {
     },
   });
 
-  // Fetch subjects for discipline
-  const { data: subjectsForDiscipline = [] } = useQuery({
-    queryKey: ["admin-subjects-for-discipline", discipline],
-    queryFn: async () => {
-      if (!discipline) return [];
-      const { data } = await supabase.from("discipline_subjects").select("subject").eq("discipline", discipline).order("subject");
-      return (data || []).map((s: any) => s.subject);
-    },
-    enabled: !!discipline,
-  });
-
-  const { data: editSubjectsForDiscipline = [] } = useQuery({
-    queryKey: ["admin-subjects-for-discipline", editDiscipline],
-    queryFn: async () => {
-      if (!editDiscipline) return [];
-      const { data } = await supabase.from("discipline_subjects").select("subject").eq("discipline", editDiscipline).order("subject");
-      return (data || []).map((s: any) => s.subject);
-    },
-    enabled: !!editDiscipline,
-  });
 
   function getNextSundayDeadline(): string {
     const now = new Date();
