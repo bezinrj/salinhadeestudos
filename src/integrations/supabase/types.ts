@@ -86,6 +86,7 @@ export type Database = {
           created_at: string | null
           discipline: string
           id: string
+          sort_order: number
           subject: string
         }
         Insert: {
@@ -93,6 +94,7 @@ export type Database = {
           created_at?: string | null
           discipline: string
           id?: string
+          sort_order?: number
           subject: string
         }
         Update: {
@@ -100,6 +102,7 @@ export type Database = {
           created_at?: string | null
           discipline?: string
           id?: string
+          sort_order?: number
           subject?: string
         }
         Relationships: []
