@@ -1218,7 +1218,7 @@ function SubjectsTab() {
         .from("discipline_subjects")
         .select("*")
         .eq("discipline", selectedDiscipline)
-        .order("category")
+        .order("sort_order", { ascending: true })
         .order("subject");
       if (error) throw error;
       return data || [];
@@ -1230,10 +1230,12 @@ function SubjectsTab() {
 
   const addMutation = useMutation({
     mutationFn: async () => {
+      const maxOrder = subjects.length > 0 ? Math.max(...subjects.map((s: any) => s.sort_order || 0)) : 0;
       const { error } = await (supabase.from("discipline_subjects") as any).insert({
         discipline: selectedDiscipline,
         subject: newSubject.trim(),
         category: newCategory.trim() || null,
+        sort_order: maxOrder + 1,
       });
       if (error) throw error;
     },
@@ -1243,6 +1245,23 @@ function SubjectsTab() {
       toast({ title: "Assunto adicionado!" });
     },
     onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
+  });
+
+  const reorderMutation = useMutation({
+    mutationFn: async ({ id, newOrder }: { id: string; newOrder: number; swapId: string; swapOrder: number }) => {
+      // We swap sort_order between two items
+      const args = arguments[0] as any;
+      const updates = [
+        (supabase.from("discipline_subjects") as any).update({ sort_order: args.newOrder }).eq("id", args.id),
+        (supabase.from("discipline_subjects") as any).update({ sort_order: args.swapOrder }).eq("id", args.swapId),
+      ];
+      const results = await Promise.all(updates);
+      for (const r of results) if (r.error) throw r.error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-discipline-subjects", selectedDiscipline] });
+    },
+    onError: (e: any) => toast({ title: "Erro ao reordenar", description: e.message, variant: "destructive" }),
   });
 
   const updateMutation = useMutation({
