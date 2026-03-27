@@ -1300,7 +1300,20 @@ function SubjectsTab() {
     }
   });
 
-  const renderSubjectRow = (s: any) => (
+  const moveSubject = (index: number, direction: "up" | "down") => {
+    const swapIndex = direction === "up" ? index - 1 : index + 1;
+    if (swapIndex < 0 || swapIndex >= subjects.length) return;
+    const current = subjects[index] as any;
+    const swap = subjects[swapIndex] as any;
+    reorderMutation.mutate({
+      id: current.id,
+      newOrder: swap.sort_order,
+      swapId: swap.id,
+      swapOrder: current.sort_order,
+    });
+  };
+
+  const renderSubjectRow = (s: any, index: number) => (
     <div key={s.id} className="flex items-center gap-2 p-2 rounded-lg bg-secondary/50">
       {editingId === s.id ? (
         <>
@@ -1327,6 +1340,14 @@ function SubjectsTab() {
         </>
       ) : (
         <>
+          <div className="flex flex-col gap-0.5">
+            <Button size="icon" variant="ghost" className="h-5 w-5" onClick={() => moveSubject(index, "up")} disabled={index === 0 || reorderMutation.isPending}>
+              <ArrowUp className="h-3 w-3" />
+            </Button>
+            <Button size="icon" variant="ghost" className="h-5 w-5" onClick={() => moveSubject(index, "down")} disabled={index === subjects.length - 1 || reorderMutation.isPending}>
+              <ArrowDown className="h-3 w-3" />
+            </Button>
+          </div>
           {s.category && (
             <Badge variant="outline" className="text-xs shrink-0">{s.category}</Badge>
           )}
