@@ -657,6 +657,7 @@ function WeeklyQuestionsTab() {
   const [idealAnswer, setIdealAnswer] = useState("");
   const [banca, setBanca] = useState("INÉDITA");
   const [year, setYear] = useState(String(new Date().getFullYear()));
+  const [searchQuery, setSearchQuery] = useState("");
   // Edit state
   const [editingQuestion, setEditingQuestion] = useState<any>(null);
   const [editTitle, setEditTitle] = useState("");
