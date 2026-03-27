@@ -126,7 +126,12 @@ export function QuestionComments({ questionId }: { questionId: string }) {
                   <div className="flex items-center gap-2">
                     <Link
                       to={`/perfil/${c.user_id}`}
-                      className="text-sm font-semibold text-foreground hover:text-primary transition-colors"
+                      className={cn(
+                        "text-sm font-semibold transition-colors",
+                        c.profiles.subscription_tier === "annual"
+                          ? "text-gold hover:text-gold/80"
+                          : "text-foreground hover:text-primary"
+                      )}
                     >
                       {c.profiles.name || c.profiles.username}
                     </Link>
