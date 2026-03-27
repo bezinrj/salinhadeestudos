@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "react-router-dom";
+import { cn } from "@/lib/utils";
 import { MessageSquare, Trash2, Crown } from "lucide-react";
 import { ActiveBadge } from "@/components/ActiveBadge";
 import { motion } from "framer-motion";
@@ -126,7 +127,12 @@ export function QuestionComments({ questionId }: { questionId: string }) {
                   <div className="flex items-center gap-2">
                     <Link
                       to={`/perfil/${c.user_id}`}
-                      className="text-sm font-semibold text-foreground hover:text-primary transition-colors"
+                      className={cn(
+                        "text-sm font-semibold transition-colors",
+                        c.profiles.subscription_tier === "annual"
+                          ? "text-gold hover:text-gold/80"
+                          : "text-foreground hover:text-primary"
+                      )}
                     >
                       {c.profiles.name || c.profiles.username}
                     </Link>

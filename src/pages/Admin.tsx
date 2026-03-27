@@ -657,6 +657,7 @@ function WeeklyQuestionsTab() {
   const [idealAnswer, setIdealAnswer] = useState("");
   const [banca, setBanca] = useState("INÉDITA");
   const [year, setYear] = useState(String(new Date().getFullYear()));
+  const [searchQuery, setSearchQuery] = useState("");
   // Edit state
   const [editingQuestion, setEditingQuestion] = useState<any>(null);
   const [editTitle, setEditTitle] = useState("");
@@ -840,9 +841,11 @@ function WeeklyQuestionsTab() {
             <SelectTrigger><SelectValue placeholder="Carreira" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="Delegado">Delegado</SelectItem>
-              <SelectItem value="Magistratura">Magistratura</SelectItem>
+              <SelectItem value="Magistratura Estadual">Magistratura Estadual</SelectItem>
+              <SelectItem value="Magistratura Federal">Magistratura Federal</SelectItem>
               <SelectItem value="Promotoria">Promotoria</SelectItem>
-              <SelectItem value="ENAM">ENAM</SelectItem>
+              <SelectItem value="Defensoria">Defensoria</SelectItem>
+              <SelectItem value="Analista">Analista</SelectItem>
               <SelectItem value="EMERJ">EMERJ</SelectItem>
             </SelectContent>
           </Select>
@@ -989,11 +992,25 @@ function WeeklyQuestionsTab() {
 
       {/* Existing questions */}
       <Card className="gradient-card border-border">
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between gap-2">
           <CardTitle className="text-sm font-medium">Todas as Questões</CardTitle>
+          <Input
+            placeholder="Buscar por ID ou título..."
+            className="max-w-xs h-8 text-xs"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
         </CardHeader>
         <CardContent className="space-y-3">
-          {questions?.length ? questions.map((q: any) => (
+          {(questions || []).filter((q: any) => {
+            if (!searchQuery.trim()) return true;
+            const s = searchQuery.toLowerCase();
+            return q.id.toLowerCase().includes(s) || q.title.toLowerCase().includes(s);
+          }).length ? (questions || []).filter((q: any) => {
+            if (!searchQuery.trim()) return true;
+            const s = searchQuery.toLowerCase();
+            return q.id.toLowerCase().includes(s) || q.title.toLowerCase().includes(s);
+          }).map((q: any) => (
             <div key={q.id} className="flex items-start gap-3 p-3 rounded-lg bg-secondary/50">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
@@ -1011,7 +1028,9 @@ function WeeklyQuestionsTab() {
                     <Badge variant="outline" className="text-muted-foreground text-[10px]">Encerrada</Badge>
                   )}
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">{q.career} · {q.discipline}{q.banca ? ` · ${q.banca}` : ""}{q.year ? ` · ${q.year}` : ""}</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  <span className="font-mono text-[10px] text-primary/60 select-all">{q.id.slice(0, 8)}</span> · {q.career} · {q.discipline}{q.banca ? ` · ${q.banca}` : ""}{q.year ? ` · ${q.year}` : ""}
+                </p>
                 {q.deadline && <p className="text-[10px] text-muted-foreground mt-1">Prazo: {new Date(q.deadline).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}</p>}
               </div>
               <div className="flex items-center gap-2 shrink-0">
@@ -1044,9 +1063,11 @@ function WeeklyQuestionsTab() {
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Delegado">Delegado</SelectItem>
-                  <SelectItem value="Magistratura">Magistratura</SelectItem>
+                  <SelectItem value="Magistratura Estadual">Magistratura Estadual</SelectItem>
+                  <SelectItem value="Magistratura Federal">Magistratura Federal</SelectItem>
                   <SelectItem value="Promotoria">Promotoria</SelectItem>
-                  <SelectItem value="ENAM">ENAM</SelectItem>
+                  <SelectItem value="Defensoria">Defensoria</SelectItem>
+                  <SelectItem value="Analista">Analista</SelectItem>
                   <SelectItem value="EMERJ">EMERJ</SelectItem>
                 </SelectContent>
               </Select>
