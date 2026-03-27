@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Shield, Users, MessageSquare, Bell, Trash2, Plus, Activity, Crown, GraduationCap, KeyRound, X, UserCheck, UserX, CreditCard, Ban, Eye, Gift, Clock, CalendarDays, Trophy, Pencil, Check } from "lucide-react";
+import { Shield, Users, MessageSquare, Bell, Trash2, Plus, Activity, Crown, GraduationCap, KeyRound, X, UserCheck, UserX, CreditCard, Ban, Eye, Gift, Clock, CalendarDays, Trophy, Pencil, Check, ArrowUp, ArrowDown } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { getPlanByPriceId } from "@/lib/stripe";
 import { toast } from "@/hooks/use-toast";
@@ -1218,7 +1218,7 @@ function SubjectsTab() {
         .from("discipline_subjects")
         .select("*")
         .eq("discipline", selectedDiscipline)
-        .order("category")
+        .order("sort_order", { ascending: true })
         .order("subject");
       if (error) throw error;
       return data || [];
@@ -1230,10 +1230,12 @@ function SubjectsTab() {
 
   const addMutation = useMutation({
     mutationFn: async () => {
+      const maxOrder = subjects.length > 0 ? Math.max(...subjects.map((s: any) => s.sort_order || 0)) : 0;
       const { error } = await (supabase.from("discipline_subjects") as any).insert({
         discipline: selectedDiscipline,
         subject: newSubject.trim(),
         category: newCategory.trim() || null,
+        sort_order: maxOrder + 1,
       });
       if (error) throw error;
     },
@@ -1243,6 +1245,21 @@ function SubjectsTab() {
       toast({ title: "Assunto adicionado!" });
     },
     onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
+  });
+
+  const reorderMutation = useMutation({
+    mutationFn: async ({ id, newOrder, swapId, swapOrder }: { id: string; newOrder: number; swapId: string; swapOrder: number }) => {
+      const [r1, r2] = await Promise.all([
+        (supabase.from("discipline_subjects") as any).update({ sort_order: newOrder }).eq("id", id),
+        (supabase.from("discipline_subjects") as any).update({ sort_order: swapOrder }).eq("id", swapId),
+      ]);
+      if (r1.error) throw r1.error;
+      if (r2.error) throw r2.error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-discipline-subjects", selectedDiscipline] });
+    },
+    onError: (e: any) => toast({ title: "Erro ao reordenar", description: e.message, variant: "destructive" }),
   });
 
   const updateMutation = useMutation({
@@ -1283,7 +1300,20 @@ function SubjectsTab() {
     }
   });
 
-  const renderSubjectRow = (s: any) => (
+  const moveSubject = (index: number, direction: "up" | "down") => {
+    const swapIndex = direction === "up" ? index - 1 : index + 1;
+    if (swapIndex < 0 || swapIndex >= subjects.length) return;
+    const current = subjects[index] as any;
+    const swap = subjects[swapIndex] as any;
+    reorderMutation.mutate({
+      id: current.id,
+      newOrder: swap.sort_order,
+      swapId: swap.id,
+      swapOrder: current.sort_order,
+    });
+  };
+
+  const renderSubjectRow = (s: any, index: number) => (
     <div key={s.id} className="flex items-center gap-2 p-2 rounded-lg bg-secondary/50">
       {editingId === s.id ? (
         <>
@@ -1310,6 +1340,14 @@ function SubjectsTab() {
         </>
       ) : (
         <>
+          <div className="flex flex-col gap-0.5">
+            <Button size="icon" variant="ghost" className="h-5 w-5" onClick={() => moveSubject(index, "up")} disabled={index === 0 || reorderMutation.isPending}>
+              <ArrowUp className="h-3 w-3" />
+            </Button>
+            <Button size="icon" variant="ghost" className="h-5 w-5" onClick={() => moveSubject(index, "down")} disabled={index === subjects.length - 1 || reorderMutation.isPending}>
+              <ArrowDown className="h-3 w-3" />
+            </Button>
+          </div>
           {s.category && (
             <Badge variant="outline" className="text-xs shrink-0">{s.category}</Badge>
           )}
@@ -1376,21 +1414,8 @@ function SubjectsTab() {
           ) : subjects.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-4">Nenhum assunto cadastrado para {selectedDiscipline}.</p>
           ) : (
-            <div className="space-y-3">
-              {/* Grouped subjects */}
-              {Object.entries(grouped).map(([cat, items]) => (
-                <div key={cat}>
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1 pl-1">{cat}</p>
-                  <div className="space-y-1 ml-3 border-l-2 border-border pl-3">
-                    {items.map(renderSubjectRow)}
-                  </div>
-                </div>
-              ))}
-              {/* Uncategorized */}
-              {uncategorized.length > 0 && Object.keys(grouped).length > 0 && (
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1 pl-1">Sem categoria</p>
-              )}
-              {uncategorized.map(renderSubjectRow)}
+            <div className="space-y-1">
+              {subjects.map((s: any, index: number) => renderSubjectRow(s, index))}
             </div>
           )}
         </CardContent>
