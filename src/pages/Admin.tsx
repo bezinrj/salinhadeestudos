@@ -1248,15 +1248,13 @@ function SubjectsTab() {
   });
 
   const reorderMutation = useMutation({
-    mutationFn: async ({ id, newOrder }: { id: string; newOrder: number; swapId: string; swapOrder: number }) => {
-      // We swap sort_order between two items
-      const args = arguments[0] as any;
-      const updates = [
-        (supabase.from("discipline_subjects") as any).update({ sort_order: args.newOrder }).eq("id", args.id),
-        (supabase.from("discipline_subjects") as any).update({ sort_order: args.swapOrder }).eq("id", args.swapId),
-      ];
-      const results = await Promise.all(updates);
-      for (const r of results) if (r.error) throw r.error;
+    mutationFn: async ({ id, newOrder, swapId, swapOrder }: { id: string; newOrder: number; swapId: string; swapOrder: number }) => {
+      const [r1, r2] = await Promise.all([
+        (supabase.from("discipline_subjects") as any).update({ sort_order: newOrder }).eq("id", id),
+        (supabase.from("discipline_subjects") as any).update({ sort_order: swapOrder }).eq("id", swapId),
+      ]);
+      if (r1.error) throw r1.error;
+      if (r2.error) throw r2.error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-discipline-subjects", selectedDiscipline] });
