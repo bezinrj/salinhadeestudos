@@ -991,11 +991,25 @@ function WeeklyQuestionsTab() {
 
       {/* Existing questions */}
       <Card className="gradient-card border-border">
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between gap-2">
           <CardTitle className="text-sm font-medium">Todas as Questões</CardTitle>
+          <Input
+            placeholder="Buscar por ID ou título..."
+            className="max-w-xs h-8 text-xs"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
         </CardHeader>
         <CardContent className="space-y-3">
-          {questions?.length ? questions.map((q: any) => (
+          {(questions || []).filter((q: any) => {
+            if (!searchQuery.trim()) return true;
+            const s = searchQuery.toLowerCase();
+            return q.id.toLowerCase().includes(s) || q.title.toLowerCase().includes(s);
+          }).length ? (questions || []).filter((q: any) => {
+            if (!searchQuery.trim()) return true;
+            const s = searchQuery.toLowerCase();
+            return q.id.toLowerCase().includes(s) || q.title.toLowerCase().includes(s);
+          }).map((q: any) => (
             <div key={q.id} className="flex items-start gap-3 p-3 rounded-lg bg-secondary/50">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
