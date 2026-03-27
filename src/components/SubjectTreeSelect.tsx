@@ -30,7 +30,7 @@ export function SubjectTreeSelect({ discipline, value, onValueChange, disabled, 
         .from("discipline_subjects")
         .select("id, subject, category")
         .eq("discipline", discipline)
-        .order("category")
+        .order("sort_order", { ascending: true })
         .order("subject");
       if (error) throw error;
       return data || [];

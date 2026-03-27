@@ -1414,21 +1414,8 @@ function SubjectsTab() {
           ) : subjects.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-4">Nenhum assunto cadastrado para {selectedDiscipline}.</p>
           ) : (
-            <div className="space-y-3">
-              {/* Grouped subjects */}
-              {Object.entries(grouped).map(([cat, items]) => (
-                <div key={cat}>
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1 pl-1">{cat}</p>
-                  <div className="space-y-1 ml-3 border-l-2 border-border pl-3">
-                    {items.map(renderSubjectRow)}
-                  </div>
-                </div>
-              ))}
-              {/* Uncategorized */}
-              {uncategorized.length > 0 && Object.keys(grouped).length > 0 && (
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1 pl-1">Sem categoria</p>
-              )}
-              {uncategorized.map(renderSubjectRow)}
+            <div className="space-y-1">
+              {subjects.map((s: any, index: number) => renderSubjectRow(s, index))}
             </div>
           )}
         </CardContent>
