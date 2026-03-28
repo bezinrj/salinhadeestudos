@@ -38,7 +38,8 @@ export function QuestionCard({ question, onDelete }: QuestionCardProps) {
       });
       return;
     }
-    navigate(`/discursivas/${question.id}`);
+    const code = (question as any).publicId ? `Q-${String((question as any).publicId).padStart(3, '0')}` : question.id;
+    navigate(`/discursivas/${code}`);
   };
 
   return (
@@ -68,7 +69,7 @@ export function QuestionCard({ question, onDelete }: QuestionCardProps) {
       </CardHeader>
       <CardContent className="pt-0">
         <p className="text-xs text-muted-foreground mb-3">
-          <span className="font-mono text-muted-foreground/60">#{question.id.slice(0, 8)}</span>
+          <span className="font-mono text-muted-foreground/60">{(question as any).publicId ? `Q-${String((question as any).publicId).padStart(3, '0')}` : `#${question.id.slice(0, 8)}`}</span>
           <span className="mx-1">·</span>
           {question.discipline}
           {(question as any).banca && <span className="ml-1">· {(question as any).banca}</span>}

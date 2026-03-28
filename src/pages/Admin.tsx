@@ -1029,7 +1029,7 @@ function WeeklyQuestionsTab() {
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  <span className="font-mono text-[10px] text-primary/60 select-all">{q.id.slice(0, 8)}</span> · {q.career} · {q.discipline}{q.banca ? ` · ${q.banca}` : ""}{q.year ? ` · ${q.year}` : ""}
+                  <span className="font-mono text-[10px] text-primary/60 select-all">Q-{String((q as any).public_id || '?').padStart(3, '0')}</span> · {q.career} · {q.discipline}{q.banca ? ` · ${q.banca}` : ""}{q.year ? ` · ${q.year}` : ""}
                 </p>
                 {q.deadline && <p className="text-[10px] text-muted-foreground mt-1">Prazo: {new Date(q.deadline).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}</p>}
               </div>
