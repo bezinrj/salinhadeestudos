@@ -58,6 +58,7 @@ export default function Discursivas() {
 
       return (questionsRes.data || []).map((q: any) => ({
         id: q.id,
+        publicId: q.public_id as number,
         title: q.title,
         career: q.career,
         discipline: q.discipline,
@@ -108,9 +109,11 @@ export default function Discursivas() {
     // Search by ID or title
     if (searchQuery.trim()) {
       const query = searchQuery.trim().toLowerCase();
-      const matchesId = q.id.toLowerCase().startsWith(query) || q.id.slice(0, 8).toLowerCase().startsWith(query);
+      // Match Q-code like "Q-001" or just "001" or "1"
+      const qCodeMatch = query.match(/^q?-?(\d+)$/i);
+      const matchesPublicId = qCodeMatch && q.publicId === parseInt(qCodeMatch[1]);
       const matchesTitle = q.title.toLowerCase().includes(query);
-      if (!matchesId && !matchesTitle) return false;
+      if (!matchesPublicId && !matchesTitle) return false;
     }
     if (career !== "Todas" && q.career !== career) return false;
     if (selectedDiscipline !== "Todas" && q.discipline !== selectedDiscipline) return false;

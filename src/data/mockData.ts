@@ -31,6 +31,7 @@ export interface Badge {
 
 export interface Question {
   id: string;
+  publicId?: number;
   title: string;
   career: "Delegado" | "Magistratura" | "Promotoria";
   discipline: string;

@@ -29,14 +29,19 @@ export default function QuestionDetail() {
   const { data: question, isLoading } = useQuery({
     queryKey: ["question-detail", id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("weekly_questions")
-        .select("*")
-        .eq("id", id!)
-        .single();
+      // Detect if the param is a Q-code (e.g. "Q-001") or a UUID
+      const isQCode = id!.match(/^Q-(\d+)$/i);
+      let query = supabase.from("weekly_questions").select("*");
+      if (isQCode) {
+        query = query.eq("public_id" as any, parseInt(isQCode[1]));
+      } else {
+        query = query.eq("id", id!);
+      }
+      const { data, error } = await query.single();
       if (error) throw error;
       return {
         id: data.id,
+        publicId: (data as any).public_id as number,
         title: data.title,
         career: data.career as any,
         discipline: data.discipline,
@@ -183,15 +188,16 @@ export default function QuestionDetail() {
           <ArrowLeft className="h-4 w-4 mr-2" /> Voltar
         </Button>
         <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground font-mono">ID #{question.id.slice(0, 8)}</span>
+          <span className="text-xs text-muted-foreground font-mono">Q-{String(question.publicId).padStart(3, '0')}</span>
           <Button
             variant="outline"
             size="sm"
             className="text-xs gap-1.5 border-border"
             onClick={() => {
-              const url = `${window.location.origin}/discursivas/${question.id}`;
+              const code = `Q-${String(question.publicId).padStart(3, '0')}`;
+              const url = `${window.location.origin}/discursivas/${code}`;
               navigator.clipboard.writeText(url);
-              toast({ title: "Link copiado!", description: "O link da questão foi copiado para a área de transferência." });
+              toast({ title: "Link copiado!", description: `Link da questão ${code} copiado.` });
             }}
           >
             <Copy className="h-3.5 w-3.5" /> Copiar link
