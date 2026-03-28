@@ -378,6 +378,7 @@ export type Database = {
           is_weekly: boolean
           mirror_text: string | null
           participants: number
+          public_id: number
           statement: string
           subject: string | null
           title: string
@@ -399,6 +400,7 @@ export type Database = {
           is_weekly?: boolean
           mirror_text?: string | null
           participants?: number
+          public_id?: number
           statement: string
           subject?: string | null
           title: string
@@ -420,6 +422,7 @@ export type Database = {
           is_weekly?: boolean
           mirror_text?: string | null
           participants?: number
+          public_id?: number
           statement?: string
           subject?: string | null
           title?: string
