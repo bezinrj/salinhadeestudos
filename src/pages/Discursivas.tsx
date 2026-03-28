@@ -36,12 +36,25 @@ export default function Discursivas() {
   const { data: allQuestions = [], isLoading } = useQuery({
     queryKey: ["discursivas-questions"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("weekly_questions")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return (data || []).map((q: any) => ({
+      const [questionsRes, participantsRes] = await Promise.all([
+        supabase
+          .from("weekly_questions")
+          .select("*")
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("weekly_answers")
+          .select("question_id, user_id"),
+      ]);
+      if (questionsRes.error) throw questionsRes.error;
+
+      // Count distinct users per question
+      const countMap: Record<string, Set<string>> = {};
+      for (const a of participantsRes.data || []) {
+        if (!countMap[a.question_id]) countMap[a.question_id] = new Set();
+        countMap[a.question_id].add(a.user_id);
+      }
+
+      return (questionsRes.data || []).map((q: any) => ({
         id: q.id,
         title: q.title,
         career: q.career,
@@ -49,7 +62,7 @@ export default function Discursivas() {
         subject: q.subject || null,
         statement: q.statement,
         difficulty: q.difficulty,
-        participants: q.participants || 0,
+        participants: countMap[q.id]?.size || 0,
         isWeekly: q.is_weekly,
         isPremium: q.is_premium || q.is_weekly,
         banca: q.banca || null,
