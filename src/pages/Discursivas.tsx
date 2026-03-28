@@ -30,6 +30,7 @@ export default function Discursivas() {
   const [selectedDiscipline, setSelectedDiscipline] = useState<string>("Todas");
   const [selectedSubject, setSelectedSubject] = useState<string>("Todas");
   const [selectedYear, setSelectedYear] = useState<string>("Todos");
+  const [searchQuery, setSearchQuery] = useState("");
   const { isAdmin } = useIsAdmin();
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -104,6 +105,13 @@ export default function Discursivas() {
 
   const filtered = allQuestions.filter(q => {
     if (q.isWeekly && q.deadline && new Date(q.deadline) > new Date()) return false;
+    // Search by ID or title
+    if (searchQuery.trim()) {
+      const query = searchQuery.trim().toLowerCase();
+      const matchesId = q.id.toLowerCase().startsWith(query) || q.id.slice(0, 8).toLowerCase().startsWith(query);
+      const matchesTitle = q.title.toLowerCase().includes(query);
+      if (!matchesId && !matchesTitle) return false;
+    }
     if (career !== "Todas" && q.career !== career) return false;
     if (selectedDiscipline !== "Todas" && q.discipline !== selectedDiscipline) return false;
     if (selectedSubject !== "Todas" && q.subject !== selectedSubject) return false;
@@ -112,7 +120,6 @@ export default function Discursivas() {
     const isPremium = q.isPremium || q.isWeekly;
     if (type === "Gratuitas" && isPremium) return false;
     if (type === "Premium" && !isPremium) return false;
-    // Status filter
     if (statusFilter === "Resolvidas" && !answeredIds.includes(q.id)) return false;
     if (statusFilter === "Não resolvidas" && answeredIds.includes(q.id)) return false;
     return true;
