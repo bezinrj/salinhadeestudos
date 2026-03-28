@@ -31,13 +31,14 @@ export default function QuestionDetail() {
     queryFn: async () => {
       // Detect if the param is a Q-code (e.g. "Q-001") or a UUID
       const isQCode = id!.match(/^Q-(\d+)$/i);
-      let query = supabase.from("weekly_questions").select("*");
+      let data: any, error: any;
       if (isQCode) {
-        query = query.eq("public_id" as any, parseInt(isQCode[1]));
+        const res = await (supabase.from("weekly_questions") as any).select("*").eq("public_id", parseInt(isQCode[1])).single();
+        data = res.data; error = res.error;
       } else {
-        query = query.eq("id", id!);
+        const res = await supabase.from("weekly_questions").select("*").eq("id", id!).single();
+        data = res.data; error = res.error;
       }
-      const { data, error } = await query.single();
       if (error) throw error;
       return {
         id: data.id,
