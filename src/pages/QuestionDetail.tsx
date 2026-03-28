@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, CheckCircle2, XCircle, AlertTriangle, Lightbulb, FileText, Send, Lock, Loader2 } from "lucide-react";
+import { ArrowLeft, CheckCircle2, XCircle, AlertTriangle, Lightbulb, FileText, Send, Lock, Loader2, Copy, Share2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { QuestionComments } from "@/components/QuestionComments";
@@ -178,9 +178,26 @@ export default function QuestionDetail() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      <Button variant="ghost" onClick={() => navigate(-1)} className="text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="h-4 w-4 mr-2" /> Voltar
-      </Button>
+      <div className="flex items-center justify-between">
+        <Button variant="ghost" onClick={() => navigate(-1)} className="text-muted-foreground hover:text-foreground">
+          <ArrowLeft className="h-4 w-4 mr-2" /> Voltar
+        </Button>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground font-mono">ID #{question.id.slice(0, 8)}</span>
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-xs gap-1.5 border-border"
+            onClick={() => {
+              const url = `${window.location.origin}/discursivas/${question.id}`;
+              navigator.clipboard.writeText(url);
+              toast({ title: "Link copiado!", description: "O link da questão foi copiado para a área de transferência." });
+            }}
+          >
+            <Copy className="h-3.5 w-3.5" /> Copiar link
+          </Button>
+        </div>
+      </div>
 
       <Card className="gradient-card border-border">
         <CardHeader>
