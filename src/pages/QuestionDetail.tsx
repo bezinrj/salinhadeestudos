@@ -120,7 +120,8 @@ export default function QuestionDetail() {
     // Fetch current profile data for badge checks
     const { data: currentProfile } = await supabase.from("profiles").select("total_essays, weekly_hours, streak, rank_position, subscription_tier").eq("id", user!.id).single();
 
-    if (question.isWeekly && user) {
+    if (user) {
+      // Save answer for ALL questions (weekly and regular) so "Resolvidas" filter works
       const { error } = await (supabase.from("weekly_answers" as any) as any).insert({
         user_id: user.id,
         question_id: question.id,
@@ -132,29 +133,23 @@ export default function QuestionDetail() {
       } else if (error) {
         toast({ title: "Erro ao salvar resposta", description: error.message, variant: "destructive" });
       } else {
-        setLockedScore(result.grade);
-        toast({ title: "Resposta registrada!", description: "Sua nota foi salva para o ranking." });
+        if (question.isWeekly) {
+          setLockedScore(result.grade);
+        }
+        toast({ title: "Resposta registrada!", description: "Sua nota foi salva." });
       }
-      // Check badges for weekly
-      await checkAndAward({
-        totalEssays: (currentProfile?.total_essays ?? 0) + 1,
-        lastScore: result.grade,
-        answeredWeekly: true,
-        rankPosition: currentProfile?.rank_position ?? 0,
-        weeklyHours: currentProfile?.weekly_hours ?? 0,
-        streak: currentProfile?.streak ?? 0,
-        subscriptionTier: currentProfile?.subscription_tier,
-      });
-    } else if (user) {
+
       const newTotal = (currentProfile?.total_essays ?? 0) + 1;
       await supabase
         .from("profiles")
         .update({ total_essays: newTotal })
         .eq("id", user.id);
-      // Check badges for regular questions
+
       await checkAndAward({
         totalEssays: newTotal,
         lastScore: result.grade,
+        answeredWeekly: question.isWeekly,
+        rankPosition: currentProfile?.rank_position ?? 0,
         weeklyHours: currentProfile?.weekly_hours ?? 0,
         streak: currentProfile?.streak ?? 0,
         subscriptionTier: currentProfile?.subscription_tier,
