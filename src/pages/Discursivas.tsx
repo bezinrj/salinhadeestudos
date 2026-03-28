@@ -149,6 +149,17 @@ export default function Discursivas() {
         </p>
       </div>
 
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Buscar por ID ou título da questão..."
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          className="pl-9 bg-secondary border-border"
+        />
+      </div>
+
       {/* Filters */}
       <div className="space-y-3">
         {/* Carreira - chips */}
