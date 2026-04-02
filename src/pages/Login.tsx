@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Scale } from "lucide-react";
+import loginBg from "@/assets/login-bg.png";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -53,14 +54,26 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <div className="w-full max-w-md">
+    <div className="relative min-h-screen flex items-center justify-center px-4 overflow-hidden">
+      {/* Background image */}
+      <div
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{
+          backgroundImage: `url(${loginBg})`,
+          filter: "brightness(0.3) saturate(0.7)",
+        }}
+      />
+      {/* Gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-black/60" />
+
+      {/* Content */}
+      <div className="relative z-10 w-full max-w-md">
         <div className="flex items-center justify-center gap-2 mb-8">
           <Scale className="h-8 w-8 text-primary" />
-          <span className="font-display text-2xl font-bold">Salinha de Estudos</span>
+          <span className="font-display text-2xl font-bold text-white">Salinha de Estudos</span>
         </div>
 
-        <Card className="gradient-card border-border">
+        <Card className="border-border/30 bg-card/85 backdrop-blur-xl shadow-2xl">
           <CardHeader className="text-center">
             <CardTitle className="font-display text-xl">Bem-vindo(a)</CardTitle>
             <CardDescription>Entre ou crie sua conta para começar</CardDescription>
