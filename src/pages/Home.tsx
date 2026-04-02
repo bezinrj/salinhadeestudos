@@ -1,4 +1,5 @@
 import { useState } from "react";
+import heroBg from "@/assets/hero-bg.png";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -29,7 +30,14 @@ export default function Home() {
     <div className="min-h-screen bg-background">
       {/* Hero */}
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-gold/5" />
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{
+            backgroundImage: `url(${heroBg})`,
+            filter: "blur(1.5px) saturate(0.6) brightness(0.35)",
+          }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/60 to-background" />
         <div className="container mx-auto px-4 py-16 md:py-28 relative">
           <nav className="flex items-center justify-between mb-16">
             <div className="flex items-center gap-2">
