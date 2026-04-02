@@ -1,4 +1,5 @@
 import { useState } from "react";
+import heroBg from "@/assets/hero-bg.png";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
