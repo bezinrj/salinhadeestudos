@@ -1,5 +1,6 @@
 import { useState } from "react";
 import heroBg from "@/assets/hero-bg.png";
+const heroVideo = "/hero-video.mp4";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
