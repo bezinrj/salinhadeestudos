@@ -91,3 +91,9 @@
     box-shadow: 0 0 20px hsl(45 93% 55% / 0.2), 0 0 40px hsl(45 93% 55% / 0.1);
   }
 }
+
+@media (max-width: 767px) {
+  .hero-video-bg {
+    object-position: center 30%;
+  }
+}
