@@ -17,6 +17,7 @@ interface QuestionCardProps {
 const careerColors: Record<string, string> = {
   Delegado: "bg-primary/10 text-primary border-primary/20",
   Magistratura: "bg-gold/10 text-gold border-gold/20",
+  "Ministério Público": "bg-purple/10 text-purple border-purple/20",
   Promotoria: "bg-purple/10 text-purple border-purple/20",
 };
 

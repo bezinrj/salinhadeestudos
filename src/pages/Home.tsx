@@ -18,7 +18,7 @@ const features = [
 ];
 
 const benefits = [
-  { icon: Scale, title: "Foco Jurídico", description: "Questões para Delegado, Magistratura e Promotoria" },
+  { icon: Scale, title: "Foco Jurídico", description: "Questões para Delegado, Magistratura e Ministério Público" },
   { icon: Target, title: "Feedback Preciso", description: "Correção estruturada com pontos positivos e omissões" },
   { icon: TrendingUp, title: "Evolução Contínua", description: "Acompanhe seu desempenho ao longo do tempo" },
   { icon: Users, title: "Comunidade Ativa", description: "Estude junto com outros concurseiros dedicados" },
@@ -91,7 +91,7 @@ export default function Home() {
       <section className="container mx-auto px-4 py-16 md:py-24">
         <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">Tudo que você precisa para <span className="text-primary">evoluir</span></h2>
-          <p className="text-muted-foreground max-w-xl mx-auto">Ferramentas projetadas para maximizar seu desempenho em concursos de Delegado, Magistratura e Promotoria.</p>
+          <p className="text-muted-foreground max-w-xl mx-auto">Ferramentas projetadas para maximizar seu desempenho em concursos de Delegado, Magistratura e Ministério Público.</p>
         </motion.div>
 
         <div className="grid md:grid-cols-3 gap-6">

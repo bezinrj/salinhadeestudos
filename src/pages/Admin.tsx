@@ -843,7 +843,7 @@ function WeeklyQuestionsTab() {
               <SelectItem value="Delegado">Delegado</SelectItem>
               <SelectItem value="Magistratura Estadual">Magistratura Estadual</SelectItem>
               <SelectItem value="Magistratura Federal">Magistratura Federal</SelectItem>
-              <SelectItem value="Promotoria">Promotoria</SelectItem>
+              <SelectItem value="Ministério Público">Ministério Público</SelectItem>
               <SelectItem value="Defensoria">Defensoria</SelectItem>
               <SelectItem value="Procuradoria">Procuradoria</SelectItem>
               <SelectItem value="Analista">Analista</SelectItem>
@@ -1066,7 +1066,7 @@ function WeeklyQuestionsTab() {
                   <SelectItem value="Delegado">Delegado</SelectItem>
                   <SelectItem value="Magistratura Estadual">Magistratura Estadual</SelectItem>
                   <SelectItem value="Magistratura Federal">Magistratura Federal</SelectItem>
-                  <SelectItem value="Promotoria">Promotoria</SelectItem>
+                  <SelectItem value="Ministério Público">Ministério Público</SelectItem>
                   <SelectItem value="Defensoria">Defensoria</SelectItem>
                   <SelectItem value="Analista">Analista</SelectItem>
                   <SelectItem value="EMERJ">EMERJ</SelectItem>
