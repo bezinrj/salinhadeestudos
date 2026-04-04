@@ -48,11 +48,8 @@ export function QuestionCard({ question, onDelete }: QuestionCardProps) {
       onClick={handleClick}>
       <CardHeader className="pb-3">
         <div className="flex flex-wrap gap-2 mb-2">
-          <Badge variant="outline" className={cn("text-[10px]", careerColors[question.career])}>
+          <Badge variant="outline" className="text-[10px] bg-white/10 text-white border-white/20">
             {question.career}
-          </Badge>
-          <Badge variant="outline" className={cn("text-[10px]", difficultyColors[question.difficulty])}>
-            {question.difficulty}
           </Badge>
           {isPremium ? (
             <Badge variant="outline" className="text-[10px] bg-gold/10 text-gold border-gold/20">
