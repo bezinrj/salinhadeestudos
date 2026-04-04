@@ -845,7 +845,7 @@ function WeeklyQuestionsTab() {
               <SelectItem value="Magistratura Federal">Magistratura Federal</SelectItem>
               <SelectItem value="Promotoria">Promotoria</SelectItem>
               <SelectItem value="Defensoria">Defensoria</SelectItem>
-              <SelectItem value="Procurador">Procurador</SelectItem>
+              <SelectItem value="Procuradoria">Procuradoria</SelectItem>
               <SelectItem value="Analista">Analista</SelectItem>
               <SelectItem value="EMERJ">EMERJ</SelectItem>
             </SelectContent>
