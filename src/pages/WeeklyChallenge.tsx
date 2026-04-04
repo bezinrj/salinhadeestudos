@@ -113,8 +113,7 @@ export default function WeeklyChallenge() {
               <CardHeader>
                 <div className="flex flex-wrap items-center gap-2 mb-2">
                   <Badge className="bg-gold/10 text-gold border-gold/20 text-[10px]">🏆 Desafio da Semana</Badge>
-                  <Badge variant="outline" className="text-primary border-primary/20 text-[10px]">{activeQuestion.career}</Badge>
-                  <Badge variant="outline" className="text-red-400 border-red-500/20 text-[10px]">{activeQuestion.difficulty}</Badge>
+                  <Badge variant="outline" className="bg-white/10 text-white border-white/20 text-[10px]">{activeQuestion.career}</Badge>
                 </div>
                 <CardTitle className="font-display text-xl">{activeQuestion.title}</CardTitle>
               </CardHeader>
