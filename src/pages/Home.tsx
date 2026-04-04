@@ -18,7 +18,7 @@ const features = [
 ];
 
 const benefits = [
-  { icon: Scale, title: "Foco Jurídico", description: "Questões para Delegado, Magistratura e Promotoria" },
+  { icon: Scale, title: "Foco Jurídico", description: "Questões para Delegado, Magistratura e Ministério Público" },
   { icon: Target, title: "Feedback Preciso", description: "Correção estruturada com pontos positivos e omissões" },
   { icon: TrendingUp, title: "Evolução Contínua", description: "Acompanhe seu desempenho ao longo do tempo" },
   { icon: Users, title: "Comunidade Ativa", description: "Estude junto com outros concurseiros dedicados" },
