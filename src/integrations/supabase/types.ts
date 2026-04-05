@@ -253,6 +253,127 @@ export type Database = {
           },
         ]
       }
+      schedule_access: {
+        Row: {
+          created_at: string | null
+          granted_by: string | null
+          id: string
+          schedule_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          granted_by?: string | null
+          id?: string
+          schedule_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          granted_by?: string | null
+          id?: string
+          schedule_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedule_access_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "schedules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      schedule_blocks: {
+        Row: {
+          block_date: string
+          color: string | null
+          created_at: string | null
+          discipline: string
+          dod_url: string | null
+          id: string
+          notes: string | null
+          questions_url: string | null
+          schedule_id: string
+          sort_order: number
+          status: string
+          subject: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          block_date: string
+          color?: string | null
+          created_at?: string | null
+          discipline: string
+          dod_url?: string | null
+          id?: string
+          notes?: string | null
+          questions_url?: string | null
+          schedule_id: string
+          sort_order?: number
+          status?: string
+          subject?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          block_date?: string
+          color?: string | null
+          created_at?: string | null
+          discipline?: string
+          dod_url?: string | null
+          id?: string
+          notes?: string | null
+          questions_url?: string | null
+          schedule_id?: string
+          sort_order?: number
+          status?: string
+          subject?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedule_blocks_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "schedules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      schedules: {
+        Row: {
+          color_theme: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          status: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          color_theme?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          status?: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          color_theme?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          status?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       user_badges: {
         Row: {
           badge_id: string
