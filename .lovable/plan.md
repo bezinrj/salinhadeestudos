@@ -1,48 +1,57 @@
 
+# Módulo Cronograma - Plano de Implementação
 
-# Plano: Correção semântica com IA
+## Fase 1: Banco de Dados (Migração)
 
-## Problema
-A correção atual usa `string.includes(keyword)` — busca exata de palavras-chave no texto. Se o aluno expressa o mesmo conceito com palavras diferentes, recebe zero. Isso impede notas justas mesmo quando a resposta está correta.
+### Tabela `schedules` (cronogramas)
+- `id`, `title`, `description`, `status` (draft/published/hidden), `color_theme`
+- `created_by` (admin), `created_at`, `updated_at`
+- RLS: admin CRUD completo, usuários autorizados podem ler cronogramas publicados
 
-## Solução
-Substituir a correção local por uma **edge function que usa IA (Lovable AI)** para avaliar semanticamente cada subitem do barema contra a resposta do aluno. A IA recebe o barema completo, o espelho, a resposta ideal e a resposta do aluno, e retorna a avaliação estruturada via tool calling.
+### Tabela `schedule_blocks` (blocos de estudo)
+- `id`, `schedule_id` (FK), `date`, `sort_order`
+- `discipline`, `subject`, `dod_url`, `questions_url`, `notes`
+- `status` (pending/in_progress/completed), `color`
+- `created_at`, `updated_at`
+- RLS: admin CRUD, usuários autorizados leitura
 
-## Mudanças
+### Tabela `schedule_access` (controle de acesso por usuário)
+- `id`, `user_id`, `schedule_id`, `granted_by`, `created_at`
+- RLS: admin gerencia, usuário lê próprio acesso
 
-### 1. Nova edge function `evaluate-answer`
-- Recebe: `answer`, `barema`, `mirrorText`, `idealAnswer`
-- Monta prompt instruindo a IA a avaliar semanticamente cada subitem, atribuindo "full", "partial" ou "missed"
-- Usa tool calling para retornar o resultado estruturado (mesma shape de `CorrectionResult`)
-- Modelo: `google/gemini-3-flash-preview` (rápido e capaz)
+## Fase 2: Frontend - Estrutura
 
-### 2. `src/pages/QuestionDetail.tsx` — chamar edge function
-- Substituir chamada local `evaluateAnswer()` por `supabase.functions.invoke('evaluate-answer', ...)`
-- Adicionar loading state durante avaliação (spinner/texto "Corrigindo com IA...")
-- Tratar erros (429, 402, falhas)
+### Menu e Rotas
+- Adicionar "Cronograma" no sidebar (apenas para admin inicialmente)
+- Rota `/cronograma` → lista de cronogramas
+- Rota `/cronograma/:id` → planner interativo
 
-### 3. `src/pages/Admin.tsx` — teste de correção
-- Atualizar o teste de correção no admin para também usar a edge function em vez da função local
-- Manter fallback local caso a IA falhe
+### Página de Lista de Cronogramas
+- Cards com título, descrição, status, progresso
+- Botão criar novo cronograma (admin)
+- Filtro por status
 
-### 4. `src/data/mockData.ts`
-- Manter `evaluateAnswer` como fallback offline, mas não será mais o método principal
+## Fase 3: Planner Interativo
 
-## Prompt da IA (resumo)
-```
-Você é um corretor de questões discursivas. Avalie a resposta do aluno
-contra cada subitem do barema. Considere sinônimos, paráfrases e
-expressões equivalentes. O aluno NÃO precisa usar as palavras exatas —
-basta demonstrar o mesmo conceito/sentido.
+### Visualizações
+- Dia, Semana, Mês (tabs)
+- Grid com blocos de estudo por data
 
-Para cada subitem, atribua:
-- "full" (nota máxima) se o conceito foi adequadamente abordado
-- "partial" (50%) se foi mencionado de forma incompleta
-- "missed" (0) se não foi abordado
-```
+### Blocos de Estudo
+- Card com matéria, assunto, links (DOD, questões), status
+- Cor por matéria
+- Ações: editar, duplicar, excluir, marcar concluído
 
-## Arquivos afetados
-- `supabase/functions/evaluate-answer/index.ts` (novo)
-- `src/pages/QuestionDetail.tsx`
-- `src/pages/Admin.tsx`
+### Drag and Drop
+- Usar `@dnd-kit/core` para arrastar blocos entre datas
+- Reordenar dentro do mesmo dia
 
+## Fase 4: Barra de Progresso
+- Total de blocos, concluídos, em andamento, pendentes
+- Percentual visual com barra de progresso
+- Indicador de atrasados
+
+## Fase 5: Permissões e Publicação
+- Status draft/published/hidden
+- Controle de acesso granular por cronograma
+- Admin gerencia no painel
