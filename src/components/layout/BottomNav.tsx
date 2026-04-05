@@ -1,5 +1,5 @@
 import { useLocation, Link, useNavigate } from "react-router-dom";
-import { Scale, FileText, Timer, Trophy, User, LogOut, CreditCard, Shield } from "lucide-react";
+import { Scale, FileText, Timer, Trophy, User, LogOut, CreditCard, Shield, CalendarRange } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
@@ -19,7 +19,9 @@ export function BottomNav() {
   const { logout } = useAuth();
   const { isAdmin } = useIsAdmin();
 
-  const allNavItems = isAdmin ? [...navItems, { path: "/admin", icon: Shield, label: "Admin" }] : navItems;
+  const allNavItems = isAdmin
+    ? [...navItems, { path: "/cronograma", icon: CalendarRange, label: "Cronograma" }, { path: "/admin", icon: Shield, label: "Admin" }]
+    : navItems;
 
   const handleLogout = () => {
     logout();
