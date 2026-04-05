@@ -51,11 +51,6 @@ export function QuestionCard({ question, onDelete }: QuestionCardProps) {
           <Badge variant="outline" className="text-[10px] bg-white/10 text-white border-white/20">
             {question.career}
           </Badge>
-          {(question as any).subject && (
-            <Badge variant="outline" className="text-[10px] bg-blue-500/10 text-blue-400 border-blue-500/20">
-              {(question as any).subject}
-            </Badge>
-          )}
           {isPremium ? (
             <Badge variant="outline" className="text-[10px] bg-gold/10 text-gold border-gold/20">
               <Lock className="h-2.5 w-2.5 mr-1" /> Premium
