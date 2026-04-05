@@ -1,4 +1,4 @@
-import { Scale, FileText, Timer, Trophy, User, Calendar, LayoutDashboard, LogOut, CreditCard, Shield } from "lucide-react";
+import { Scale, FileText, Timer, Trophy, User, Calendar, LayoutDashboard, LogOut, CreditCard, Shield, CalendarRange } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -77,14 +77,24 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               ))}
               {isAdmin && (
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={isActive("/admin")}>
-                    <NavLink to="/admin" className="hover:bg-secondary/50" activeClassName="bg-secondary text-primary font-medium">
-                      <Shield className="mr-2 h-4 w-4" />
-                      {!collapsed && <span>Admin</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
+                <>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={isActive("/cronograma")}>
+                      <NavLink to="/cronograma" className="hover:bg-secondary/50" activeClassName="bg-secondary text-primary font-medium">
+                        <CalendarRange className="mr-2 h-4 w-4" />
+                        {!collapsed && <span>Cronograma</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={isActive("/admin")}>
+                      <NavLink to="/admin" className="hover:bg-secondary/50" activeClassName="bg-secondary text-primary font-medium">
+                        <Shield className="mr-2 h-4 w-4" />
+                        {!collapsed && <span>Admin</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </>
               )}
             </SidebarMenu>
           </SidebarGroupContent>
