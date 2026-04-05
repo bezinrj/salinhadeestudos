@@ -55,6 +55,7 @@ export default function QuestionDetail() {
         barema: data.barema as unknown as BaremaItem[] | undefined,
         mirrorText: (data as any).mirror_text as string | null,
         idealAnswer: (data as any).ideal_answer as string | null,
+        subject: (data as any).subject as string | null,
       };
     },
     enabled: !!id,
@@ -209,8 +210,13 @@ export default function QuestionDetail() {
       <Card className="gradient-card border-border">
         <CardHeader>
           <div className="flex flex-wrap gap-2 mb-2">
-            <Badge variant="outline" className="text-primary border-primary/20 bg-primary/10 text-[10px]">{question.career}</Badge>
+            <Badge variant="outline" className="text-white border-white/20 bg-white/10 text-[10px]">{question.career}</Badge>
             <Badge variant="outline" className="text-muted-foreground border-border text-[10px]">{question.discipline}</Badge>
+            {question.subject && (
+              <Badge variant="outline" className="text-[10px] bg-blue-500/10 text-blue-400 border-blue-500/20">
+                {question.subject}
+              </Badge>
+            )}
             {question.isWeekly && <Badge className="bg-gold/10 text-gold border-gold/20 text-[10px]">🏆 Questão da Semana</Badge>}
           </div>
           <CardTitle className="font-display text-xl">{question.title}</CardTitle>
