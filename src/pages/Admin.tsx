@@ -301,6 +301,14 @@ function UsersTab() {
     },
   });
 
+  const { data: manualSubs } = useQuery({
+    queryKey: ["admin-all-manual-subs"],
+    queryFn: async () => {
+      const { data } = await supabase.from("manual_subscriptions").select("*").eq("is_active", true).gte("expires_at", new Date().toISOString());
+      return data || [];
+    },
+  });
+
   const { data: users } = useQuery({
     queryKey: ["admin-users", search],
     queryFn: async () => {
@@ -321,9 +329,18 @@ function UsersTab() {
     return true;
   });
 
-  const getUserRole = (userId: string) => {
-    const r = (roles || []).find((r: any) => r.user_id === userId);
-    return r?.role || "user";
+  const getUserRoles = (userId: string) => {
+    return (roles || []).filter((r: any) => r.user_id === userId).map((r: any) => r.role);
+  };
+
+  const hasCortesia = (userId: string) => {
+    return (manualSubs || []).some((s: any) => s.user_id === userId);
+  };
+
+  const getAccessType = (userId: string, profile: any): "cortesia" | "premium" | "gratuito" => {
+    if (hasCortesia(userId)) return "cortesia";
+    if (profile.subscription_tier) return "premium";
+    return "gratuito";
   };
 
   const getLastSeen = (userId: string) => {
@@ -342,10 +359,18 @@ function UsersTab() {
     return `${Math.floor(hours / 24)}d atrás`;
   };
 
-  const roleBadge = (role: string) => {
-    if (role === "admin") return <Badge className="bg-red-500/20 text-red-400 border-red-400/30 text-[10px]"><Crown className="h-3 w-3 mr-1" />Admin</Badge>;
-    if (role === "moderator") return <Badge className="bg-blue-500/20 text-blue-400 border-blue-400/30 text-[10px]"><GraduationCap className="h-3 w-3 mr-1" />Professor</Badge>;
-    return null;
+  const accessBadge = (type: "cortesia" | "premium" | "gratuito") => {
+    if (type === "cortesia") return <Badge className="bg-orange-500/20 text-orange-400 border-orange-400/30 text-[10px]"><Gift className="h-3 w-3 mr-1" />Cortesia</Badge>;
+    if (type === "premium") return <Badge className="bg-green-500/20 text-green-400 border-green-400/30 text-[10px]"><Crown className="h-3 w-3 mr-1" />Premium</Badge>;
+    return <Badge variant="outline" className="text-[10px] text-muted-foreground">Gratuito</Badge>;
+  };
+
+  const roleBadges = (userRoles: string[]) => {
+    return userRoles.map((role) => {
+      if (role === "admin") return <Badge key={role} className="bg-red-500/20 text-red-400 border-red-400/30 text-[10px]"><Crown className="h-3 w-3 mr-1" />Admin</Badge>;
+      if (role === "moderator") return <Badge key={role} className="bg-blue-500/20 text-blue-400 border-blue-400/30 text-[10px]"><GraduationCap className="h-3 w-3 mr-1" />Moderador</Badge>;
+      return null;
+    }).filter(Boolean);
   };
 
   return (
@@ -363,7 +388,8 @@ function UsersTab() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {filteredUsers.map((u: any) => {
-          const role = getUserRole(u.id);
+          const userRolesList = getUserRoles(u.id);
+          const accessType = getAccessType(u.id, u);
           const isOnline = onlineIds.has(u.id);
           const lastSeen = getLastSeen(u.id);
           return (
@@ -378,10 +404,10 @@ function UsersTab() {
                     {isOnline && <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-green-500 border-2 border-card" />}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       <p className="text-sm font-semibold truncate">{u.name || u.username}</p>
-                      {roleBadge(role)}
-                      <Badge variant="outline" className="text-[10px] text-muted-foreground">Free</Badge>
+                      {accessBadge(accessType)}
+                      {roleBadges(userRolesList)}
                     </div>
                     <p className="text-xs text-muted-foreground">@{u.username}</p>
                     <div className="flex items-center gap-2 mt-1">
