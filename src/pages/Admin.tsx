@@ -69,6 +69,10 @@ export default function Admin() {
 
 /* ─── Overview Tab ─── */
 function OverviewTab() {
+  const [showCortesias, setShowCortesias] = useState(false);
+  const [cortesiaSearch, setCortesiaSearch] = useState("");
+  const [cortesiaFilter, setCortesiaFilter] = useState<"all" | "active" | "expired">("active");
+
   const { data: stats } = useQuery({
     queryKey: ["admin-stats"],
     queryFn: async () => {
@@ -91,6 +95,41 @@ function OverviewTab() {
       };
     },
     refetchInterval: 30_000,
+  });
+
+  const { data: allCortesias } = useQuery({
+    queryKey: ["admin-all-cortesias"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("manual_subscriptions")
+        .select("*")
+        .order("expires_at", { ascending: false });
+      if (!data?.length) return [];
+      const userIds = [...new Set(data.map((s: any) => s.user_id))];
+      const { data: profiles } = await supabase.from("profiles").select("id, username, name, avatar_url").in("id", userIds);
+      const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
+      return data.map((s: any) => ({
+        ...s,
+        profile: profileMap.get(s.user_id) || null,
+        isExpired: !s.is_active || new Date(s.expires_at) < new Date(),
+      }));
+    },
+    enabled: showCortesias,
+  });
+
+  const filteredCortesias = (allCortesias || []).filter((c: any) => {
+    if (cortesiaFilter === "active" && c.isExpired) return false;
+    if (cortesiaFilter === "expired" && !c.isExpired) return false;
+    if (cortesiaSearch) {
+      const q = cortesiaSearch.toLowerCase();
+      const name = (c.profile?.name || "").toLowerCase();
+      const username = (c.profile?.username || "").toLowerCase();
+      return name.includes(q) || username.includes(q);
+    }
+    return true;
+  }).sort((a: any, b: any) => {
+    if (a.isExpired !== b.isExpired) return a.isExpired ? 1 : -1;
+    return new Date(b.expires_at).getTime() - new Date(a.expires_at).getTime();
   });
 
   const { data: onlineProfiles } = useQuery({
@@ -116,19 +155,23 @@ function OverviewTab() {
   };
 
   const overviewCards = [
-    { title: "Total de Usuários", value: stats?.totalUsers ?? 0, icon: Users, color: "text-blue-400", bg: "bg-blue-500/10" },
-    { title: "Online Agora", value: stats?.onlineNow ?? 0, icon: Activity, color: "text-green-400", bg: "bg-green-500/10" },
-    { title: "Cortesias Ativas", value: stats?.manualPlans ?? 0, icon: Gift, color: "text-orange-400", bg: "bg-orange-500/10" },
-    { title: "Ativos (24h)", value: stats?.activeUsers ?? 0, icon: UserCheck, color: "text-sky-400", bg: "bg-sky-500/10" },
-    { title: "Bloqueados", value: stats?.blockedUsers ?? 0, icon: Ban, color: "text-red-400", bg: "bg-red-500/10" },
-    { title: "Assinaturas Ativas", value: stats?.activeSubscriptions ?? 0, icon: CreditCard, color: "text-primary", bg: "bg-primary/10" },
+    { title: "Total de Usuários", value: stats?.totalUsers ?? 0, icon: Users, color: "text-blue-400", bg: "bg-blue-500/10", onClick: undefined },
+    { title: "Online Agora", value: stats?.onlineNow ?? 0, icon: Activity, color: "text-green-400", bg: "bg-green-500/10", onClick: undefined },
+    { title: "Cortesias Ativas", value: stats?.manualPlans ?? 0, icon: Gift, color: "text-orange-400", bg: "bg-orange-500/10", onClick: () => setShowCortesias(true) },
+    { title: "Ativos (24h)", value: stats?.activeUsers ?? 0, icon: UserCheck, color: "text-sky-400", bg: "bg-sky-500/10", onClick: undefined },
+    { title: "Bloqueados", value: stats?.blockedUsers ?? 0, icon: Ban, color: "text-red-400", bg: "bg-red-500/10", onClick: undefined },
+    { title: "Assinaturas Ativas", value: stats?.activeSubscriptions ?? 0, icon: CreditCard, color: "text-primary", bg: "bg-primary/10", onClick: undefined },
   ];
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
         {overviewCards.map((card) => (
-          <Card key={card.title} className="gradient-card border-border hover:scale-[1.02] transition-transform">
+          <Card
+            key={card.title}
+            className={cn("gradient-card border-border hover:scale-[1.02] transition-transform", card.onClick && "cursor-pointer hover:border-primary/40")}
+            onClick={card.onClick}
+          >
             <CardContent className="p-5">
               <div className="flex items-center gap-4">
                 <div className={`rounded-xl p-3 ${card.bg}`}>
@@ -143,6 +186,61 @@ function OverviewTab() {
           </Card>
         ))}
       </div>
+
+      {/* Cortesias Drawer */}
+      <Drawer open={showCortesias} onOpenChange={setShowCortesias}>
+        <DrawerContent className="max-h-[90vh]">
+          <DrawerHeader className="text-left">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Gift className="h-5 w-5 text-orange-400" />
+                <DrawerTitle>Cortesias</DrawerTitle>
+              </div>
+              <DrawerClose asChild><Button variant="ghost" size="icon"><X className="h-4 w-4" /></Button></DrawerClose>
+            </div>
+            <DrawerDescription>Gerencie todas as cortesias atribuídas aos usuários.</DrawerDescription>
+          </DrawerHeader>
+          <div className="px-4 pb-6 space-y-4 overflow-y-auto">
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Input placeholder="Buscar por nome ou username..." value={cortesiaSearch} onChange={(e) => setCortesiaSearch(e.target.value)} className="max-w-sm" />
+              <div className="flex gap-1">
+                {(["active", "expired", "all"] as const).map((f) => (
+                  <Button key={f} variant={cortesiaFilter === f ? "default" : "outline"} size="sm" onClick={() => setCortesiaFilter(f)}>
+                    {f === "active" ? "Ativas" : f === "expired" ? "Expiradas" : "Todas"}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              {filteredCortesias.length ? filteredCortesias.map((c: any) => (
+                <div key={c.id} className="flex items-center gap-3 p-3 rounded-lg bg-secondary/50">
+                  <Avatar className="h-9 w-9">
+                    <AvatarImage src={c.profile?.avatar_url} />
+                    <AvatarFallback className="bg-primary/20 text-primary text-xs">{(c.profile?.name || c.profile?.username || "?")[0].toUpperCase()}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{c.profile?.name || c.profile?.username || "—"}</p>
+                    <p className="text-xs text-muted-foreground">@{c.profile?.username || "—"}</p>
+                  </div>
+                  <div className="text-right space-y-0.5">
+                    <Badge className={cn("text-[10px]", c.isExpired ? "bg-red-500/20 text-red-400 border-red-400/30" : "bg-green-500/20 text-green-400 border-green-400/30")}>
+                      {c.isExpired ? "Expirada" : "Ativa"}
+                    </Badge>
+                    <p className="text-[10px] text-muted-foreground">{c.plan_type === "trial" ? "Trial" : "Premium"}</p>
+                  </div>
+                  <div className="text-right space-y-0.5 hidden sm:block">
+                    <p className="text-[10px] text-muted-foreground">Início: {new Date(c.starts_at).toLocaleDateString("pt-BR")}</p>
+                    <p className="text-[10px] text-muted-foreground">Término: {new Date(c.expires_at).toLocaleDateString("pt-BR")}</p>
+                  </div>
+                </div>
+              )) : (
+                <p className="text-sm text-muted-foreground text-center py-8">Nenhuma cortesia encontrada.</p>
+              )}
+            </div>
+          </div>
+        </DrawerContent>
+      </Drawer>
 
       <Card className="gradient-card border-border">
         <CardHeader>
@@ -203,6 +301,14 @@ function UsersTab() {
     },
   });
 
+  const { data: manualSubs } = useQuery({
+    queryKey: ["admin-all-manual-subs"],
+    queryFn: async () => {
+      const { data } = await supabase.from("manual_subscriptions").select("*").eq("is_active", true).gte("expires_at", new Date().toISOString());
+      return data || [];
+    },
+  });
+
   const { data: users } = useQuery({
     queryKey: ["admin-users", search],
     queryFn: async () => {
@@ -223,9 +329,18 @@ function UsersTab() {
     return true;
   });
 
-  const getUserRole = (userId: string) => {
-    const r = (roles || []).find((r: any) => r.user_id === userId);
-    return r?.role || "user";
+  const getUserRoles = (userId: string) => {
+    return (roles || []).filter((r: any) => r.user_id === userId).map((r: any) => r.role);
+  };
+
+  const hasCortesia = (userId: string) => {
+    return (manualSubs || []).some((s: any) => s.user_id === userId);
+  };
+
+  const getAccessType = (userId: string, profile: any): "cortesia" | "premium" | "gratuito" => {
+    if (hasCortesia(userId)) return "cortesia";
+    if (profile.subscription_tier) return "premium";
+    return "gratuito";
   };
 
   const getLastSeen = (userId: string) => {
@@ -244,10 +359,18 @@ function UsersTab() {
     return `${Math.floor(hours / 24)}d atrás`;
   };
 
-  const roleBadge = (role: string) => {
-    if (role === "admin") return <Badge className="bg-red-500/20 text-red-400 border-red-400/30 text-[10px]"><Crown className="h-3 w-3 mr-1" />Admin</Badge>;
-    if (role === "moderator") return <Badge className="bg-blue-500/20 text-blue-400 border-blue-400/30 text-[10px]"><GraduationCap className="h-3 w-3 mr-1" />Professor</Badge>;
-    return null;
+  const accessBadge = (type: "cortesia" | "premium" | "gratuito") => {
+    if (type === "cortesia") return <Badge className="bg-orange-500/20 text-orange-400 border-orange-400/30 text-[10px]"><Gift className="h-3 w-3 mr-1" />Cortesia</Badge>;
+    if (type === "premium") return <Badge className="bg-green-500/20 text-green-400 border-green-400/30 text-[10px]"><Crown className="h-3 w-3 mr-1" />Premium</Badge>;
+    return <Badge variant="outline" className="text-[10px] text-muted-foreground">Gratuito</Badge>;
+  };
+
+  const roleBadges = (userRoles: string[]) => {
+    return userRoles.map((role) => {
+      if (role === "admin") return <Badge key={role} className="bg-red-500/20 text-red-400 border-red-400/30 text-[10px]"><Crown className="h-3 w-3 mr-1" />Admin</Badge>;
+      if (role === "moderator") return <Badge key={role} className="bg-blue-500/20 text-blue-400 border-blue-400/30 text-[10px]"><GraduationCap className="h-3 w-3 mr-1" />Moderador</Badge>;
+      return null;
+    }).filter(Boolean);
   };
 
   return (
@@ -265,7 +388,8 @@ function UsersTab() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {filteredUsers.map((u: any) => {
-          const role = getUserRole(u.id);
+          const userRolesList = getUserRoles(u.id);
+          const accessType = getAccessType(u.id, u);
           const isOnline = onlineIds.has(u.id);
           const lastSeen = getLastSeen(u.id);
           return (
@@ -280,10 +404,10 @@ function UsersTab() {
                     {isOnline && <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-green-500 border-2 border-card" />}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       <p className="text-sm font-semibold truncate">{u.name || u.username}</p>
-                      {roleBadge(role)}
-                      <Badge variant="outline" className="text-[10px] text-muted-foreground">Free</Badge>
+                      {accessBadge(accessType)}
+                      {roleBadges(userRolesList)}
                     </div>
                     <p className="text-xs text-muted-foreground">@{u.username}</p>
                     <div className="flex items-center gap-2 mt-1">
@@ -327,7 +451,7 @@ function UsersTab() {
       {selectedUser && (
         <UserDetailDrawer
           user={selectedUser}
-          role={getUserRole(selectedUser.id)}
+          role={getUserRoles(selectedUser.id)[0] || "user"}
           isOnline={onlineIds.has(selectedUser.id)}
           onClose={() => setSelectedUser(null)}
         />
