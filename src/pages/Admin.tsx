@@ -451,7 +451,7 @@ function UsersTab() {
       {selectedUser && (
         <UserDetailDrawer
           user={selectedUser}
-          role={getUserRole(selectedUser.id)}
+          role={getUserRoles(selectedUser.id)[0] || "user"}
           isOnline={onlineIds.has(selectedUser.id)}
           onClose={() => setSelectedUser(null)}
         />
