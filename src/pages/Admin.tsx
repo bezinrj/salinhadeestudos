@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { useIsModerator } from "@/hooks/useIsModerator";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -27,14 +28,18 @@ import { SubjectTreeSelect } from "@/components/SubjectTreeSelect";
 
 export default function Admin() {
   const { isAdmin, loading: adminLoading } = useIsAdmin();
+  const { isModerator, loading: modLoading } = useIsModerator();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (!adminLoading && !isAdmin) navigate("/dashboard", { replace: true });
-  }, [isAdmin, adminLoading, navigate]);
+  const hasAccess = isAdmin || isModerator;
+  const loading = adminLoading || modLoading;
 
-  if (adminLoading) return <div className="flex items-center justify-center min-h-[60vh]"><p className="text-muted-foreground">Verificando permissões...</p></div>;
-  if (!isAdmin) return null;
+  useEffect(() => {
+    if (!loading && !hasAccess) navigate("/dashboard", { replace: true });
+  }, [hasAccess, loading, navigate]);
+
+  if (loading) return <div className="flex items-center justify-center min-h-[60vh]"><p className="text-muted-foreground">Verificando permissões...</p></div>;
+  if (!hasAccess) return null;
 
   return (
     <div className="space-y-6">
@@ -46,23 +51,35 @@ export default function Admin() {
         <p className="text-muted-foreground text-sm mt-1">Gerencie usuários, conteúdo e configurações do sistema.</p>
       </motion.div>
 
-      <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-6 bg-secondary">
-          <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-          <TabsTrigger value="users">Usuários</TabsTrigger>
-          <TabsTrigger value="weekly">Semanal</TabsTrigger>
-          <TabsTrigger value="announcements">Avisos</TabsTrigger>
-          <TabsTrigger value="content">Conteúdo</TabsTrigger>
-          <TabsTrigger value="subjects">Assuntos</TabsTrigger>
-        </TabsList>
+      {isAdmin ? (
+        <Tabs defaultValue="overview" className="space-y-4">
+          <TabsList className="grid w-full grid-cols-6 bg-secondary">
+            <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+            <TabsTrigger value="users">Usuários</TabsTrigger>
+            <TabsTrigger value="weekly">Semanal</TabsTrigger>
+            <TabsTrigger value="announcements">Avisos</TabsTrigger>
+            <TabsTrigger value="content">Conteúdo</TabsTrigger>
+            <TabsTrigger value="subjects">Assuntos</TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="overview"><OverviewTab /></TabsContent>
-        <TabsContent value="users"><UsersTab /></TabsContent>
-        <TabsContent value="weekly"><WeeklyQuestionsTab /></TabsContent>
-        <TabsContent value="announcements"><AnnouncementsTab /></TabsContent>
-        <TabsContent value="content"><ContentTab /></TabsContent>
-        <TabsContent value="subjects"><SubjectsTab /></TabsContent>
-      </Tabs>
+          <TabsContent value="overview"><OverviewTab /></TabsContent>
+          <TabsContent value="users"><UsersTab /></TabsContent>
+          <TabsContent value="weekly"><WeeklyQuestionsTab /></TabsContent>
+          <TabsContent value="announcements"><AnnouncementsTab /></TabsContent>
+          <TabsContent value="content"><ContentTab /></TabsContent>
+          <TabsContent value="subjects"><SubjectsTab /></TabsContent>
+        </Tabs>
+      ) : (
+        <Tabs defaultValue="weekly" className="space-y-4">
+          <TabsList className="grid w-full grid-cols-2 bg-secondary">
+            <TabsTrigger value="weekly">Semanal</TabsTrigger>
+            <TabsTrigger value="subjects">Assuntos</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="weekly"><WeeklyQuestionsTab /></TabsContent>
+          <TabsContent value="subjects"><SubjectsTab /></TabsContent>
+        </Tabs>
+      )}
     </div>
   );
 }
@@ -589,7 +606,7 @@ function UserDetailDrawer({ user, role, isOnline, onClose }: { user: any; role: 
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="user">Aluno</SelectItem>
-                    <SelectItem value="moderator">Professor</SelectItem>
+                    <SelectItem value="moderator">Moderador</SelectItem>
                     <SelectItem value="admin">Admin</SelectItem>
                   </SelectContent>
                 </Select>

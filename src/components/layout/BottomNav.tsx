@@ -3,6 +3,7 @@ import { Scale, FileText, Timer, Trophy, User, LogOut, CreditCard, Shield, Calen
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { useIsModerator } from "@/hooks/useIsModerator";
 
 const navItems = [
   { path: "/dashboard", icon: Scale, label: "Home" },
@@ -18,9 +19,12 @@ export function BottomNav() {
   const navigate = useNavigate();
   const { logout } = useAuth();
   const { isAdmin } = useIsAdmin();
+  const { isModerator } = useIsModerator();
 
   const allNavItems = isAdmin
     ? [...navItems, { path: "/cronograma", icon: CalendarRange, label: "Cronograma" }, { path: "/admin", icon: Shield, label: "Admin" }]
+    : isModerator
+    ? [...navItems, { path: "/admin", icon: Shield, label: "Admin" }]
     : navItems;
 
   const handleLogout = () => {
