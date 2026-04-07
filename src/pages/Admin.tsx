@@ -425,18 +425,6 @@ function UsersTab() {
                   <Button variant="outline" size="sm" className="h-7 text-[11px] px-2" onClick={() => setSelectedUser(u)}>
                     <Eye className="h-3 w-3 mr-1" />Acompanhar
                   </Button>
-                  <Button variant="outline" size="sm" className="h-7 text-[11px] px-2" onClick={() => setSelectedUser(u)}>
-                    <Crown className="h-3 w-3 mr-1" />Admin
-                  </Button>
-                  <Button variant="outline" size="sm" className="h-7 text-[11px] px-2" onClick={() => setSelectedUser(u)}>
-                    <GraduationCap className="h-3 w-3 mr-1" />Professor
-                  </Button>
-                  <Button variant="outline" size="sm" className="h-7 text-[11px] px-2" onClick={() => setSelectedUser(u)}>
-                    <CreditCard className="h-3 w-3 mr-1" />Plano
-                  </Button>
-                  <Button variant="outline" size="sm" className="h-7 text-[11px] px-2" onClick={() => setSelectedUser(u)}>
-                    <KeyRound className="h-3 w-3 mr-1" />Senha
-                  </Button>
                   <Button variant="outline" size="sm" className="h-7 text-[11px] px-2 text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => setSelectedUser(u)}>
                     <Trash2 className="h-3 w-3 mr-1" />Deletar
                   </Button>
