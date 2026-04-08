@@ -25,6 +25,9 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { disciplines, evaluateAnswer } from "@/data/mockData";
 import { cn } from "@/lib/utils";
 import { SubjectTreeSelect } from "@/components/SubjectTreeSelect";
+import ModerationRequestsTab from "@/components/ModerationRequestsTab";
+
+const ABSOLUTE_ADMIN_ID = "ffdb2f38-0e5b-4f29-8cb8-712fcfde53f6";
 
 export default function Admin() {
   const { isAdmin, loading: adminLoading } = useIsAdmin();
@@ -52,11 +55,12 @@ export default function Admin() {
       </motion.div>
 
       {isAdmin ? (
-        <Tabs defaultValue="overview" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-6 bg-secondary">
+         <Tabs defaultValue="overview" className="space-y-4">
+          <TabsList className="grid w-full grid-cols-7 bg-secondary">
             <TabsTrigger value="overview">Visão Geral</TabsTrigger>
             <TabsTrigger value="users">Usuários</TabsTrigger>
             <TabsTrigger value="weekly">Semanal</TabsTrigger>
+            <TabsTrigger value="requests">Solicitações</TabsTrigger>
             <TabsTrigger value="announcements">Avisos</TabsTrigger>
             <TabsTrigger value="content">Conteúdo</TabsTrigger>
             <TabsTrigger value="subjects">Assuntos</TabsTrigger>
@@ -65,6 +69,7 @@ export default function Admin() {
           <TabsContent value="overview"><OverviewTab /></TabsContent>
           <TabsContent value="users"><UsersTab /></TabsContent>
           <TabsContent value="weekly"><WeeklyQuestionsTab /></TabsContent>
+          <TabsContent value="requests"><ModerationRequestsTab /></TabsContent>
           <TabsContent value="announcements"><AnnouncementsTab /></TabsContent>
           <TabsContent value="content"><ContentTab /></TabsContent>
           <TabsContent value="subjects"><SubjectsTab /></TabsContent>
@@ -600,16 +605,20 @@ function UserDetailDrawer({ user, role, isOnline, onClose }: { user: any; role: 
             <div className="flex flex-col sm:flex-row gap-3">
               <div className="flex-1">
                 <p className="text-xs text-muted-foreground mb-1">Alterar Role</p>
-                <Select defaultValue={role} onValueChange={(v) => roleMutation.mutate(v)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="user">Aluno</SelectItem>
-                    <SelectItem value="moderator">Moderador</SelectItem>
-                    <SelectItem value="admin">Admin</SelectItem>
-                  </SelectContent>
-                </Select>
+                {user.id === ABSOLUTE_ADMIN_ID ? (
+                  <p className="text-xs text-yellow-400 p-2 rounded bg-yellow-500/10 border border-yellow-500/20">⚡ Admin Absoluto — não pode ser alterado</p>
+                ) : (
+                  <Select defaultValue={role} onValueChange={(v) => roleMutation.mutate(v)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="user">Aluno</SelectItem>
+                      <SelectItem value="moderator">Moderador</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
               <div className="flex-1">
                 <p className="text-xs text-muted-foreground mb-1">Senha</p>
@@ -621,32 +630,34 @@ function UserDetailDrawer({ user, role, isOnline, onClose }: { user: any; role: 
             </div>
 
             {/* Delete account */}
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="outline" className="w-full border-destructive/30 text-destructive hover:bg-destructive/10">
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Deletar Conta do Usuário
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Esta ação é <strong>irreversível</strong>. A conta de <strong>@{user.username}</strong> será permanentemente deletada, incluindo perfil, comentários e dados associados.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                  <AlertDialogAction
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    onClick={() => deleteUserMutation.mutate()}
-                    disabled={deleteUserMutation.isPending}
-                  >
-                    {deleteUserMutation.isPending ? "Deletando..." : "Sim, deletar conta"}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            {user.id !== ABSOLUTE_ADMIN_ID && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="outline" className="w-full border-destructive/30 text-destructive hover:bg-destructive/10">
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Deletar Conta do Usuário
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Esta ação é <strong>irreversível</strong>. A conta de <strong>@{user.username}</strong> será permanentemente deletada, incluindo perfil, comentários e dados associados.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      onClick={() => deleteUserMutation.mutate()}
+                      disabled={deleteUserMutation.isPending}
+                    >
+                      {deleteUserMutation.isPending ? "Deletando..." : "Sim, deletar conta"}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
           </div>
 
           <Separator />
@@ -771,6 +782,9 @@ function AnnouncementsTab() {
 function WeeklyQuestionsTab() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { isAdmin } = useIsAdmin();
+  const [modJustification, setModJustification] = useState("");
+  const [modAction, setModAction] = useState<{ type: "edit" | "delete"; question: any } | null>(null);
   const [title, setTitle] = useState("");
   const [career, setCareer] = useState("Delegado");
   const [discipline, setDiscipline] = useState("");
@@ -913,6 +927,28 @@ function WeeklyQuestionsTab() {
       queryClient.invalidateQueries({ queryKey: ["discursivas-questions"] });
       setEditingQuestion(null);
       toast({ title: "Questão atualizada!" });
+    },
+    onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
+  });
+
+  // Moderation request mutation (for moderators)
+  const modRequestMutation = useMutation({
+    mutationFn: async ({ type, questionId, proposedData, justification }: { type: "edit" | "delete"; questionId: string; proposedData?: any; justification: string }) => {
+      const { error } = await (supabase.from("moderation_requests") as any).insert({
+        request_type: type,
+        question_id: questionId,
+        requester_id: user?.id,
+        justification,
+        proposed_data: proposedData || null,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["moderation-requests"] });
+      setModAction(null);
+      setModJustification("");
+      setEditingQuestion(null);
+      toast({ title: "Solicitação enviada!", description: "Um administrador precisará aprovar sua solicitação." });
     },
     onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
   });
@@ -1167,10 +1203,19 @@ function WeeklyQuestionsTab() {
                 <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:text-primary" onClick={() => openEditDialog(q)}>
                   <Pencil className="h-4 w-4" />
                 </Button>
-                <Switch checked={q.is_active} onCheckedChange={(checked) => toggleMutation.mutate({ id: q.id, is_active: checked })} />
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => deleteMutation.mutate(q.id)}>
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                {isAdmin && (
+                  <>
+                    <Switch checked={q.is_active} onCheckedChange={(checked) => toggleMutation.mutate({ id: q.id, is_active: checked })} />
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => deleteMutation.mutate(q.id)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </>
+                )}
+                {!isAdmin && (
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => { setModAction({ type: "delete", question: q }); setModJustification(""); }}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
             </div>
           )) : (
@@ -1263,12 +1308,82 @@ function WeeklyQuestionsTab() {
                   <span className="text-sm">Premium</span>
                 </div>
               </div>
-              <div className="flex gap-2 pt-2">
-                <Button onClick={() => updateMutation.mutate()} disabled={updateMutation.isPending || !editTitle.trim() || !editStatement.trim()}>
-                  {updateMutation.isPending ? "Salvando..." : "Salvar Alterações"}
+              {isAdmin ? (
+                <div className="flex gap-2 pt-2">
+                  <Button onClick={() => updateMutation.mutate()} disabled={updateMutation.isPending || !editTitle.trim() || !editStatement.trim()}>
+                    {updateMutation.isPending ? "Salvando..." : "Salvar Alterações"}
+                  </Button>
+                  <Button variant="outline" onClick={() => setEditingQuestion(null)}>Cancelar</Button>
+                </div>
+              ) : (
+                <div className="space-y-3 pt-2">
+                  <Textarea
+                    placeholder="Justificativa para a edição (obrigatório)..."
+                    value={modJustification}
+                    onChange={(e) => setModJustification(e.target.value)}
+                    rows={3}
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() => modRequestMutation.mutate({
+                        type: "edit",
+                        questionId: editingQuestion.id,
+                        justification: modJustification,
+                        proposedData: {
+                          title: editTitle, career: editCareer, discipline: editDiscipline,
+                          subject: editSubject.trim() || null, statement: editStatement,
+                          is_weekly: editIsWeekly, is_premium: editIsPremium,
+                          mirror_text: editMirrorText.trim() || null, ideal_answer: editIdealAnswer.trim() || null,
+                          banca: editBanca, year: parseInt(editYear),
+                        },
+                      })}
+                      disabled={modRequestMutation.isPending || !editTitle.trim() || !editStatement.trim() || !modJustification.trim()}
+                      className="bg-yellow-600 hover:bg-yellow-700"
+                    >
+                      {modRequestMutation.isPending ? "Enviando..." : "Solicitar Edição"}
+                    </Button>
+                    <Button variant="outline" onClick={() => setEditingQuestion(null)}>Cancelar</Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Sua solicitação será enviada para aprovação de um administrador.</p>
+                </div>
+              )}
+            </div>
+          </DrawerContent>
+        </Drawer>
+      )}
+
+      {/* Moderator delete request dialog */}
+      {modAction && modAction.type === "delete" && (
+        <Drawer open onOpenChange={(open) => !open && setModAction(null)}>
+          <DrawerContent className="max-h-[60vh]">
+            <DrawerHeader>
+              <DrawerTitle>Solicitar Exclusão</DrawerTitle>
+              <DrawerDescription>
+                Questão: Q-{String(modAction.question.public_id || "?").padStart(3, "0")} — {modAction.question.title}
+              </DrawerDescription>
+            </DrawerHeader>
+            <div className="px-4 pb-6 space-y-3">
+              <Textarea
+                placeholder="Justificativa para a exclusão (obrigatório)..."
+                value={modJustification}
+                onChange={(e) => setModJustification(e.target.value)}
+                rows={3}
+              />
+              <div className="flex gap-2">
+                <Button
+                  className="bg-yellow-600 hover:bg-yellow-700"
+                  onClick={() => modRequestMutation.mutate({
+                    type: "delete",
+                    questionId: modAction.question.id,
+                    justification: modJustification,
+                  })}
+                  disabled={modRequestMutation.isPending || !modJustification.trim()}
+                >
+                  {modRequestMutation.isPending ? "Enviando..." : "Solicitar Exclusão"}
                 </Button>
-                <Button variant="outline" onClick={() => setEditingQuestion(null)}>Cancelar</Button>
+                <Button variant="outline" onClick={() => setModAction(null)}>Cancelar</Button>
               </div>
+              <p className="text-xs text-muted-foreground">A questão só será excluída após aprovação de um administrador.</p>
             </div>
           </DrawerContent>
         </Drawer>

@@ -1,57 +1,28 @@
+## Plano de Implementação
 
-# Módulo Cronograma - Plano de Implementação
+### 1. Migração de Banco de Dados
+- Criar tabela `moderation_requests` para armazenar solicitações de moderadores (tipo, questão, dados propostos, status, justificativa, moderador, admin decisor, timestamps)
+- Criar função `is_absolute_admin()` para proteger o admin principal (vneto2023@gmail.com)
+- Adicionar RLS policies adequadas
+- Adicionar trigger para impedir remoção/alteração de role do admin absoluto
 
-## Fase 1: Banco de Dados (Migração)
+### 2. Proteção do Admin Absoluto
+- Trigger na tabela `user_roles` que impede DELETE/UPDATE no role do admin absoluto
+- Lógica no frontend para esconder botões de alteração de role quando o usuário alvo é o admin absoluto
 
-### Tabela `schedules` (cronogramas)
-- `id`, `title`, `description`, `status` (draft/published/hidden), `color_theme`
-- `created_by` (admin), `created_at`, `updated_at`
-- RLS: admin CRUD completo, usuários autorizados podem ler cronogramas publicados
+### 3. Fluxo do Moderador
+- Quando moderador tenta editar/excluir questão, ao invés de executar, cria uma `moderation_request`
+- Moderador preenche justificativa obrigatória
+- Questão original permanece inalterada
 
-### Tabela `schedule_blocks` (blocos de estudo)
-- `id`, `schedule_id` (FK), `date`, `sort_order`
-- `discipline`, `subject`, `dod_url`, `questions_url`, `notes`
-- `status` (pending/in_progress/completed), `color`
-- `created_at`, `updated_at`
-- RLS: admin CRUD, usuários autorizados leitura
+### 4. Menu "Solicitações" no Painel Admin
+- Nova aba no painel admin (visível apenas para admins)
+- Listagem com filtros (status, moderador, tipo)
+- Visualização de diff para edições
+- Botões aprovar/rejeitar
+- Histórico completo
 
-### Tabela `schedule_access` (controle de acesso por usuário)
-- `id`, `user_id`, `schedule_id`, `granted_by`, `created_at`
-- RLS: admin gerencia, usuário lê próprio acesso
-
-## Fase 2: Frontend - Estrutura
-
-### Menu e Rotas
-- Adicionar "Cronograma" no sidebar (apenas para admin inicialmente)
-- Rota `/cronograma` → lista de cronogramas
-- Rota `/cronograma/:id` → planner interativo
-
-### Página de Lista de Cronogramas
-- Cards com título, descrição, status, progresso
-- Botão criar novo cronograma (admin)
-- Filtro por status
-
-## Fase 3: Planner Interativo
-
-### Visualizações
-- Dia, Semana, Mês (tabs)
-- Grid com blocos de estudo por data
-
-### Blocos de Estudo
-- Card com matéria, assunto, links (DOD, questões), status
-- Cor por matéria
-- Ações: editar, duplicar, excluir, marcar concluído
-
-### Drag and Drop
-- Usar `@dnd-kit/core` para arrastar blocos entre datas
-- Reordenar dentro do mesmo dia
-
-## Fase 4: Barra de Progresso
-- Total de blocos, concluídos, em andamento, pendentes
-- Percentual visual com barra de progresso
-- Indicador de atrasados
-
-## Fase 5: Permissões e Publicação
-- Status draft/published/hidden
-- Controle de acesso granular por cronograma
-- Admin gerencia no painel
+### 5. Arquivos a Modificar
+- `src/pages/Admin.tsx` - adicionar aba Solicitações, proteger admin absoluto
+- Novo componente para o menu de Solicitações
+- Lógica de moderador nas telas de questões semanais
