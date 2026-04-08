@@ -140,6 +140,53 @@ export type Database = {
         }
         Relationships: []
       }
+      moderation_requests: {
+        Row: {
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          id: string
+          justification: string
+          proposed_data: Json | null
+          question_id: string
+          request_type: Database["public"]["Enums"]["moderation_request_type"]
+          requester_id: string
+          status: Database["public"]["Enums"]["moderation_request_status"]
+        }
+        Insert: {
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          id?: string
+          justification: string
+          proposed_data?: Json | null
+          question_id: string
+          request_type: Database["public"]["Enums"]["moderation_request_type"]
+          requester_id: string
+          status?: Database["public"]["Enums"]["moderation_request_status"]
+        }
+        Update: {
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          id?: string
+          justification?: string
+          proposed_data?: Json | null
+          question_id?: string
+          request_type?: Database["public"]["Enums"]["moderation_request_type"]
+          requester_id?: string
+          status?: Database["public"]["Enums"]["moderation_request_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "moderation_requests_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "weekly_questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profile_likes: {
         Row: {
           created_at: string | null
@@ -584,9 +631,12 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_absolute_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
+      moderation_request_status: "pending" | "approved" | "rejected"
+      moderation_request_type: "edit" | "delete"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -715,6 +765,8 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user"],
+      moderation_request_status: ["pending", "approved", "rejected"],
+      moderation_request_type: ["edit", "delete"],
     },
   },
 } as const
