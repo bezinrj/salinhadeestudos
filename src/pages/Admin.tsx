@@ -1308,12 +1308,45 @@ function WeeklyQuestionsTab() {
                   <span className="text-sm">Premium</span>
                 </div>
               </div>
-              <div className="flex gap-2 pt-2">
-                <Button onClick={() => updateMutation.mutate()} disabled={updateMutation.isPending || !editTitle.trim() || !editStatement.trim()}>
-                  {updateMutation.isPending ? "Salvando..." : "Salvar Alterações"}
-                </Button>
-                <Button variant="outline" onClick={() => setEditingQuestion(null)}>Cancelar</Button>
-              </div>
+              {isAdmin ? (
+                <div className="flex gap-2 pt-2">
+                  <Button onClick={() => updateMutation.mutate()} disabled={updateMutation.isPending || !editTitle.trim() || !editStatement.trim()}>
+                    {updateMutation.isPending ? "Salvando..." : "Salvar Alterações"}
+                  </Button>
+                  <Button variant="outline" onClick={() => setEditingQuestion(null)}>Cancelar</Button>
+                </div>
+              ) : (
+                <div className="space-y-3 pt-2">
+                  <Textarea
+                    placeholder="Justificativa para a edição (obrigatório)..."
+                    value={modJustification}
+                    onChange={(e) => setModJustification(e.target.value)}
+                    rows={3}
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() => modRequestMutation.mutate({
+                        type: "edit",
+                        questionId: editingQuestion.id,
+                        justification: modJustification,
+                        proposedData: {
+                          title: editTitle, career: editCareer, discipline: editDiscipline,
+                          subject: editSubject.trim() || null, statement: editStatement,
+                          is_weekly: editIsWeekly, is_premium: editIsPremium,
+                          mirror_text: editMirrorText.trim() || null, ideal_answer: editIdealAnswer.trim() || null,
+                          banca: editBanca, year: parseInt(editYear),
+                        },
+                      })}
+                      disabled={modRequestMutation.isPending || !editTitle.trim() || !editStatement.trim() || !modJustification.trim()}
+                      className="bg-yellow-600 hover:bg-yellow-700"
+                    >
+                      {modRequestMutation.isPending ? "Enviando..." : "Solicitar Edição"}
+                    </Button>
+                    <Button variant="outline" onClick={() => setEditingQuestion(null)}>Cancelar</Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Sua solicitação será enviada para aprovação de um administrador.</p>
+                </div>
+              )}
             </div>
           </DrawerContent>
         </Drawer>
