@@ -782,6 +782,9 @@ function AnnouncementsTab() {
 function WeeklyQuestionsTab() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { isAdmin } = useIsAdmin();
+  const [modJustification, setModJustification] = useState("");
+  const [modAction, setModAction] = useState<{ type: "edit" | "delete"; question: any } | null>(null);
   const [title, setTitle] = useState("");
   const [career, setCareer] = useState("Delegado");
   const [discipline, setDiscipline] = useState("");
