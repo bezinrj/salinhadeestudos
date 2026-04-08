@@ -1351,6 +1351,43 @@ function WeeklyQuestionsTab() {
           </DrawerContent>
         </Drawer>
       )}
+
+      {/* Moderator delete request dialog */}
+      {modAction && modAction.type === "delete" && (
+        <Drawer open onOpenChange={(open) => !open && setModAction(null)}>
+          <DrawerContent className="max-h-[60vh]">
+            <DrawerHeader>
+              <DrawerTitle>Solicitar Exclusão</DrawerTitle>
+              <DrawerDescription>
+                Questão: Q-{String(modAction.question.public_id || "?").padStart(3, "0")} — {modAction.question.title}
+              </DrawerDescription>
+            </DrawerHeader>
+            <div className="px-4 pb-6 space-y-3">
+              <Textarea
+                placeholder="Justificativa para a exclusão (obrigatório)..."
+                value={modJustification}
+                onChange={(e) => setModJustification(e.target.value)}
+                rows={3}
+              />
+              <div className="flex gap-2">
+                <Button
+                  className="bg-yellow-600 hover:bg-yellow-700"
+                  onClick={() => modRequestMutation.mutate({
+                    type: "delete",
+                    questionId: modAction.question.id,
+                    justification: modJustification,
+                  })}
+                  disabled={modRequestMutation.isPending || !modJustification.trim()}
+                >
+                  {modRequestMutation.isPending ? "Enviando..." : "Solicitar Exclusão"}
+                </Button>
+                <Button variant="outline" onClick={() => setModAction(null)}>Cancelar</Button>
+              </div>
+              <p className="text-xs text-muted-foreground">A questão só será excluída após aprovação de um administrador.</p>
+            </div>
+          </DrawerContent>
+        </Drawer>
+      )}
     </div>
   );
 }
