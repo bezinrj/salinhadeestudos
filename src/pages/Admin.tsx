@@ -931,6 +931,28 @@ function WeeklyQuestionsTab() {
     onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
   });
 
+  // Moderation request mutation (for moderators)
+  const modRequestMutation = useMutation({
+    mutationFn: async ({ type, questionId, proposedData, justification }: { type: "edit" | "delete"; questionId: string; proposedData?: any; justification: string }) => {
+      const { error } = await (supabase.from("moderation_requests") as any).insert({
+        request_type: type,
+        question_id: questionId,
+        requester_id: user?.id,
+        justification,
+        proposed_data: proposedData || null,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["moderation-requests"] });
+      setModAction(null);
+      setModJustification("");
+      setEditingQuestion(null);
+      toast({ title: "Solicitação enviada!", description: "Um administrador precisará aprovar sua solicitação." });
+    },
+    onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
+  });
+
   const openEditDialog = (q: any) => {
     setEditingQuestion(q);
     setEditTitle(q.title);
