@@ -630,32 +630,34 @@ function UserDetailDrawer({ user, role, isOnline, onClose }: { user: any; role: 
             </div>
 
             {/* Delete account */}
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="outline" className="w-full border-destructive/30 text-destructive hover:bg-destructive/10">
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Deletar Conta do Usuário
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Esta ação é <strong>irreversível</strong>. A conta de <strong>@{user.username}</strong> será permanentemente deletada, incluindo perfil, comentários e dados associados.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                  <AlertDialogAction
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    onClick={() => deleteUserMutation.mutate()}
-                    disabled={deleteUserMutation.isPending}
-                  >
-                    {deleteUserMutation.isPending ? "Deletando..." : "Sim, deletar conta"}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            {user.id !== ABSOLUTE_ADMIN_ID && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="outline" className="w-full border-destructive/30 text-destructive hover:bg-destructive/10">
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Deletar Conta do Usuário
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Esta ação é <strong>irreversível</strong>. A conta de <strong>@{user.username}</strong> será permanentemente deletada, incluindo perfil, comentários e dados associados.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      onClick={() => deleteUserMutation.mutate()}
+                      disabled={deleteUserMutation.isPending}
+                    >
+                      {deleteUserMutation.isPending ? "Deletando..." : "Sim, deletar conta"}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
           </div>
 
           <Separator />
