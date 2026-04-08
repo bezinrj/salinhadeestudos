@@ -605,16 +605,20 @@ function UserDetailDrawer({ user, role, isOnline, onClose }: { user: any; role: 
             <div className="flex flex-col sm:flex-row gap-3">
               <div className="flex-1">
                 <p className="text-xs text-muted-foreground mb-1">Alterar Role</p>
-                <Select defaultValue={role} onValueChange={(v) => roleMutation.mutate(v)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="user">Aluno</SelectItem>
-                    <SelectItem value="moderator">Moderador</SelectItem>
-                    <SelectItem value="admin">Admin</SelectItem>
-                  </SelectContent>
-                </Select>
+                {user.id === ABSOLUTE_ADMIN_ID ? (
+                  <p className="text-xs text-yellow-400 p-2 rounded bg-yellow-500/10 border border-yellow-500/20">⚡ Admin Absoluto — não pode ser alterado</p>
+                ) : (
+                  <Select defaultValue={role} onValueChange={(v) => roleMutation.mutate(v)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="user">Aluno</SelectItem>
+                      <SelectItem value="moderator">Moderador</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
               <div className="flex-1">
                 <p className="text-xs text-muted-foreground mb-1">Senha</p>
