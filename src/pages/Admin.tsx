@@ -25,6 +25,9 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { disciplines, evaluateAnswer } from "@/data/mockData";
 import { cn } from "@/lib/utils";
 import { SubjectTreeSelect } from "@/components/SubjectTreeSelect";
+import ModerationRequestsTab from "@/components/ModerationRequestsTab";
+
+const ABSOLUTE_ADMIN_ID = "ffdb2f38-0e5b-4f29-8cb8-712fcfde53f6";
 
 export default function Admin() {
   const { isAdmin, loading: adminLoading } = useIsAdmin();
