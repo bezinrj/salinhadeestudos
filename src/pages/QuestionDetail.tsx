@@ -25,6 +25,7 @@ export default function QuestionDetail() {
   const [correction, setCorrection] = useState<CorrectionResult | null>(null);
   const [lockedScore, setLockedScore] = useState<number | null>(null);
   const [isEvaluating, setIsEvaluating] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
   const { checkAndAward } = useBadges(user?.id);
 
   const { data: question, isLoading } = useQuery({
