@@ -223,10 +223,20 @@ export default function QuestionDetail() {
           </div>
           <CardTitle className="font-display text-xl">{question.title}</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
           <p className="text-sm text-foreground/90 leading-relaxed whitespace-pre-line">{question.statement}</p>
+          <Button variant="ghost" size="sm" className="text-xs text-muted-foreground gap-1.5 hover:text-yellow-400" onClick={() => setReportOpen(true)}>
+            <Flag className="h-3.5 w-3.5" /> Reportar problema
+          </Button>
         </CardContent>
       </Card>
+
+      <ReportQuestionDialog
+        questionId={question.id}
+        questionTitle={question.title}
+        open={reportOpen}
+        onOpenChange={setReportOpen}
+      />
 
       {/* Locked state - already answered weekly */}
       {isLocked && !correction ? (
