@@ -9,12 +9,13 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, CheckCircle2, XCircle, AlertTriangle, Lightbulb, FileText, Send, Lock, Loader2, Copy, Share2 } from "lucide-react";
+import { ArrowLeft, CheckCircle2, XCircle, AlertTriangle, Lightbulb, FileText, Send, Lock, Loader2, Copy, Share2, Flag } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { QuestionComments } from "@/components/QuestionComments";
 import { toast } from "@/hooks/use-toast";
 import { useBadges } from "@/hooks/useBadges";
+import { ReportQuestionDialog } from "@/components/ReportQuestionDialog";
 
 export default function QuestionDetail() {
   const { id } = useParams();
