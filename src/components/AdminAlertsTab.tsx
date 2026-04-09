@@ -50,8 +50,8 @@ export default function AdminAlertsTab() {
       if (!data?.length) return [];
 
       // Fetch question + user data
-      const questionIds = [...new Set(data.map((r: any) => r.question_id))];
-      const userIds = [...new Set(data.map((r: any) => r.user_id))];
+      const questionIds = [...new Set(data.map((r: any) => r.question_id))] as string[];
+      const userIds = [...new Set(data.map((r: any) => r.user_id))] as string[];
 
       const [questionsRes, profilesRes] = await Promise.all([
         supabase.from("weekly_questions").select("id, title, public_id, statement").in("id", questionIds),
