@@ -9,12 +9,13 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, CheckCircle2, XCircle, AlertTriangle, Lightbulb, FileText, Send, Lock, Loader2, Copy, Share2 } from "lucide-react";
+import { ArrowLeft, CheckCircle2, XCircle, AlertTriangle, Lightbulb, FileText, Send, Lock, Loader2, Copy, Share2, Flag } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { QuestionComments } from "@/components/QuestionComments";
 import { toast } from "@/hooks/use-toast";
 import { useBadges } from "@/hooks/useBadges";
+import { ReportQuestionDialog } from "@/components/ReportQuestionDialog";
 
 export default function QuestionDetail() {
   const { id } = useParams();
@@ -24,6 +25,7 @@ export default function QuestionDetail() {
   const [correction, setCorrection] = useState<CorrectionResult | null>(null);
   const [lockedScore, setLockedScore] = useState<number | null>(null);
   const [isEvaluating, setIsEvaluating] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
   const { checkAndAward } = useBadges(user?.id);
 
   const { data: question, isLoading } = useQuery({
@@ -221,10 +223,20 @@ export default function QuestionDetail() {
           </div>
           <CardTitle className="font-display text-xl">{question.title}</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
           <p className="text-sm text-foreground/90 leading-relaxed whitespace-pre-line">{question.statement}</p>
+          <Button variant="ghost" size="sm" className="text-xs text-muted-foreground gap-1.5 hover:text-yellow-400" onClick={() => setReportOpen(true)}>
+            <Flag className="h-3.5 w-3.5" /> Reportar problema
+          </Button>
         </CardContent>
       </Card>
+
+      <ReportQuestionDialog
+        questionId={question.id}
+        questionTitle={question.title}
+        open={reportOpen}
+        onOpenChange={setReportOpen}
+      />
 
       {/* Locked state - already answered weekly */}
       {isLocked && !correction ? (

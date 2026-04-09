@@ -387,6 +387,71 @@ export type Database = {
           },
         ]
       }
+      question_reports: {
+        Row: {
+          admin_note: string | null
+          attachment_deleted_at: string | null
+          attachment_expires_at: string | null
+          attachment_name: string | null
+          attachment_path: string | null
+          attachment_size: number | null
+          attachment_type: string | null
+          attachment_url: string | null
+          created_at: string
+          description: string
+          id: string
+          problem_type: Database["public"]["Enums"]["report_problem_type"]
+          question_id: string
+          status: Database["public"]["Enums"]["report_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_note?: string | null
+          attachment_deleted_at?: string | null
+          attachment_expires_at?: string | null
+          attachment_name?: string | null
+          attachment_path?: string | null
+          attachment_size?: number | null
+          attachment_type?: string | null
+          attachment_url?: string | null
+          created_at?: string
+          description: string
+          id?: string
+          problem_type: Database["public"]["Enums"]["report_problem_type"]
+          question_id: string
+          status?: Database["public"]["Enums"]["report_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_note?: string | null
+          attachment_deleted_at?: string | null
+          attachment_expires_at?: string | null
+          attachment_name?: string | null
+          attachment_path?: string | null
+          attachment_size?: number | null
+          attachment_type?: string | null
+          attachment_url?: string | null
+          created_at?: string
+          description?: string
+          id?: string
+          problem_type?: Database["public"]["Enums"]["report_problem_type"]
+          question_id?: string
+          status?: Database["public"]["Enums"]["report_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "question_reports_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "weekly_questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       schedule_access: {
         Row: {
           created_at: string | null
@@ -773,6 +838,20 @@ export type Database = {
       app_role: "admin" | "moderator" | "user"
       moderation_request_status: "pending" | "approved" | "rejected"
       moderation_request_type: "edit" | "delete"
+      report_problem_type:
+        | "gabarito_errado"
+        | "correcao_inconsistente"
+        | "problema_enunciado"
+        | "materia_errada"
+        | "barema_incoerente"
+        | "erro_digitacao"
+        | "outro"
+      report_status:
+        | "pendente"
+        | "em_analise"
+        | "procedente"
+        | "improcedente"
+        | "corrigido"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -903,6 +982,22 @@ export const Constants = {
       app_role: ["admin", "moderator", "user"],
       moderation_request_status: ["pending", "approved", "rejected"],
       moderation_request_type: ["edit", "delete"],
+      report_problem_type: [
+        "gabarito_errado",
+        "correcao_inconsistente",
+        "problema_enunciado",
+        "materia_errada",
+        "barema_incoerente",
+        "erro_digitacao",
+        "outro",
+      ],
+      report_status: [
+        "pendente",
+        "em_analise",
+        "procedente",
+        "improcedente",
+        "corrigido",
+      ],
     },
   },
 } as const

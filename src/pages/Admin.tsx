@@ -26,6 +26,7 @@ import { disciplines, evaluateAnswer } from "@/data/mockData";
 import { cn } from "@/lib/utils";
 import { SubjectTreeSelect } from "@/components/SubjectTreeSelect";
 import ModerationRequestsTab from "@/components/ModerationRequestsTab";
+import AdminAlertsTab from "@/components/AdminAlertsTab";
 
 const ABSOLUTE_ADMIN_ID = "ffdb2f38-0e5b-4f29-8cb8-712fcfde53f6";
 
@@ -56,10 +57,11 @@ export default function Admin() {
 
       {isAdmin ? (
          <Tabs defaultValue="overview" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-7 bg-secondary">
+          <TabsList className="grid w-full grid-cols-8 bg-secondary">
             <TabsTrigger value="overview">Visão Geral</TabsTrigger>
             <TabsTrigger value="users">Usuários</TabsTrigger>
             <TabsTrigger value="weekly">Semanal</TabsTrigger>
+            <TabsTrigger value="alerts">Alertas</TabsTrigger>
             <TabsTrigger value="requests">Solicitações</TabsTrigger>
             <TabsTrigger value="announcements">Avisos</TabsTrigger>
             <TabsTrigger value="content">Conteúdo</TabsTrigger>
@@ -69,6 +71,7 @@ export default function Admin() {
           <TabsContent value="overview"><OverviewTab /></TabsContent>
           <TabsContent value="users"><UsersTab /></TabsContent>
           <TabsContent value="weekly"><WeeklyQuestionsTab /></TabsContent>
+          <TabsContent value="alerts"><AdminAlertsTab /></TabsContent>
           <TabsContent value="requests"><ModerationRequestsTab /></TabsContent>
           <TabsContent value="announcements"><AnnouncementsTab /></TabsContent>
           <TabsContent value="content"><ContentTab /></TabsContent>
