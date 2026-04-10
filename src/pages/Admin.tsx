@@ -63,6 +63,13 @@ export default function Admin() {
     enabled: isAdmin,
   });
 
+  useEffect(() => {
+    if (!loading && !hasAccess) navigate("/dashboard", { replace: true });
+  }, [hasAccess, loading, navigate]);
+
+  if (loading) return <div className="flex items-center justify-center min-h-[60vh]"><p className="text-muted-foreground">Verificando permissões...</p></div>;
+  if (!hasAccess) return null;
+
   return (
     <div className="space-y-6">
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
