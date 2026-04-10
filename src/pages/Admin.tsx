@@ -45,6 +45,31 @@ export default function Admin() {
   if (loading) return <div className="flex items-center justify-center min-h-[60vh]"><p className="text-muted-foreground">Verificando permissões...</p></div>;
   if (!hasAccess) return null;
 
+  const { data: pendingAlerts = 0 } = useQuery({
+    queryKey: ["admin-pending-alerts-count"],
+    queryFn: async () => {
+      const { count, error } = await (supabase.from("question_reports" as any) as any)
+        .select("*", { count: "exact", head: true })
+        .eq("status", "pendente");
+      if (error) throw error;
+      return count || 0;
+    },
+    enabled: isAdmin,
+  });
+
+  const { data: pendingRequests = 0 } = useQuery({
+    queryKey: ["admin-pending-requests-count"],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("moderation_requests")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "pending");
+      if (error) throw error;
+      return count || 0;
+    },
+    enabled: isAdmin,
+  });
+
   return (
     <div className="space-y-6">
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
@@ -61,8 +86,22 @@ export default function Admin() {
             <TabsTrigger value="overview">Visão Geral</TabsTrigger>
             <TabsTrigger value="users">Usuários</TabsTrigger>
             <TabsTrigger value="weekly">Semanal</TabsTrigger>
-            <TabsTrigger value="alerts">Alertas</TabsTrigger>
-            <TabsTrigger value="requests">Solicitações</TabsTrigger>
+            <TabsTrigger value="alerts" className="relative">
+              Alertas
+              {pendingAlerts > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground px-1">
+                  {pendingAlerts > 99 ? "99+" : pendingAlerts}
+                </span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="requests" className="relative">
+              Solicitações
+              {pendingRequests > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground px-1">
+                  {pendingRequests > 99 ? "99+" : pendingRequests}
+                </span>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="announcements">Avisos</TabsTrigger>
             <TabsTrigger value="content">Conteúdo</TabsTrigger>
             <TabsTrigger value="subjects">Assuntos</TabsTrigger>
