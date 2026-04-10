@@ -326,17 +326,3 @@ function ScheduleCard({
   );
 }
 
-type Schedule = {
-  id: string;
-  title: string;
-  description: string;
-  status: string;
-  color_theme: string;
-  cover_image_url: string | null;
-  career: string | null;
-  access_type: string;
-  sort_order: number;
-  created_by: string | null;
-  created_at: string;
-  updated_at: string;
-};
