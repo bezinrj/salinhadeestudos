@@ -542,31 +542,43 @@ export type Database = {
       }
       schedules: {
         Row: {
+          access_type: string
+          career: string | null
           color_theme: string | null
+          cover_image_url: string | null
           created_at: string | null
           created_by: string | null
           description: string | null
           id: string
+          sort_order: number
           status: string
           title: string
           updated_at: string | null
         }
         Insert: {
+          access_type?: string
+          career?: string | null
           color_theme?: string | null
+          cover_image_url?: string | null
           created_at?: string | null
           created_by?: string | null
           description?: string | null
           id?: string
+          sort_order?: number
           status?: string
           title: string
           updated_at?: string | null
         }
         Update: {
+          access_type?: string
+          career?: string | null
           color_theme?: string | null
+          cover_image_url?: string | null
           created_at?: string | null
           created_by?: string | null
           description?: string | null
           id?: string
+          sort_order?: number
           status?: string
           title?: string
           updated_at?: string | null
