@@ -1,20 +1,21 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useAuth } from "@/contexts/AuthContext";
 import { motion } from "framer-motion";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Progress } from "@/components/ui/progress";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Calendar, Eye, EyeOff, FileEdit, Trash2, BarChart3 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Plus, Calendar, Lock, MoreVertical, FileEdit, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import ScheduleFormDialog from "@/components/ScheduleFormDialog";
 
 type Schedule = {
   id: string;
@@ -22,29 +23,22 @@ type Schedule = {
   description: string;
   status: string;
   color_theme: string;
+  cover_image_url: string | null;
+  career: string | null;
+  access_type: string;
+  sort_order: number;
   created_by: string | null;
   created_at: string;
   updated_at: string;
 };
 
-type BlockStats = {
-  total: number;
-  completed: number;
-  in_progress: number;
-  pending: number;
-};
-
 export default function Schedules() {
   const { isAdmin } = useIsAdmin();
-  const { user } = useAuth();
+  const { subscribed } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [showCreate, setShowCreate] = useState(false);
+  const [showForm, setShowForm] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState<Schedule | null>(null);
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [status, setStatus] = useState("draft");
-  const [colorTheme, setColorTheme] = useState("blue");
 
   const { data: schedules = [], isLoading } = useQuery({
     queryKey: ["schedules"],
@@ -52,72 +46,25 @@ export default function Schedules() {
       const { data, error } = await supabase
         .from("schedules")
         .select("*")
+        .order("sort_order", { ascending: true })
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as Schedule[];
     },
   });
 
-  const { data: blockStats = {} } = useQuery({
-    queryKey: ["schedule-block-stats"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("schedule_blocks")
-        .select("schedule_id, status");
-      if (error) throw error;
-      const stats: Record<string, BlockStats> = {};
-      (data || []).forEach((block: any) => {
-        if (!stats[block.schedule_id]) {
-          stats[block.schedule_id] = { total: 0, completed: 0, in_progress: 0, pending: 0 };
-        }
-        stats[block.schedule_id].total++;
-        if (block.status === "completed") stats[block.schedule_id].completed++;
-        else if (block.status === "in_progress") stats[block.schedule_id].in_progress++;
-        else stats[block.schedule_id].pending++;
-      });
-      return stats;
-    },
-  });
-
-  const createMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.from("schedules").insert({
-        title,
-        description,
-        status,
-        color_theme: colorTheme,
-        created_by: user?.id,
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["schedules"] });
-      setShowCreate(false);
-      resetForm();
-      toast.success("Cronograma criado com sucesso!");
-    },
-    onError: () => toast.error("Erro ao criar cronograma"),
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: async (schedule: Schedule) => {
-      const { error } = await supabase
-        .from("schedules")
-        .update({ title: schedule.title, description: schedule.description, status: schedule.status, color_theme: schedule.color_theme })
-        .eq("id", schedule.id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["schedules"] });
-      setEditingSchedule(null);
-      toast.success("Cronograma atualizado!");
-    },
-    onError: () => toast.error("Erro ao atualizar"),
-  });
-
   const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("schedules").delete().eq("id", id);
+    mutationFn: async (schedule: Schedule) => {
+      // Delete cover from storage if exists
+      if (schedule.cover_image_url) {
+        const path = schedule.cover_image_url.split("/schedule-covers/")[1];
+        if (path) {
+          await supabase.storage.from("schedule-covers").remove([path]);
+        }
+      }
+      // Delete blocks first
+      await supabase.from("schedule_blocks").delete().eq("schedule_id", schedule.id);
+      const { error } = await supabase.from("schedules").delete().eq("id", schedule.id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -127,210 +74,255 @@ export default function Schedules() {
     onError: () => toast.error("Erro ao excluir"),
   });
 
-  const resetForm = () => {
-    setTitle("");
-    setDescription("");
-    setStatus("draft");
-    setColorTheme("blue");
-  };
+  // Group schedules by career
+  const groupedByCareer = schedules.reduce<Record<string, Schedule[]>>((acc, s) => {
+    const key = s.career || "Sem carreira";
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(s);
+    return acc;
+  }, {});
 
-  const statusLabel = (s: string) => {
-    if (s === "draft") return "Rascunho";
-    if (s === "published") return "Publicado";
-    return "Oculto";
-  };
+  const careerOrder = [
+    "Delegado",
+    "Ministério Público",
+    "Magistratura Estadual",
+    "Defensoria",
+    "Procuradoria",
+  ];
 
-  const statusColor = (s: string) => {
-    if (s === "draft") return "bg-yellow-500/10 text-yellow-400 border-yellow-500/20";
-    if (s === "published") return "bg-green-500/10 text-green-400 border-green-500/20";
-    return "bg-red-500/10 text-red-400 border-red-500/20";
-  };
+  const sortedCareers = Object.keys(groupedByCareer).sort((a, b) => {
+    const ia = careerOrder.indexOf(a);
+    const ib = careerOrder.indexOf(b);
+    if (ia === -1 && ib === -1) return a.localeCompare(b);
+    if (ia === -1) return 1;
+    if (ib === -1) return -1;
+    return ia - ib;
+  });
 
-  const themeColors: Record<string, string> = {
-    blue: "from-blue-500/20 to-blue-600/5 border-blue-500/30",
-    green: "from-green-500/20 to-green-600/5 border-green-500/30",
-    purple: "from-purple-500/20 to-purple-600/5 border-purple-500/30",
-    orange: "from-orange-500/20 to-orange-600/5 border-orange-500/30",
-    red: "from-red-500/20 to-red-600/5 border-red-500/30",
+  const handleCardClick = (schedule: Schedule) => {
+    if (schedule.access_type === "premium" && !subscribed && !isAdmin) {
+      navigate("/meu-plano");
+      toast.info("Este cronograma é exclusivo para assinantes Premium.");
+      return;
+    }
+    navigate(`/cronograma/${schedule.id}`);
   };
 
   return (
-    <div className="p-4 md:p-6 space-y-6 pb-24 md:pb-6">
+    <div className="p-4 md:p-6 space-y-8 pb-24 md:pb-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Cronogramas</h1>
-          <p className="text-sm text-muted-foreground">Planeje seus estudos de forma organizada</p>
+          <h1 className="text-2xl font-bold text-foreground font-['Space_Grotesk']">Cronogramas</h1>
+          <p className="text-sm text-muted-foreground">Sua biblioteca de planos de estudo</p>
         </div>
         {isAdmin && (
-          <Dialog open={showCreate} onOpenChange={setShowCreate}>
-            <DialogTrigger asChild>
-              <Button size="sm" className="gap-2">
-                <Plus className="h-4 w-4" /> Novo Cronograma
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Criar Cronograma</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <Input placeholder="Título do cronograma" value={title} onChange={e => setTitle(e.target.value)} />
-                <Textarea placeholder="Descrição" value={description} onChange={e => setDescription(e.target.value)} />
-                <div className="grid grid-cols-2 gap-4">
-                  <Select value={status} onValueChange={setStatus}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="draft">Rascunho</SelectItem>
-                      <SelectItem value="published">Publicado</SelectItem>
-                      <SelectItem value="hidden">Oculto</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select value={colorTheme} onValueChange={setColorTheme}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="blue">🔵 Azul</SelectItem>
-                      <SelectItem value="green">🟢 Verde</SelectItem>
-                      <SelectItem value="purple">🟣 Roxo</SelectItem>
-                      <SelectItem value="orange">🟠 Laranja</SelectItem>
-                      <SelectItem value="red">🔴 Vermelho</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button onClick={() => createMutation.mutate()} disabled={!title.trim() || createMutation.isPending} className="w-full">
-                  {createMutation.isPending ? "Criando..." : "Criar Cronograma"}
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+          <Button size="sm" className="gap-2" onClick={() => { setEditingSchedule(null); setShowForm(true); }}>
+            <Plus className="h-4 w-4" /> Novo Cronograma
+          </Button>
         )}
       </div>
 
       {isLoading ? (
-        <div className="text-center py-12 text-muted-foreground">Carregando cronogramas...</div>
+        <div className="text-center py-16 text-muted-foreground">Carregando cronogramas...</div>
       ) : schedules.length === 0 ? (
-        <div className="text-center py-12">
-          <Calendar className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
-          <p className="text-muted-foreground">Nenhum cronograma disponível</p>
-          {isAdmin && <p className="text-sm text-muted-foreground mt-2">Crie seu primeiro cronograma clicando no botão acima.</p>}
+        <div className="text-center py-16">
+          <Calendar className="mx-auto h-14 w-14 text-muted-foreground/30 mb-4" />
+          <p className="text-muted-foreground text-lg">Nenhum cronograma disponível</p>
+          {isAdmin && <p className="text-sm text-muted-foreground mt-2">Crie seu primeiro cronograma.</p>}
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {schedules.map((schedule, i) => {
-            const stats = blockStats[schedule.id] || { total: 0, completed: 0, in_progress: 0, pending: 0 };
-            const progress = stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0;
-            return (
-              <motion.div
-                key={schedule.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.05 }}
-              >
-                <Card
-                  className={`cursor-pointer hover:shadow-lg transition-all border bg-gradient-to-br ${themeColors[schedule.color_theme] || themeColors.blue}`}
-                  onClick={() => navigate(`/cronograma/${schedule.id}`)}
-                >
-                  <CardHeader className="pb-2">
-                    <div className="flex items-start justify-between">
-                      <CardTitle className="text-lg text-foreground">{schedule.title}</CardTitle>
-                      <Badge variant="outline" className={statusColor(schedule.status)}>
-                        {statusLabel(schedule.status)}
-                      </Badge>
-                    </div>
-                    {schedule.description && (
-                      <p className="text-sm text-muted-foreground line-clamp-2">{schedule.description}</p>
-                    )}
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <BarChart3 className="h-3 w-3" />
-                      <span>{stats.total} blocos</span>
-                      <span>•</span>
-                      <span>{stats.completed} concluídos</span>
-                      <span>•</span>
-                      <span>{progress}%</span>
-                    </div>
-                    <Progress value={progress} className="h-2" />
-
-                    {isAdmin && (
-                      <div className="flex gap-2 pt-1" onClick={e => e.stopPropagation()}>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 text-xs"
-                          onClick={() => {
-                            setEditingSchedule(schedule);
-                            setTitle(schedule.title);
-                            setDescription(schedule.description);
-                            setStatus(schedule.status);
-                            setColorTheme(schedule.color_theme);
-                          }}
-                        >
-                          <FileEdit className="h-3 w-3 mr-1" /> Editar
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 text-xs text-destructive hover:text-destructive"
-                          onClick={() => {
-                            if (confirm("Excluir este cronograma e todos seus blocos?")) {
-                              deleteMutation.mutate(schedule.id);
-                            }
-                          }}
-                        >
-                          <Trash2 className="h-3 w-3 mr-1" /> Excluir
-                        </Button>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </motion.div>
-            );
-          })}
-        </div>
+        sortedCareers.map(career => (
+          <CareerRow
+            key={career}
+            career={career}
+            schedules={groupedByCareer[career]}
+            isAdmin={isAdmin}
+            subscribed={subscribed}
+            onCardClick={handleCardClick}
+            onEdit={(s) => { setEditingSchedule(s); setShowForm(true); }}
+            onDelete={(s) => {
+              if (confirm(`Excluir "${s.title}" e todos seus blocos?`)) {
+                deleteMutation.mutate(s);
+              }
+            }}
+          />
+        ))
       )}
 
-      {/* Edit Dialog */}
-      <Dialog open={!!editingSchedule} onOpenChange={open => { if (!open) setEditingSchedule(null); }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Editar Cronograma</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <Input placeholder="Título" value={title} onChange={e => setTitle(e.target.value)} />
-            <Textarea placeholder="Descrição" value={description} onChange={e => setDescription(e.target.value)} />
-            <div className="grid grid-cols-2 gap-4">
-              <Select value={status} onValueChange={setStatus}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="draft">Rascunho</SelectItem>
-                  <SelectItem value="published">Publicado</SelectItem>
-                  <SelectItem value="hidden">Oculto</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={colorTheme} onValueChange={setColorTheme}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="blue">🔵 Azul</SelectItem>
-                  <SelectItem value="green">🟢 Verde</SelectItem>
-                  <SelectItem value="purple">🟣 Roxo</SelectItem>
-                  <SelectItem value="orange">🟠 Laranja</SelectItem>
-                  <SelectItem value="red">🔴 Vermelho</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <Button
-              onClick={() => {
-                if (editingSchedule) {
-                  updateMutation.mutate({ ...editingSchedule, title, description, status, color_theme: colorTheme });
-                }
-              }}
-              disabled={!title.trim() || updateMutation.isPending}
-              className="w-full"
-            >
-              {updateMutation.isPending ? "Salvando..." : "Salvar Alterações"}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Form dialog */}
+      <ScheduleFormDialog
+        open={showForm}
+        onOpenChange={setShowForm}
+        editData={editingSchedule ? {
+          id: editingSchedule.id,
+          title: editingSchedule.title,
+          career: editingSchedule.career,
+          access_type: editingSchedule.access_type,
+          cover_image_url: editingSchedule.cover_image_url,
+          status: editingSchedule.status,
+          sort_order: editingSchedule.sort_order,
+        } : null}
+      />
     </div>
   );
 }
+
+function CareerRow({
+  career,
+  schedules,
+  isAdmin,
+  subscribed,
+  onCardClick,
+  onEdit,
+  onDelete,
+}: {
+  career: string;
+  schedules: Schedule[];
+  isAdmin: boolean;
+  subscribed: boolean;
+  onCardClick: (s: Schedule) => void;
+  onEdit: (s: Schedule) => void;
+  onDelete: (s: Schedule) => void;
+}) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const scroll = (dir: number) => {
+    scrollRef.current?.scrollBy({ left: dir * 280, behavior: "smooth" });
+  };
+
+  return (
+    <section>
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-lg font-semibold text-foreground font-['Space_Grotesk']">{career}</h2>
+        <div className="flex gap-1">
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => scroll(-1)}>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => scroll(1)}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
+      <div
+        ref={scrollRef}
+        className="flex gap-4 overflow-x-auto scrollbar-hide pb-2 -mx-1 px-1"
+        style={{ scrollSnapType: "x mandatory" }}
+      >
+        {schedules.map((schedule, i) => (
+          <ScheduleCard
+            key={schedule.id}
+            schedule={schedule}
+            index={i}
+            isAdmin={isAdmin}
+            subscribed={subscribed}
+            onClick={() => onCardClick(schedule)}
+            onEdit={() => onEdit(schedule)}
+            onDelete={() => onDelete(schedule)}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function ScheduleCard({
+  schedule,
+  index,
+  isAdmin,
+  subscribed,
+  onClick,
+  onEdit,
+  onDelete,
+}: {
+  schedule: Schedule;
+  index: number;
+  isAdmin: boolean;
+  subscribed: boolean;
+  onClick: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  const isPremium = schedule.access_type === "premium";
+  const isLocked = isPremium && !subscribed && !isAdmin;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.04, duration: 0.3 }}
+      className="flex-shrink-0 w-[160px] md:w-[180px]"
+      style={{ scrollSnapAlign: "start" }}
+    >
+      <div
+        className="group relative cursor-pointer rounded-xl overflow-hidden border border-border/50 bg-card hover:border-primary/40 transition-all duration-300 hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-1"
+        onClick={onClick}
+      >
+        {/* Cover */}
+        <div className="relative aspect-[3/4] bg-muted/50 overflow-hidden">
+          {schedule.cover_image_url ? (
+            <img
+              src={schedule.cover_image_url}
+              alt={schedule.title}
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              loading="lazy"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-secondary to-muted">
+              <Calendar className="h-10 w-10 text-muted-foreground/30" />
+            </div>
+          )}
+
+          {/* Premium/Free badge */}
+          {isPremium ? (
+            <Badge className="absolute top-2 left-2 bg-accent text-accent-foreground text-[10px] px-1.5 py-0.5 border-0 font-semibold">
+              Premium
+            </Badge>
+          ) : (
+            <Badge variant="outline" className="absolute top-2 left-2 bg-background/70 backdrop-blur-sm text-[10px] px-1.5 py-0.5 border-border/50 text-foreground">
+              Gratuito
+            </Badge>
+          )}
+
+          {/* Lock overlay */}
+          {isLocked && (
+            <div className="absolute inset-0 bg-background/60 backdrop-blur-[2px] flex items-center justify-center">
+              <div className="flex flex-col items-center gap-1">
+                <Lock className="h-6 w-6 text-accent" />
+                <span className="text-[10px] text-accent font-semibold">PREMIUM</span>
+              </div>
+            </div>
+          )}
+
+          {/* Admin menu */}
+          {isAdmin && (
+            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 bg-background/70 backdrop-blur-sm hover:bg-background/90">
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-40">
+                  <DropdownMenuItem onClick={onEdit}>
+                    <FileEdit className="h-4 w-4 mr-2" /> Editar
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={onDelete} className="text-destructive focus:text-destructive">
+                    <Trash2 className="h-4 w-4 mr-2" /> Excluir
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          )}
+        </div>
+
+        {/* Title */}
+        <div className="p-3">
+          <p className="text-sm font-medium text-foreground line-clamp-2 leading-snug">{schedule.title}</p>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
