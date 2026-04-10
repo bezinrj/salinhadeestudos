@@ -38,13 +38,6 @@ export default function Admin() {
   const hasAccess = isAdmin || isModerator;
   const loading = adminLoading || modLoading;
 
-  useEffect(() => {
-    if (!loading && !hasAccess) navigate("/dashboard", { replace: true });
-  }, [hasAccess, loading, navigate]);
-
-  if (loading) return <div className="flex items-center justify-center min-h-[60vh]"><p className="text-muted-foreground">Verificando permissões...</p></div>;
-  if (!hasAccess) return null;
-
   const { data: pendingAlerts = 0 } = useQuery({
     queryKey: ["admin-pending-alerts-count"],
     queryFn: async () => {
