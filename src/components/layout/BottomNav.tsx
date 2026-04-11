@@ -21,11 +21,13 @@ export function BottomNav() {
   const { isAdmin } = useIsAdmin();
   const { isModerator } = useIsModerator();
 
-  const allNavItems = isAdmin
-    ? [...navItems, { path: "/cronograma", icon: CalendarRange, label: "Cronograma" }, { path: "/admin", icon: Shield, label: "Admin" }]
-    : isModerator
-    ? [...navItems, { path: "/admin", icon: Shield, label: "Admin" }]
-    : navItems;
+  const cronogramaItem = { path: "/cronograma", icon: CalendarRange, label: "Cronograma" };
+  const adminItem = { path: "/admin", icon: Shield, label: "Admin" };
+  const allNavItems = [
+    ...navItems,
+    cronogramaItem,
+    ...((isAdmin || isModerator) ? [adminItem] : []),
+  ];
 
   const handleLogout = () => {
     logout();

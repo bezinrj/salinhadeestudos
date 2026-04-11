@@ -497,6 +497,7 @@ export type Database = {
           schedule_id: string
           sort_order: number
           status: string
+          study_time: string | null
           subject: string | null
           updated_at: string | null
         }
@@ -512,6 +513,7 @@ export type Database = {
           schedule_id: string
           sort_order?: number
           status?: string
+          study_time?: string | null
           subject?: string | null
           updated_at?: string | null
         }
@@ -527,6 +529,7 @@ export type Database = {
           schedule_id?: string
           sort_order?: number
           status?: string
+          study_time?: string | null
           subject?: string | null
           updated_at?: string | null
         }
@@ -584,6 +587,92 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      student_planner_entries: {
+        Row: {
+          block_id: string
+          created_at: string | null
+          id: string
+          is_completed: boolean
+          planned_date: string | null
+          planned_duration: string | null
+          schedule_id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          block_id: string
+          created_at?: string | null
+          id?: string
+          is_completed?: boolean
+          planned_date?: string | null
+          planned_duration?: string | null
+          schedule_id: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          block_id?: string
+          created_at?: string | null
+          id?: string
+          is_completed?: boolean
+          planned_date?: string | null
+          planned_duration?: string | null
+          schedule_id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_planner_entries_block_id_fkey"
+            columns: ["block_id"]
+            isOneToOne: false
+            referencedRelation: "schedule_blocks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_planner_entries_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "schedules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_planner_settings: {
+        Row: {
+          created_at: string | null
+          id: string
+          schedule_id: string
+          updated_at: string | null
+          user_id: string
+          weekly_hours: number
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          schedule_id: string
+          updated_at?: string | null
+          user_id: string
+          weekly_hours?: number
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          schedule_id?: string
+          updated_at?: string | null
+          user_id?: string
+          weekly_hours?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_planner_settings_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "schedules"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       suppressed_emails: {
         Row: {
