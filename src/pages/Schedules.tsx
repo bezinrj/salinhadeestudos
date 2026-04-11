@@ -113,7 +113,7 @@ export default function Schedules() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground font-['Space_Grotesk']">Cronogramas</h1>
+          <h1 className="text-2xl font-display font-bold text-foreground">Cronogramas</h1>
           <p className="text-sm text-muted-foreground">Sua biblioteca de planos de estudo</p>
         </div>
         {isAdmin && (
@@ -194,7 +194,7 @@ function CareerRow({
   return (
     <section>
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-lg font-semibold text-foreground font-['Space_Grotesk']">{career}</h2>
+        <h2 className="text-lg font-display font-semibold text-foreground">{career}</h2>
         <div className="flex gap-1">
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => scroll(-1)}>
             <ChevronLeft className="h-4 w-4" />
