@@ -9,13 +9,14 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, CheckCircle2, XCircle, AlertTriangle, Lightbulb, FileText, Send, Lock, Loader2, Copy, Share2, Flag } from "lucide-react";
+import { ArrowLeft, CheckCircle2, XCircle, AlertTriangle, Lightbulb, FileText, Send, Lock, Loader2, Copy, Share2, Flag, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { QuestionComments } from "@/components/QuestionComments";
 import { toast } from "@/hooks/use-toast";
 import { useBadges } from "@/hooks/useBadges";
 import { ReportQuestionDialog } from "@/components/ReportQuestionDialog";
+import { AnswerFileUpload } from "@/components/AnswerFileUpload";
 
 export default function QuestionDetail() {
   const { id } = useParams();
@@ -26,6 +27,8 @@ export default function QuestionDetail() {
   const [lockedScore, setLockedScore] = useState<number | null>(null);
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
+  const [submissionType, setSubmissionType] = useState<"texto_manual" | "transcricao" | "correcao_direta">("texto_manual");
+  const [uploadedFileUrl, setUploadedFileUrl] = useState<string | null>(null);
   const { checkAndAward } = useBadges(user?.id);
 
   const { data: question, isLoading } = useQuery({
@@ -91,22 +94,31 @@ export default function QuestionDetail() {
   const canAnswer = !isPremium || subscribed;
   const isLocked = question.isWeekly && lockedScore !== null;
 
-  const handleSubmit = async () => {
-    if (answer.trim().length < 50) return;
+  const handleSubmit = async (directImageBase64?: string, directMimeType?: string) => {
+    const isDirect = !!directImageBase64;
+    if (!isDirect && answer.trim().length < 50) return;
     if (!question.mirrorText && !question.idealAnswer) return;
     
     setIsEvaluating(true);
+    const currentSubmissionType = isDirect ? "correcao_direta" : submissionType;
     let result: CorrectionResult;
 
     try {
-      const { data, error } = await supabase.functions.invoke('evaluate-answer', {
-        body: {
-          answer,
-          baremaText: question.mirrorText || undefined,
-          gabarito: question.idealAnswer || undefined,
-          statement: question.statement || undefined,
-        },
-      });
+      const body: any = {
+        baremaText: question.mirrorText || undefined,
+        gabarito: question.idealAnswer || undefined,
+        statement: question.statement || undefined,
+      };
+
+      if (isDirect) {
+        body.imageBase64 = directImageBase64;
+        body.mimeType = directMimeType;
+        body.directCorrection = true;
+      } else {
+        body.answer = answer;
+      }
+
+      const { data, error } = await supabase.functions.invoke('evaluate-answer', { body });
 
       if (error || data?.error) {
         console.warn("AI evaluation failed:", error || data?.error);
@@ -130,15 +142,27 @@ export default function QuestionDetail() {
     const { data: currentProfile } = await supabase.from("profiles").select("total_essays, weekly_hours, streak, rank_position, subscription_tier").eq("id", user!.id).single();
 
     if (user) {
-      // Save answer for ALL questions (weekly and regular) so "Resolvidas" filter works
-      const { error } = await (supabase.from("weekly_answers" as any) as any).insert({
+      const insertData: any = {
         user_id: user.id,
         question_id: question.id,
-        answer_text: answer,
+        answer_text: isDirect ? "[Correção direta por imagem]" : answer,
         score: result.grade,
-      });
+        submission_type: currentSubmissionType,
+        direct_correction_used: isDirect,
+      };
+
+      if (isDirect && result.handwritingNote) {
+        insertData.handwriting_legibility_note = result.handwritingNote;
+        insertData.handwriting_legibility_level = result.handwritingLevel;
+      }
+
+      if (uploadedFileUrl) {
+        insertData.uploaded_file_url = uploadedFileUrl;
+      }
+
+      const { error } = await (supabase.from("weekly_answers" as any) as any).insert(insertData);
       if (error && error.code === "23505") {
-        // Already answered - ignore duplicate
+        // Already answered
       } else if (error) {
         toast({ title: "Erro ao salvar resposta", description: error.message, variant: "destructive" });
       } else {
@@ -164,6 +188,15 @@ export default function QuestionDetail() {
         subscriptionTier: currentProfile?.subscription_tier,
       });
     }
+  };
+
+  const handleTranscriptionComplete = (text: string) => {
+    setAnswer(text);
+    setSubmissionType("transcricao");
+  };
+
+  const handleDirectCorrection = (imageBase64: string, mimeType: string) => {
+    handleSubmit(imageBase64, mimeType);
   };
 
   const getGradeColor = (grade: number) => {
@@ -260,12 +293,12 @@ export default function QuestionDetail() {
             <Textarea
               placeholder="Escreva ou cole sua resposta aqui... (mínimo 50 caracteres)"
               value={answer}
-              onChange={e => setAnswer(e.target.value)}
+              onChange={e => { setAnswer(e.target.value); setSubmissionType("texto_manual"); }}
               className="min-h-[250px] bg-secondary border-border resize-y text-sm"
             />
             <div className="flex items-center justify-between">
               <span className="text-xs text-muted-foreground">{answer.length} caracteres</span>
-              <Button onClick={handleSubmit} disabled={answer.trim().length < 50 || isEvaluating} className="gradient-electric text-white font-semibold">
+              <Button onClick={() => handleSubmit()} disabled={answer.trim().length < 50 || isEvaluating} className="gradient-electric text-white font-semibold">
                 {isEvaluating ? (
                   <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Corrigindo com IA...</>
                 ) : (
@@ -273,6 +306,17 @@ export default function QuestionDetail() {
                 )}
               </Button>
             </div>
+
+            {/* File upload section */}
+            {user && (
+              <AnswerFileUpload
+                userId={user.id}
+                questionId={question.id}
+                onTranscriptionComplete={handleTranscriptionComplete}
+                onDirectCorrection={handleDirectCorrection}
+                disabled={isEvaluating}
+              />
+            )}
           </CardContent>
         </Card>
         ) : (
@@ -403,6 +447,33 @@ export default function QuestionDetail() {
             <CardHeader><CardTitle className="text-sm font-medium flex items-center gap-2"><Lightbulb className="h-4 w-4 text-primary" /> Resposta Ideal</CardTitle></CardHeader>
             <CardContent><p className="text-sm text-foreground/85 leading-relaxed whitespace-pre-line">{correction.idealAnswer}</p></CardContent>
           </Card>
+
+          {/* Handwriting Legibility */}
+          {correction.handwritingNote && (
+            <Card className="gradient-card border-amber-500/20">
+              <CardHeader>
+                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <Eye className="h-4 w-4 text-amber-400" /> Legibilidade da Escrita
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-foreground/85 leading-relaxed">{correction.handwritingNote}</p>
+                {correction.handwritingLevel && (
+                  <Badge variant="outline" className={cn("mt-2 text-[10px]",
+                    correction.handwritingLevel === "plenamente_legivel" && "border-green-500/30 text-green-400",
+                    correction.handwritingLevel === "legivel_com_esforco" && "border-yellow-500/30 text-yellow-400",
+                    correction.handwritingLevel === "prejudica_parcialmente" && "border-orange-500/30 text-orange-400",
+                    correction.handwritingLevel === "compromete_correcao" && "border-red-500/30 text-red-400",
+                  )}>
+                    {correction.handwritingLevel === "plenamente_legivel" && "✅ Plenamente legível"}
+                    {correction.handwritingLevel === "legivel_com_esforco" && "⚠️ Legível com esforço"}
+                    {correction.handwritingLevel === "prejudica_parcialmente" && "🔶 Prejudica parcialmente"}
+                    {correction.handwritingLevel === "compromete_correcao" && "🔴 Compromete a correção"}
+                  </Badge>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Feedback */}
           <Card className="gradient-card border-gold/20">

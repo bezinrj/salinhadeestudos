@@ -18,5 +18,8 @@ verify_jwt = false
 [functions.evaluate-answer]
 verify_jwt = false
 
+[functions.transcribe-answer]
+verify_jwt = false
+
 [functions.process-email-queue]
 verify_jwt = true

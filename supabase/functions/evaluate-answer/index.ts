@@ -10,10 +10,12 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { answer, baremaText, gabarito, statement } = await req.json();
+    const { answer, baremaText, gabarito, statement, imageBase64, mimeType, directCorrection } = await req.json();
 
-    if (!answer) {
-      return new Response(JSON.stringify({ error: "answer is required" }), {
+    const hasImage = !!imageBase64 && directCorrection;
+    
+    if (!answer && !hasImage) {
+      return new Response(JSON.stringify({ error: "answer or image is required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -29,6 +31,25 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
+    const handwritingSection = hasImage ? `
+
+## DIAGNÓSTICO DE CALIGRAFIA (obrigatório quando a resposta vem de imagem manuscrita):
+
+Analise a caligrafia da imagem e classifique em um dos níveis:
+- "plenamente_legivel" — A caligrafia é legível e não compromete a correção.
+- "legivel_com_esforco" — A escrita é compreensível, embora exija algum esforço pontual do corretor.
+- "prejudica_parcialmente" — A caligrafia apresenta trechos de difícil leitura, o que pode prejudicar parcialmente a avaliação.
+- "compromete_correcao" — A legibilidade está bastante comprometida e isso pode impedir uma correção segura em alguns trechos.
+
+Forneça também uma observação humanizada e objetiva sobre a caligrafia.
+Este diagnóstico NÃO substitui a correção do conteúdo — é uma observação complementar.
+Só aponte impedimento quando a escrita realmente inviabilizar compreender trechos relevantes.
+
+Ao corrigir a partir de imagem manuscrita:
+- Tente preservar a resposta real do aluno
+- NÃO penalize automaticamente pequenas falhas de leitura
+- Se houver trechos ilegíveis, mencione na correção mas NÃO invente conteúdo` : "";
+
     const systemPrompt = `Você é um corretor especialista de questões discursivas de concursos públicos brasileiros.
 
 ## ENTRADAS FIXAS (cadastradas pelo sistema — NÃO modifique, NÃO reorganize, NÃO converta):
@@ -43,14 +64,14 @@ ${baremaText || "(não informado)"}
 ${gabarito || "(não informado)"}
 
 ## ENTRADA VARIÁVEL (enviada pelo aluno no momento da correção):
-A resposta do aluno será fornecida na próxima mensagem.
+${hasImage ? "A resposta do aluno será fornecida como IMAGEM MANUSCRITA na próxima mensagem." : "A resposta do aluno será fornecida na próxima mensagem."}
 
 ## FUNÇÃO DO CORRETOR:
 
 1. Ler o enunciado cadastrado
 2. Ler o barema oficial cadastrado — este é o espelho oficial, NÃO recriar, NÃO converter em JSON, NÃO alterar a divisão de pontos
 3. Ler o gabarito oficial cadastrado — esta é a referência oficial
-4. Ler a resposta do aluno
+4. Ler a resposta do aluno${hasImage ? " (transcrever mentalmente a imagem manuscrita)" : ""}
 5. Identificar os itens/critérios presentes no barema oficial
 6. Comparar a resposta do aluno com CADA critério do barema
 7. Atribuir nota por item/critério
@@ -89,79 +110,101 @@ Essa resposta ideal deve:
 - Manter os trechos corretos da resposta do aluno
 - Reescrever apenas os trechos deficientes
 - Manter fidelidade ao espelho oficial da correção
-- Usar a resposta do aluno como BASE para a personalização`;
+- Usar a resposta do aluno como BASE para a personalização${handwritingSection}`;
 
-    const userPrompt = `RESPOSTA DO ALUNO:
-${answer}
-
-Avalie cada critério do barema e retorne o resultado usando a ferramenta fornecida. 
+    // Build user message content
+    const userContent: any[] = [];
+    
+    if (hasImage) {
+      userContent.push({
+        type: "image_url",
+        image_url: {
+          url: `data:${mimeType || "image/jpeg"};base64,${imageBase64}`,
+        },
+      });
+      userContent.push({
+        type: "text",
+        text: `Esta é a RESPOSTA MANUSCRITA DO ALUNO em imagem. Leia a imagem, transcreva mentalmente o conteúdo e avalie cada critério do barema. Retorne o resultado usando a ferramenta fornecida.
 IMPORTANTE: 
 - Extraia os itens/critérios do barema de texto e use-os no baremaBreakdown
-- A resposta ideal (idealAnswer) deve ser PERSONALIZADA para este aluno, reescrevendo a resposta dele corrigindo erros e omissões`;
+- A resposta ideal (idealAnswer) deve ser PERSONALIZADA para este aluno
+- Inclua o diagnóstico de caligrafia (handwritingNote e handwritingLevel)`,
+      });
+    } else {
+      userContent.push({
+        type: "text",
+        text: `RESPOSTA DO ALUNO:
+${answer}
+
+Avalie cada critério do barema e retorne o resultado usando a ferramenta fornecida.
+IMPORTANTE: 
+- Extraia os itens/critérios do barema de texto e use-os no baremaBreakdown
+- A resposta ideal (idealAnswer) deve ser PERSONALIZADA para este aluno, reescrevendo a resposta dele corrigindo erros e omissões`,
+      });
+    }
+
+    const toolProperties: any = {
+      baremaBreakdown: {
+        type: "array",
+        description: "Evaluation of each item/criterion extracted from the text barema.",
+        items: {
+          type: "object",
+          properties: {
+            letter: { type: "string", description: "Item identifier (e.g., 'a', 'b', '1', '2')" },
+            title: { type: "string", description: "Item/criterion title" },
+            maxScore: { type: "number", description: "Maximum score for this item" },
+            earnedScore: { type: "number", description: "Score earned by the student" },
+            subitems: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  description: { type: "string" },
+                  maxScore: { type: "number" },
+                  earnedScore: { type: "number" },
+                  status: { type: "string", enum: ["full", "partial", "missed"] },
+                  justification: { type: "string" },
+                },
+                required: ["description", "maxScore", "earnedScore", "status", "justification"],
+              },
+            },
+          },
+          required: ["letter", "title", "maxScore", "earnedScore", "subitems"],
+        },
+      },
+      mirror: { type: "string", description: "Resumo do espelho de correção" },
+      positives: { type: "array", items: { type: "string" }, description: "Pontos positivos" },
+      errors: { type: "array", items: { type: "string" }, description: "Erros e imprecisões" },
+      omissions: { type: "array", items: { type: "string" }, description: "Omissões" },
+      idealAnswer: { type: "string", description: "Resposta ideal PERSONALIZADA" },
+      feedback: { type: "string", description: "Feedback de melhoria" },
+    };
+
+    const requiredFields = ["baremaBreakdown", "mirror", "positives", "errors", "omissions", "idealAnswer", "feedback"];
+
+    if (hasImage) {
+      toolProperties.handwritingNote = {
+        type: "string",
+        description: "Observação humanizada sobre a caligrafia/legibilidade do manuscrito",
+      };
+      toolProperties.handwritingLevel = {
+        type: "string",
+        enum: ["plenamente_legivel", "legivel_com_esforco", "prejudica_parcialmente", "compromete_correcao"],
+        description: "Nível de legibilidade da caligrafia",
+      };
+      requiredFields.push("handwritingNote", "handwritingLevel");
+    }
 
     const tools = [
       {
         type: "function",
         function: {
           name: "submit_correction",
-          description: "Submit the structured correction result for the student's answer",
+          description: "Submit the structured correction result",
           parameters: {
             type: "object",
-            properties: {
-              baremaBreakdown: {
-                type: "array",
-                description: "Evaluation of each item/criterion extracted from the text barema. Use the EXACT items from the original barema text.",
-                items: {
-                  type: "object",
-                  properties: {
-                    letter: { type: "string", description: "Item identifier (e.g., 'a', 'b', '1', '2') — extracted from the barema text" },
-                    title: { type: "string", description: "Item/criterion title — extracted from the barema text" },
-                    maxScore: { type: "number", description: "Maximum score for this item — extracted from the barema text" },
-                    earnedScore: { type: "number", description: "Score earned by the student for this item" },
-                    subitems: {
-                      type: "array",
-                      items: {
-                        type: "object",
-                        properties: {
-                          description: { type: "string", description: "Subitem/sub-criterion description — extracted from the barema text" },
-                          maxScore: { type: "number", description: "Max score for this subitem — extracted from the barema text" },
-                          earnedScore: { type: "number", description: "Score earned by the student" },
-                          status: { type: "string", enum: ["full", "partial", "missed"] },
-                          justification: { type: "string", description: "Brief justification for the score attributed" },
-                        },
-                        required: ["description", "maxScore", "earnedScore", "status", "justification"],
-                      },
-                    },
-                  },
-                  required: ["letter", "title", "maxScore", "earnedScore", "subitems"],
-                },
-              },
-              mirror: { type: "string", description: "Resumo do espelho de correção baseado no barema oficial" },
-              positives: {
-                type: "array",
-                items: { type: "string" },
-                description: "Pontos positivos da resposta do aluno — o que ele acertou e demonstrou conhecimento",
-              },
-              errors: {
-                type: "array",
-                items: { type: "string" },
-                description: "Erros, imprecisões ou abordagens incorretas na resposta do aluno",
-              },
-              omissions: {
-                type: "array",
-                items: { type: "string" },
-                description: "Pontos do barema que foram completamente omitidos pelo aluno",
-              },
-              idealAnswer: {
-                type: "string",
-                description: "Resposta ideal PERSONALIZADA para este aluno: reescrita da resposta corrigindo os erros e omissões identificados, mantendo trechos corretos e melhorando os deficientes, baseada no barema e gabarito oficiais. NÃO é uma cópia do gabarito.",
-              },
-              feedback: {
-                type: "string",
-                description: "Feedback de melhoria personalizado para o aluno, com dicas práticas de estudo",
-              },
-            },
-            required: ["baremaBreakdown", "mirror", "positives", "errors", "omissions", "idealAnswer", "feedback"],
+            properties: toolProperties,
+            required: requiredFields,
           },
         },
       },
@@ -174,10 +217,10 @@ IMPORTANTE:
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: hasImage ? "google/gemini-2.5-flash" : "google/gemini-3-flash-preview",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
+          { role: "user", content: userContent },
         ],
         tools,
         tool_choice: { type: "function", function: { name: "submit_correction" } },
@@ -193,7 +236,7 @@ IMPORTANTE:
         });
       }
       if (status === 402) {
-        return new Response(JSON.stringify({ error: "Créditos de IA esgotados. Adicione créditos na sua conta." }), {
+        return new Response(JSON.stringify({ error: "Créditos de IA esgotados." }), {
           status: 402,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -218,16 +261,15 @@ IMPORTANTE:
 
     const correction = JSON.parse(toolCall.function.arguments);
 
-    // Calculate total grade from baremaBreakdown
     const grade = Math.round(
       correction.baremaBreakdown.reduce((sum: number, item: any) => sum + item.earnedScore, 0) * 10
     ) / 10;
 
-    const result = {
+    const result: any = {
       id: `corr-${Date.now()}`,
       questionId: "",
       userId: "",
-      answer,
+      answer: answer || "",
       grade,
       maxGrade: 10,
       mirror: correction.mirror,
@@ -239,6 +281,11 @@ IMPORTANTE:
       createdAt: new Date().toISOString().split("T")[0],
       baremaBreakdown: correction.baremaBreakdown,
     };
+
+    if (hasImage) {
+      result.handwritingNote = correction.handwritingNote || null;
+      result.handwritingLevel = correction.handwritingLevel || null;
+    }
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
