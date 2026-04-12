@@ -27,6 +27,8 @@ export default function QuestionDetail() {
   const [lockedScore, setLockedScore] = useState<number | null>(null);
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
+  const [submissionType, setSubmissionType] = useState<"texto_manual" | "transcricao" | "correcao_direta">("texto_manual");
+  const [uploadedFileUrl, setUploadedFileUrl] = useState<string | null>(null);
   const { checkAndAward } = useBadges(user?.id);
 
   const { data: question, isLoading } = useQuery({
