@@ -775,25 +775,55 @@ export type Database = {
         Row: {
           answer_text: string
           created_at: string
+          direct_correction_used: boolean
+          handwriting_legibility_level: string | null
+          handwriting_legibility_note: string | null
           id: string
+          ocr_confidence: number | null
+          ocr_text: string | null
+          processing_status: string | null
           question_id: string
           score: number
+          submission_type: string
+          transcription_reviewed_text: string | null
+          uploaded_file_name: string | null
+          uploaded_file_url: string | null
           user_id: string
         }
         Insert: {
           answer_text: string
           created_at?: string
+          direct_correction_used?: boolean
+          handwriting_legibility_level?: string | null
+          handwriting_legibility_note?: string | null
           id?: string
+          ocr_confidence?: number | null
+          ocr_text?: string | null
+          processing_status?: string | null
           question_id: string
           score?: number
+          submission_type?: string
+          transcription_reviewed_text?: string | null
+          uploaded_file_name?: string | null
+          uploaded_file_url?: string | null
           user_id: string
         }
         Update: {
           answer_text?: string
           created_at?: string
+          direct_correction_used?: boolean
+          handwriting_legibility_level?: string | null
+          handwriting_legibility_note?: string | null
           id?: string
+          ocr_confidence?: number | null
+          ocr_text?: string | null
+          processing_status?: string | null
           question_id?: string
           score?: number
+          submission_type?: string
+          transcription_reviewed_text?: string | null
+          uploaded_file_name?: string | null
+          uploaded_file_url?: string | null
           user_id?: string
         }
         Relationships: [
