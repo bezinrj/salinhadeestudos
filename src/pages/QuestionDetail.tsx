@@ -293,12 +293,12 @@ export default function QuestionDetail() {
             <Textarea
               placeholder="Escreva ou cole sua resposta aqui... (mínimo 50 caracteres)"
               value={answer}
-              onChange={e => setAnswer(e.target.value)}
+              onChange={e => { setAnswer(e.target.value); setSubmissionType("texto_manual"); }}
               className="min-h-[250px] bg-secondary border-border resize-y text-sm"
             />
             <div className="flex items-center justify-between">
               <span className="text-xs text-muted-foreground">{answer.length} caracteres</span>
-              <Button onClick={handleSubmit} disabled={answer.trim().length < 50 || isEvaluating} className="gradient-electric text-white font-semibold">
+              <Button onClick={() => handleSubmit()} disabled={answer.trim().length < 50 || isEvaluating} className="gradient-electric text-white font-semibold">
                 {isEvaluating ? (
                   <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Corrigindo com IA...</>
                 ) : (
@@ -306,6 +306,17 @@ export default function QuestionDetail() {
                 )}
               </Button>
             </div>
+
+            {/* File upload section */}
+            {user && (
+              <AnswerFileUpload
+                userId={user.id}
+                questionId={question.id}
+                onTranscriptionComplete={handleTranscriptionComplete}
+                onDirectCorrection={handleDirectCorrection}
+                disabled={isEvaluating}
+              />
+            )}
           </CardContent>
         </Card>
         ) : (
