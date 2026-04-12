@@ -73,6 +73,8 @@ export interface CorrectionResult {
   feedback: string;
   createdAt: string;
   baremaBreakdown: BaremaScore[];
+  handwritingNote?: string;
+  handwritingLevel?: string;
 }
 
 export interface BaremaScore {
