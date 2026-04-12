@@ -94,22 +94,31 @@ export default function QuestionDetail() {
   const canAnswer = !isPremium || subscribed;
   const isLocked = question.isWeekly && lockedScore !== null;
 
-  const handleSubmit = async () => {
-    if (answer.trim().length < 50) return;
+  const handleSubmit = async (directImageBase64?: string, directMimeType?: string) => {
+    const isDirect = !!directImageBase64;
+    if (!isDirect && answer.trim().length < 50) return;
     if (!question.mirrorText && !question.idealAnswer) return;
     
     setIsEvaluating(true);
+    const currentSubmissionType = isDirect ? "correcao_direta" : submissionType;
     let result: CorrectionResult;
 
     try {
-      const { data, error } = await supabase.functions.invoke('evaluate-answer', {
-        body: {
-          answer,
-          baremaText: question.mirrorText || undefined,
-          gabarito: question.idealAnswer || undefined,
-          statement: question.statement || undefined,
-        },
-      });
+      const body: any = {
+        baremaText: question.mirrorText || undefined,
+        gabarito: question.idealAnswer || undefined,
+        statement: question.statement || undefined,
+      };
+
+      if (isDirect) {
+        body.imageBase64 = directImageBase64;
+        body.mimeType = directMimeType;
+        body.directCorrection = true;
+      } else {
+        body.answer = answer;
+      }
+
+      const { data, error } = await supabase.functions.invoke('evaluate-answer', { body });
 
       if (error || data?.error) {
         console.warn("AI evaluation failed:", error || data?.error);
@@ -133,15 +142,27 @@ export default function QuestionDetail() {
     const { data: currentProfile } = await supabase.from("profiles").select("total_essays, weekly_hours, streak, rank_position, subscription_tier").eq("id", user!.id).single();
 
     if (user) {
-      // Save answer for ALL questions (weekly and regular) so "Resolvidas" filter works
-      const { error } = await (supabase.from("weekly_answers" as any) as any).insert({
+      const insertData: any = {
         user_id: user.id,
         question_id: question.id,
-        answer_text: answer,
+        answer_text: isDirect ? "[Correção direta por imagem]" : answer,
         score: result.grade,
-      });
+        submission_type: currentSubmissionType,
+        direct_correction_used: isDirect,
+      };
+
+      if (isDirect && result.handwritingNote) {
+        insertData.handwriting_legibility_note = result.handwritingNote;
+        insertData.handwriting_legibility_level = result.handwritingLevel;
+      }
+
+      if (uploadedFileUrl) {
+        insertData.uploaded_file_url = uploadedFileUrl;
+      }
+
+      const { error } = await (supabase.from("weekly_answers" as any) as any).insert(insertData);
       if (error && error.code === "23505") {
-        // Already answered - ignore duplicate
+        // Already answered
       } else if (error) {
         toast({ title: "Erro ao salvar resposta", description: error.message, variant: "destructive" });
       } else {
@@ -167,6 +188,15 @@ export default function QuestionDetail() {
         subscriptionTier: currentProfile?.subscription_tier,
       });
     }
+  };
+
+  const handleTranscriptionComplete = (text: string) => {
+    setAnswer(text);
+    setSubmissionType("transcricao");
+  };
+
+  const handleDirectCorrection = (imageBase64: string, mimeType: string) => {
+    handleSubmit(imageBase64, mimeType);
   };
 
   const getGradeColor = (grade: number) => {
