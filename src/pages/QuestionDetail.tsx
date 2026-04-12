@@ -448,6 +448,33 @@ export default function QuestionDetail() {
             <CardContent><p className="text-sm text-foreground/85 leading-relaxed whitespace-pre-line">{correction.idealAnswer}</p></CardContent>
           </Card>
 
+          {/* Handwriting Legibility */}
+          {correction.handwritingNote && (
+            <Card className="gradient-card border-amber-500/20">
+              <CardHeader>
+                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <Eye className="h-4 w-4 text-amber-400" /> Legibilidade da Escrita
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-foreground/85 leading-relaxed">{correction.handwritingNote}</p>
+                {correction.handwritingLevel && (
+                  <Badge variant="outline" className={cn("mt-2 text-[10px]",
+                    correction.handwritingLevel === "plenamente_legivel" && "border-green-500/30 text-green-400",
+                    correction.handwritingLevel === "legivel_com_esforco" && "border-yellow-500/30 text-yellow-400",
+                    correction.handwritingLevel === "prejudica_parcialmente" && "border-orange-500/30 text-orange-400",
+                    correction.handwritingLevel === "compromete_correcao" && "border-red-500/30 text-red-400",
+                  )}>
+                    {correction.handwritingLevel === "plenamente_legivel" && "✅ Plenamente legível"}
+                    {correction.handwritingLevel === "legivel_com_esforco" && "⚠️ Legível com esforço"}
+                    {correction.handwritingLevel === "prejudica_parcialmente" && "🔶 Prejudica parcialmente"}
+                    {correction.handwritingLevel === "compromete_correcao" && "🔴 Compromete a correção"}
+                  </Badge>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
           {/* Feedback */}
           <Card className="gradient-card border-gold/20">
             <CardContent className="p-6">
