@@ -30,6 +30,8 @@ export default function QuestionDetail() {
   const [reportOpen, setReportOpen] = useState(false);
   const [submissionType, setSubmissionType] = useState<"texto_manual" | "transcricao" | "correcao_direta">("texto_manual");
   const [uploadedFileUrl, setUploadedFileUrl] = useState<string | null>(null);
+  const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
+  const [answerForReport, setAnswerForReport] = useState<string>("");
   const { checkAndAward } = useBadges(user?.id);
 
   const { data: question, isLoading } = useQuery({
@@ -136,6 +138,11 @@ export default function QuestionDetail() {
       return;
     }
 
+    // Persist the answer text for the report
+    const reportText = isDirect 
+      ? (result.answer || "[Correcao direta por imagem/PDF]")
+      : answer;
+    setAnswerForReport(reportText);
     setCorrection(result);
     setIsEvaluating(false);
 
@@ -315,6 +322,7 @@ export default function QuestionDetail() {
                 questionId={question.id}
                 onTranscriptionComplete={handleTranscriptionComplete}
                 onDirectCorrection={handleDirectCorrection}
+                onFileSelected={(name) => setUploadedFileName(name)}
                 disabled={isEvaluating}
               />
             )}
@@ -486,7 +494,7 @@ export default function QuestionDetail() {
 
           <div className="flex items-center gap-3 flex-wrap">
             {!question.isWeekly && (
-              <Button variant="outline" onClick={() => { setCorrection(null); setAnswer(""); }} className="border-border">
+              <Button variant="outline" onClick={() => { setCorrection(null); setAnswer(""); setAnswerForReport(""); setSubmissionType("texto_manual"); setUploadedFileName(null); setUploadedFileUrl(null); }} className="border-border">
                 Responder novamente
               </Button>
             )}
@@ -505,8 +513,8 @@ export default function QuestionDetail() {
                   },
                   correction,
                   submissionType,
-                  answerText: answer || correction.answer || "[Correção direta por imagem]",
-                  uploadedFileName: uploadedFileUrl ? "Arquivo enviado" : null,
+                  answerText: answerForReport || answer || correction.answer || "[Sem resposta disponivel]",
+                  uploadedFileName: uploadedFileName || (uploadedFileUrl ? "Arquivo enviado" : null),
                 });
               }}
             >
