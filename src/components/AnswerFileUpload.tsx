@@ -10,6 +10,7 @@ interface AnswerFileUploadProps {
   questionId: string;
   onTranscriptionComplete: (text: string) => void;
   onDirectCorrection: (imageBase64: string, mimeType: string) => void;
+  onFileSelected?: (fileName: string | null) => void;
   disabled?: boolean;
 }
 
@@ -21,6 +22,7 @@ export function AnswerFileUpload({
   questionId,
   onTranscriptionComplete,
   onDirectCorrection,
+  onFileSelected,
   disabled,
 }: AnswerFileUploadProps) {
   const [file, setFile] = useState<File | null>(null);
@@ -44,7 +46,7 @@ export function AnswerFileUpload({
     }
 
     setFile(selected);
-
+    onFileSelected?.(selected.name);
     if (selected.type.startsWith("image/")) {
       const reader = new FileReader();
       reader.onload = (ev) => setPreview(ev.target?.result as string);
@@ -130,6 +132,7 @@ export function AnswerFileUpload({
   const clearFile = () => {
     setFile(null);
     setPreview(null);
+    onFileSelected?.(null);
     if (inputRef.current) inputRef.current.value = "";
   };
 
