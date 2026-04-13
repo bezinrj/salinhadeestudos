@@ -322,6 +322,7 @@ export default function QuestionDetail() {
                 questionId={question.id}
                 onTranscriptionComplete={handleTranscriptionComplete}
                 onDirectCorrection={handleDirectCorrection}
+                onFileSelected={(name) => setUploadedFileName(name)}
                 disabled={isEvaluating}
               />
             )}
