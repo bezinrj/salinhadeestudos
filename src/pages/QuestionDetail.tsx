@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, CheckCircle2, XCircle, AlertTriangle, Lightbulb, FileText, Send, Lock, Loader2, Copy, Share2, Flag, Eye } from "lucide-react";
+import { ArrowLeft, CheckCircle2, XCircle, AlertTriangle, Lightbulb, FileText, Send, Lock, Loader2, Copy, Share2, Flag, Eye, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { QuestionComments } from "@/components/QuestionComments";
@@ -17,6 +17,7 @@ import { toast } from "@/hooks/use-toast";
 import { useBadges } from "@/hooks/useBadges";
 import { ReportQuestionDialog } from "@/components/ReportQuestionDialog";
 import { AnswerFileUpload } from "@/components/AnswerFileUpload";
+import { generateCorrectionReport } from "@/lib/generateCorrectionReport";
 
 export default function QuestionDetail() {
   const { id } = useParams();
@@ -483,11 +484,35 @@ export default function QuestionDetail() {
             </CardContent>
           </Card>
 
-          {!question.isWeekly && (
-            <Button variant="outline" onClick={() => { setCorrection(null); setAnswer(""); }} className="border-border">
-              Responder novamente
+          <div className="flex items-center gap-3 flex-wrap">
+            {!question.isWeekly && (
+              <Button variant="outline" onClick={() => { setCorrection(null); setAnswer(""); }} className="border-border">
+                Responder novamente
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              className="border-primary/30 text-primary hover:bg-primary/10 gap-2"
+              onClick={() => {
+                generateCorrectionReport({
+                  question: {
+                    publicId: question.publicId,
+                    title: question.title,
+                    career: question.career,
+                    discipline: question.discipline,
+                    subject: question.subject,
+                    statement: question.statement,
+                  },
+                  correction,
+                  submissionType,
+                  answerText: answer || correction.answer || "[Correção direta por imagem]",
+                  uploadedFileName: uploadedFileUrl ? "Arquivo enviado" : null,
+                });
+              }}
+            >
+              <Download className="h-4 w-4" /> Baixar relatório da correção
             </Button>
-          )}
+          </div>
         </motion.div>
       )}
 

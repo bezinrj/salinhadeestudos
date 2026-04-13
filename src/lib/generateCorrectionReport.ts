@@ -21,14 +21,14 @@ interface ReportData {
 }
 
 // Colors
-const PRIMARY = [37, 99, 235] as const; // blue-600
-const DARK = [15, 23, 42] as const; // slate-900
-const MUTED = [100, 116, 139] as const; // slate-500
-const LIGHT_BG = [241, 245, 249] as const; // slate-100
-const GREEN = [22, 163, 74] as const;
-const RED = [220, 38, 38] as const;
-const YELLOW = [161, 98, 7] as const;
-const WHITE = [255, 255, 255] as const;
+const PRIMARY: [number, number, number] = [37, 99, 235];
+const DARK: [number, number, number] = [15, 23, 42];
+const MUTED: [number, number, number] = [100, 116, 139];
+const LIGHT_BG: [number, number, number] = [241, 245, 249];
+const GREEN: [number, number, number] = [22, 163, 74];
+const RED: [number, number, number] = [220, 38, 38];
+const YELLOW: [number, number, number] = [161, 98, 7];
+const WHITE: [number, number, number] = [255, 255, 255];
 
 function getSubmissionLabel(type: string): string {
   if (type === "transcricao") return "Resposta transcrita de imagem/PDF";
