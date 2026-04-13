@@ -30,6 +30,8 @@ export default function QuestionDetail() {
   const [reportOpen, setReportOpen] = useState(false);
   const [submissionType, setSubmissionType] = useState<"texto_manual" | "transcricao" | "correcao_direta">("texto_manual");
   const [uploadedFileUrl, setUploadedFileUrl] = useState<string | null>(null);
+  const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
+  const [answerForReport, setAnswerForReport] = useState<string>("");
   const { checkAndAward } = useBadges(user?.id);
 
   const { data: question, isLoading } = useQuery({
