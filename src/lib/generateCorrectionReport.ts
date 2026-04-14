@@ -392,7 +392,7 @@ export async function generateCorrectionReport(data: ReportData) {
         const sBg = statusBg(sub.status);
         const sColor = statusColor(sub.status);
         const sLabel = getStatusLabel(sub.status);
-        const descLines = doc.splitTextToSize(sanitize(sub.description), cw - 50);
+        const descLines = doc.splitTextToSize(sanitize(sub.description), cw - 55);
         const rowH = Math.max(6, descLines.length * lh) + 2;
 
         // Row background
