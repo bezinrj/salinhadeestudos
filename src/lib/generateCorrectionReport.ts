@@ -506,8 +506,8 @@ export async function generateCorrectionReport(data: ReportData) {
   // ═══════════════════════════════════════════
   sectionLabel("ESPELHO RESUMIDO", NAVY);
   const mirrorText = sanitize(data.correction.mirror);
-  const mirrorLines = doc.splitTextToSize(mirrorText, cw - 14);
-  const mirrorH = Math.max(14, mirrorLines.length * lh + 10);
+  const mirrorLines = doc.splitTextToSize(mirrorText, textMaxW);
+  const mirrorH = Math.max(14, mirrorLines.length * lh + 12);
   needPage(Math.min(mirrorH + 4, 60));
 
   doc.setFillColor(...MIRROR_BG);
@@ -519,10 +519,10 @@ export async function generateCorrectionReport(data: ReportData) {
   doc.setFontSize(8.5);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(...TEXT_PRIMARY);
-  let my = y + 6;
+  let my = y + 7;
   for (const line of mirrorLines) {
     if (my > ph - 18) { doc.addPage(); my = 14; }
-    doc.text(line, ml + 6, my);
+    doc.text(line, ml + cardPad, my);
     my += lh;
   }
   y += mirrorH + 6;
@@ -536,10 +536,10 @@ export async function generateCorrectionReport(data: ReportData) {
   let idealLines: string[] = [];
   for (const p of idealParagraphs) {
     if (!p.trim()) continue;
-    idealLines = idealLines.concat(doc.splitTextToSize(p.trim(), cw - 14));
+    idealLines = idealLines.concat(doc.splitTextToSize(p.trim(), textMaxW));
     idealLines.push(""); // spacer
   }
-  const idealH = Math.max(14, idealLines.length * lh + 10);
+  const idealH = Math.max(14, idealLines.length * lh + 12);
   needPage(Math.min(idealH + 4, 60));
 
   card(ml, y, cw, idealH);
@@ -549,11 +549,11 @@ export async function generateCorrectionReport(data: ReportData) {
   doc.setFontSize(8.5);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(...TEXT_PRIMARY);
-  let idy = y + 6;
+  let idy = y + 7;
   for (const line of idealLines) {
     if (idy > ph - 18) { doc.addPage(); idy = 14; }
     if (line === "") { idy += 2; continue; }
-    doc.text(line, ml + 8, idy);
+    doc.text(line, ml + cardPad + 2, idy);
     idy += lh;
   }
   y += idealH + 6;
