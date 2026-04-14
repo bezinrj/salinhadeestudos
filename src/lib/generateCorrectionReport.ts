@@ -20,27 +20,41 @@ interface ReportData {
   userName?: string;
 }
 
-// ─── Palette ───
-const NAVY: [number, number, number] = [30, 42, 74];
-const INDIGO: [number, number, number] = [99, 102, 241];
-const BG: [number, number, number] = [248, 249, 252];
+// Colors
+const PRIMARY: [number, number, number] = [37, 99, 235];
+const DARK: [number, number, number] = [30, 41, 59];
+const MUTED: [number, number, number] = [100, 116, 139];
+const LIGHT_BG: [number, number, number] = [241, 245, 249];
+const GREEN: [number, number, number] = [22, 163, 74];
+const RED: [number, number, number] = [220, 38, 38];
+const YELLOW: [number, number, number] = [161, 98, 7];
+const ORANGE: [number, number, number] = [234, 88, 12];
 const WHITE: [number, number, number] = [255, 255, 255];
-const CARD_SHADOW: [number, number, number] = [220, 225, 232];
-const AMBER: [number, number, number] = [245, 158, 11];
-const GREEN: [number, number, number] = [16, 185, 129];
-const RED: [number, number, number] = [239, 68, 68];
-const TEXT_PRIMARY: [number, number, number] = [31, 41, 55];
-const TEXT_SECONDARY: [number, number, number] = [107, 114, 128];
-const LIGHT_BLUE_BG: [number, number, number] = [238, 242, 255];
-const AMBER_BG: [number, number, number] = [255, 251, 235];
-const GREEN_LIGHT: [number, number, number] = [236, 253, 245];
-const RED_LIGHT: [number, number, number] = [254, 242, 242];
-const MIRROR_BG: [number, number, number] = [241, 245, 249];
-const BAR_TRACK: [number, number, number] = [229, 231, 235];
+const GOLD: [number, number, number] = [180, 140, 50];
+const SECTION_BG: [number, number, number] = [248, 250, 252];
 
-function sanitize(t: string): string {
-  if (!t) return "";
-  return t
+function getSubmissionLabel(type: string): string {
+  if (type === "transcricao") return "Resposta transcrita de imagem/PDF";
+  if (type === "correcao_direta") return "Resposta enviada por imagem/PDF (correcao direta)";
+  return "Resposta digitada manualmente";
+}
+
+function getStatusLabel(status: "full" | "partial" | "missed"): string {
+  if (status === "full") return "Atendido";
+  if (status === "partial") return "Parcial";
+  return "Nao atendido";
+}
+
+function getStatusColor(status: "full" | "partial" | "missed"): [number, number, number] {
+  if (status === "full") return GREEN;
+  if (status === "partial") return YELLOW;
+  return RED;
+}
+
+function sanitize(text: string): string {
+  if (!text) return "";
+  // Replace problematic unicode chars with safe alternatives
+  return text
     .replace(/[\u2018\u2019]/g, "'")
     .replace(/[\u201C\u201D]/g, '"')
     .replace(/\u2014/g, " - ")
@@ -53,550 +67,358 @@ function sanitize(t: string): string {
     .replace(/&quot;/g, '"');
 }
 
-function getSubmissionLabel(type: string): string {
-  if (type === "transcricao") return "Resposta transcrita de imagem/PDF";
-  if (type === "correcao_direta") return "Resposta enviada por imagem/PDF (correcao direta)";
-  return "Resposta digitada manualmente";
-}
-
-function getStatusLabel(s: "full" | "partial" | "missed"): string {
-  if (s === "full") return "Atendido";
-  if (s === "partial") return "Parcial";
-  return "Nao atendido";
-}
-
-function statusColor(s: "full" | "partial" | "missed"): [number, number, number] {
-  if (s === "full") return GREEN;
-  if (s === "partial") return AMBER;
-  return RED;
-}
-
-function statusBg(s: "full" | "partial" | "missed"): [number, number, number] {
-  if (s === "full") return GREEN_LIGHT;
-  if (s === "partial") return AMBER_BG;
-  return RED_LIGHT;
-}
-
 export async function generateCorrectionReport(data: ReportData) {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-  const pw = doc.internal.pageSize.getWidth();
-  const ph = doc.internal.pageSize.getHeight();
-  const ml = 14;
-  const mr = 14;
-  const cw = pw - ml - mr;
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const marginL = 18;
+  const marginR = 18;
+  const contentW = pageW - marginL - marginR;
   let y = 0;
-  const lh = 4.5;
+  const lineH = 4.2;
 
-  const needPage = (n: number) => {
-    if (y + n > ph - 18) {
+  const checkPage = (needed: number) => {
+    if (y + needed > pageH - 22) {
       doc.addPage();
-      y = 14;
+      y = 18;
     }
   };
 
-  // ─── Rounded rect helper ───
-  const card = (x: number, yy: number, w: number, h: number, r = 3) => {
-    doc.setFillColor(...WHITE);
-    doc.roundedRect(x, yy, w, h, r, r, "F");
-    // subtle shadow line at bottom
-    doc.setDrawColor(...CARD_SHADOW);
+  const drawFooter = (pageNum: number, totalPages: number) => {
+    doc.setDrawColor(220, 225, 230);
     doc.setLineWidth(0.3);
-    doc.roundedRect(x, yy, w, h, r, r, "S");
+    doc.line(marginL, pageH - 14, pageW - marginR, pageH - 14);
+    doc.setFontSize(7);
+    doc.setTextColor(...MUTED);
+    doc.setFont("helvetica", "normal");
+    doc.text("Salinha de Estudos", marginL, pageH - 9);
+    doc.text("Relatorio de Correcao Discursiva", marginL, pageH - 5.5);
+    doc.text(`Pagina ${pageNum} de ${totalPages}`, pageW - marginR, pageH - 9, { align: "right" });
   };
 
-  const sectionLabel = (text: string, color: [number, number, number] = TEXT_PRIMARY) => {
-    needPage(10);
+  const sectionTitle = (num: string, title: string) => {
+    checkPage(14);
+    // Draw accent bar
+    doc.setFillColor(...PRIMARY);
+    doc.rect(marginL, y, 3, 8, "F");
+    // Draw section background
+    doc.setFillColor(...LIGHT_BG);
+    doc.rect(marginL + 3, y, contentW - 3, 8, "F");
+    // Section text
+    doc.setFontSize(10);
+    doc.setTextColor(...DARK);
+    doc.setFont("helvetica", "bold");
+    doc.text(`${num}. ${sanitize(title)}`, marginL + 7, y + 5.5);
+    y += 12;
+  };
+
+  const labelValue = (label: string, value: string, labelW = 28) => {
+    checkPage(8);
+    doc.setFontSize(8.5);
+    doc.setTextColor(...MUTED);
+    doc.setFont("helvetica", "bold");
+    doc.text(sanitize(label), marginL + 4, y);
+    doc.setTextColor(...DARK);
+    doc.setFont("helvetica", "normal");
+    const lines = doc.splitTextToSize(sanitize(value || "---"), contentW - labelW - 6);
+    doc.text(lines, marginL + labelW, y);
+    y += Math.max(5, lines.length * lineH) + 1.5;
+  };
+
+  const wrappedText = (text: string, fontSize = 9, color = DARK, indent = 4) => {
+    doc.setFontSize(fontSize);
+    doc.setTextColor(...color);
+    doc.setFont("helvetica", "normal");
+    const cleaned = sanitize(text);
+    // Split into paragraphs first for better readability
+    const paragraphs = cleaned.split(/\n\s*\n|\n/);
+    for (const para of paragraphs) {
+      if (!para.trim()) continue;
+      const lines = doc.splitTextToSize(para.trim(), contentW - indent * 2);
+      for (let i = 0; i < lines.length; i++) {
+        checkPage(5);
+        doc.text(lines[i], marginL + indent, y);
+        y += lineH;
+      }
+      y += 2; // paragraph spacing
+    }
+  };
+
+  const bulletItem = (text: string, bulletLabel: string, bulletColor: [number, number, number]) => {
+    checkPage(8);
+    // Draw badge-style label
     doc.setFontSize(7);
     doc.setFont("helvetica", "bold");
-    doc.setTextColor(...color);
-    doc.text(sanitize(text).toUpperCase(), ml, y);
-    y += 5;
-  };
+    const badgeW = doc.getTextWidth(bulletLabel) + 4;
+    doc.setFillColor(...bulletColor);
+    doc.roundedRect(marginL + 4, y - 3, badgeW, 4.5, 1, 1, "F");
+    doc.setTextColor(...WHITE);
+    doc.text(bulletLabel, marginL + 6, y);
 
-  const wrappedInCard = (text: string, padL = 4, fontSize = 9) => {
-    doc.setFontSize(fontSize);
+    doc.setFontSize(8.5);
     doc.setFont("helvetica", "normal");
-    doc.setTextColor(...TEXT_PRIMARY);
-    const paragraphs = sanitize(text).split(/\n\s*\n|\n/);
-    for (const p of paragraphs) {
-      if (!p.trim()) continue;
-      const lines = doc.splitTextToSize(p.trim(), cw - padL * 2);
-      for (const line of lines) {
-        needPage(5);
-        doc.text(line, ml + padL, y);
-        y += lh;
-      }
-      y += 1.5;
-    }
+    doc.setTextColor(...DARK);
+    const textLines = doc.splitTextToSize(sanitize(text), contentW - badgeW - 12);
+    doc.text(textLines, marginL + badgeW + 8, y);
+    y += Math.max(5, textLines.length * lineH) + 2;
   };
 
-  // ═══════════════════════════════════════════
-  // HEADER – dark navy bar
-  // ═══════════════════════════════════════════
-  const headerH = 38;
-  doc.setFillColor(...NAVY);
-  doc.rect(0, 0, pw, headerH, "F");
-
-  // Logo
+  // ===== HEADER =====
   try {
     const img = new Image();
     img.crossOrigin = "anonymous";
-    await new Promise<void>((res, rej) => {
-      img.onload = () => res();
-      img.onerror = () => rej();
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve();
+      img.onerror = () => reject();
       img.src = logoImg;
     });
-    doc.addImage(img, "PNG", ml, 5, 16, 16);
+    doc.addImage(img, "PNG", marginL, 8, 20, 20);
   } catch {
-    // skip
+    // Skip logo if loading fails
   }
 
-  // Header text left side
-  const textX = ml + 20;
-  doc.setFontSize(6.5);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(180, 190, 220);
-  doc.text("SALINHA DE ESTUDOS", textX, 11);
-
-  doc.setFontSize(13);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(...WHITE);
-  doc.text("Relatorio de Correcao Discursiva", textX, 19);
-
-  const now = new Date();
-  doc.setFontSize(7);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(160, 170, 200);
-  doc.text(`Gerado em ${now.toLocaleDateString("pt-BR")} as ${now.toLocaleTimeString("pt-BR")}`, textX, 25);
-
-  // Grade circle on the right
-  const grade = data.correction.grade;
-  const maxGrade = data.correction.maxGrade;
-  const pct = Math.min(1, grade / maxGrade);
-  const gradeColor: [number, number, number] = pct >= 0.7 ? GREEN : pct >= 0.4 ? AMBER : RED;
-
-  const cx = pw - mr - 16;
-  const cy = 19;
-  const radius = 12;
-
-  // Track circle
-  doc.setDrawColor(60, 70, 100);
-  doc.setLineWidth(2.5);
-  doc.circle(cx, cy, radius, "S");
-
-  // Progress arc (approximate with colored arc segments)
-  doc.setDrawColor(...gradeColor);
-  doc.setLineWidth(2.5);
-  const segments = Math.floor(pct * 36);
-  for (let i = 0; i < segments; i++) {
-    const angle1 = (i * 10 - 90) * (Math.PI / 180);
-    const angle2 = ((i + 1) * 10 - 90) * (Math.PI / 180);
-    const x1 = cx + radius * Math.cos(angle1);
-    const y1 = cy + radius * Math.sin(angle1);
-    const x2 = cx + radius * Math.cos(angle2);
-    const y2 = cy + radius * Math.sin(angle2);
-    doc.line(x1, y1, x2, y2);
-  }
-
-  // Grade number
+  // Platform name & title
   doc.setFontSize(16);
+  doc.setTextColor(...PRIMARY);
   doc.setFont("helvetica", "bold");
-  doc.setTextColor(...WHITE);
-  const gradeText = grade.toFixed(1);
-  doc.text(gradeText, cx, cy + 2, { align: "center" });
+  doc.text("Salinha de Estudos", marginL + 24, 16);
+
+  doc.setFontSize(10);
+  doc.setTextColor(...DARK);
+  doc.setFont("helvetica", "normal");
+  doc.text("Relatorio de Correcao Discursiva", marginL + 24, 22);
+
+  // Date
+  const now = new Date();
+  doc.setFontSize(7.5);
+  doc.setTextColor(...MUTED);
+  const dateStr = `Gerado em ${now.toLocaleDateString("pt-BR")} as ${now.toLocaleTimeString("pt-BR")}`;
+  doc.text(dateStr, marginL + 24, 27);
+
+  // Grade box on the right
+  const grade = data.correction.grade;
+  const gradeColor = grade >= 8 ? GREEN : grade >= 6 ? PRIMARY : grade >= 4 ? YELLOW : RED;
+  const boxW = 38;
+  const boxX = pageW - marginR - boxW;
+  doc.setFillColor(...LIGHT_BG);
+  doc.roundedRect(boxX, 8, boxW, 22, 2, 2, "F");
+  doc.setDrawColor(...gradeColor);
+  doc.setLineWidth(0.6);
+  doc.roundedRect(boxX, 8, boxW, 22, 2, 2, "S");
 
   doc.setFontSize(7);
-  doc.setTextColor(160, 170, 200);
-  doc.text(`/ ${maxGrade}`, cx, cy + 7, { align: "center" });
+  doc.setTextColor(...MUTED);
+  doc.setFont("helvetica", "bold");
+  doc.text("NOTA FINAL", boxX + boxW / 2, 14, { align: "center" });
 
-  doc.setFontSize(5.5);
-  doc.text("NOTA FINAL", cx, cy + 11, { align: "center" });
+  doc.setFontSize(20);
+  doc.setTextColor(...gradeColor);
+  doc.setFont("helvetica", "bold");
+  doc.text(`${grade.toFixed(1)}`, boxX + boxW / 2 - 5, 24);
 
-  y = headerH + 6;
-
-  // ═══════════════════════════════════════════
-  // 3 INFO CARDS
-  // ═══════════════════════════════════════════
-  const cardW = (cw - 6) / 3;
-  const cardH = 16;
-  const infoItems = [
-    { label: "ID DA QUESTAO", value: `Q-${String(data.question.publicId).padStart(3, "0")}` },
-    { label: "CARGO", value: data.question.career },
-    { label: "MATERIA", value: data.question.discipline },
-  ];
-
-  for (let i = 0; i < 3; i++) {
-    const cx2 = ml + i * (cardW + 3);
-    doc.setFillColor(...LIGHT_BLUE_BG);
-    doc.roundedRect(cx2, y, cardW, cardH, 2, 2, "F");
-
-    doc.setFontSize(6);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(...TEXT_SECONDARY);
-    doc.text(infoItems[i].label, cx2 + 4, y + 5.5);
-
-    doc.setFontSize(9);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(...TEXT_PRIMARY);
-    const val = sanitize(infoItems[i].value);
-    const truncated = val.length > 28 ? val.substring(0, 27) + "..." : val;
-    doc.text(truncated, cx2 + 4, y + 12);
-  }
-  y += cardH + 6;
-
-  // ═══════════════════════════════════════════
-  // ENUNCIADO
-  // ═══════════════════════════════════════════
-  sectionLabel("ENUNCIADO DA QUESTAO", INDIGO);
-  const stmtText = sanitize(data.question.statement);
-  const stmtLines = doc.splitTextToSize(stmtText, cw - 14);
-  const stmtH = Math.max(14, stmtLines.length * lh + 10);
-  needPage(stmtH + 4);
-
-  // Card with indigo left border
-  card(ml, y, cw, stmtH);
-  doc.setFillColor(...INDIGO);
-  doc.rect(ml, y, 2.5, stmtH, "F");
-
-  doc.setFontSize(8.5);
+  doc.setFontSize(10);
+  doc.setTextColor(...MUTED);
   doc.setFont("helvetica", "normal");
-  doc.setTextColor(...TEXT_PRIMARY);
-  let sy = y + 6;
-  for (const line of stmtLines) {
-    if (sy > ph - 18) { doc.addPage(); sy = 14; }
-    doc.text(line, ml + 8, sy);
-    sy += lh;
+  doc.text(`/ ${data.correction.maxGrade}`, boxX + boxW / 2 + 9, 24);
+
+  // Separator
+  doc.setDrawColor(...PRIMARY);
+  doc.setLineWidth(0.8);
+  doc.line(marginL, 33, pageW - marginR, 33);
+  y = 38;
+
+  // ===== SECTION 1 - IDENTIFICATION =====
+  sectionTitle("1", "Identificacao da Questao");
+  labelValue("ID:", `Q-${String(data.question.publicId).padStart(3, "0")}`);
+  labelValue("Cargo:", data.question.career);
+  labelValue("Materia:", data.question.discipline);
+  if (data.question.subject) labelValue("Assunto:", data.question.subject);
+  y += 2;
+
+  // ===== SECTION 2 - STATEMENT =====
+  sectionTitle("2", "Enunciado");
+  wrappedText(data.question.statement);
+
+  // ===== SECTION 3 - STUDENT ANSWER =====
+  sectionTitle("3", "Resposta do Aluno");
+  labelValue("Tipo de envio:", getSubmissionLabel(data.submissionType));
+  if (data.uploadedFileName) {
+    labelValue("Arquivo:", data.uploadedFileName);
   }
-  y += stmtH + 6;
+  y += 1;
 
-  // ═══════════════════════════════════════════
-  // RESPOSTA DO ALUNO
-  // ═══════════════════════════════════════════
-  sectionLabel("RESPOSTA DO ALUNO");
-  const answerMeta = `${getSubmissionLabel(data.submissionType)}${data.uploadedFileName ? ` | Arquivo: ${data.uploadedFileName}` : ""}`;
-  const ansText = sanitize(data.answerText || "---");
-  const ansLines = doc.splitTextToSize(ansText, cw - 14);
-  const ansH = Math.max(14, ansLines.length * lh + 16);
-  needPage(Math.min(ansH + 4, 60));
+  doc.setFontSize(8);
+  doc.setTextColor(...MUTED);
+  doc.setFont("helvetica", "bold");
+  doc.text("Conteudo considerado na correcao:", marginL + 4, y);
+  y += 5;
 
-  card(ml, y, cw, ansH);
-  doc.setFillColor(...INDIGO);
-  doc.rect(ml, y, 2.5, ansH, "F");
-
-  doc.setFontSize(7);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(...TEXT_SECONDARY);
-  doc.text(sanitize(answerMeta), ml + 8, y + 5);
-
+  // Answer box
+  const answerText = sanitize(data.answerText || "---");
+  const answerLines = doc.splitTextToSize(answerText, contentW - 10);
+  const answerH = Math.max(12, answerLines.length * lineH + 8);
+  checkPage(answerH + 4);
+  doc.setFillColor(...SECTION_BG);
+  doc.roundedRect(marginL + 2, y, contentW - 4, answerH, 1.5, 1.5, "F");
+  doc.setDrawColor(210, 218, 226);
+  doc.setLineWidth(0.3);
+  doc.roundedRect(marginL + 2, y, contentW - 4, answerH, 1.5, 1.5, "S");
   doc.setFontSize(8.5);
-  doc.setTextColor(...TEXT_PRIMARY);
-  let ay = y + 11;
-  for (const line of ansLines) {
-    if (ay > ph - 18) { doc.addPage(); ay = 14; }
-    doc.text(line, ml + 8, ay);
-    ay += lh;
-  }
-  y += ansH + 6;
-
-  // ═══════════════════════════════════════════
-  // FEEDBACK GERAL
-  // ═══════════════════════════════════════════
-  sectionLabel("FEEDBACK GERAL", AMBER);
-  const fbText = sanitize(data.correction.feedback);
-  const fbLines = doc.splitTextToSize(fbText, cw - 14);
-  const fbH = Math.max(14, fbLines.length * lh + 10);
-  needPage(Math.min(fbH + 4, 60));
-
-  // Amber-tinted card
-  doc.setFillColor(...AMBER_BG);
-  doc.roundedRect(ml, y, cw, fbH, 3, 3, "F");
-  doc.setDrawColor(251, 191, 36);
-  doc.setLineWidth(0.4);
-  doc.roundedRect(ml, y, cw, fbH, 3, 3, "S");
-
-  doc.setFontSize(8.5);
+  doc.setTextColor(...DARK);
   doc.setFont("helvetica", "normal");
-  doc.setTextColor(...TEXT_PRIMARY);
-  let fy = y + 6;
-  for (const line of fbLines) {
-    if (fy > ph - 18) { doc.addPage(); fy = 14; }
-    doc.text(line, ml + 6, fy);
-    fy += lh;
+  for (let i = 0; i < answerLines.length; i++) {
+    if (y + 5 + i * lineH > pageH - 22) {
+      doc.addPage();
+      y = 18;
+      // Redraw box continuation on new page
+    }
+    doc.text(answerLines[i], marginL + 6, y + 5 + i * lineH);
   }
-  y += fbH + 6;
+  y += answerH + 6;
 
-  // ═══════════════════════════════════════════
-  // ANALISE POR CRITERIO
-  // ═══════════════════════════════════════════
+  // ===== SECTION 4 - GENERAL FEEDBACK =====
+  sectionTitle("4", "Feedback Geral");
+  wrappedText(data.correction.feedback);
+
+  // ===== SECTION 5 - DETAILED ANALYSIS =====
   if (data.correction.baremaBreakdown && data.correction.baremaBreakdown.length > 0) {
-    sectionLabel("ANALISE DETALHADA POR CRITERIO", NAVY);
+    sectionTitle("5", "Analise Detalhada por Criterio");
 
     for (const item of data.correction.baremaBreakdown) {
-      const ratio = item.earnedScore / item.maxScore;
-      const barColor: [number, number, number] = ratio >= 0.7 ? GREEN : ratio >= 0.4 ? AMBER : RED;
+      checkPage(18);
 
-      // Estimate card height
-      let itemH = 20; // header + bar
-      for (const sub of item.subitems) {
-        const dl = doc.splitTextToSize(sanitize(sub.description), cw - 50);
-        itemH += Math.max(6, dl.length * lh) + 3;
-      }
-      itemH += 4;
-
-      needPage(Math.min(itemH, 80));
-
-      const cardY = y;
-      card(ml, cardY, cw, itemH);
-
-      // Criterion header
-      doc.setFontSize(9.5);
+      // Criterion header bar
+      doc.setFillColor(235, 240, 248);
+      doc.roundedRect(marginL + 2, y, contentW - 4, 8, 1, 1, "F");
+      doc.setFontSize(9);
       doc.setFont("helvetica", "bold");
-      doc.setTextColor(...TEXT_PRIMARY);
-      doc.text(sanitize(`${item.letter}) ${item.title}`), ml + 5, cardY + 7);
+      doc.setTextColor(...DARK);
+      doc.text(sanitize(`${item.letter}) ${item.title}`), marginL + 6, y + 5.5);
 
-      // Score
-      doc.setTextColor(...barColor);
-      doc.text(`${item.earnedScore.toFixed(1)} / ${item.maxScore.toFixed(1)}`, pw - mr - 5, cardY + 7, { align: "right" });
+      const ratio = item.earnedScore / item.maxScore;
+      const scoreColor = ratio >= 0.8 ? GREEN : ratio >= 0.5 ? YELLOW : RED;
+      doc.setTextColor(...scoreColor);
+      doc.text(`${item.earnedScore.toFixed(1)} / ${item.maxScore.toFixed(1)}`, pageW - marginR - 6, y + 5.5, { align: "right" });
+      y += 11;
 
       // Progress bar
-      const barY = cardY + 11;
-      const barW = cw - 10;
-      doc.setFillColor(...BAR_TRACK);
-      doc.roundedRect(ml + 5, barY, barW, 2.5, 1, 1, "F");
-      if (ratio > 0) {
-        doc.setFillColor(...barColor);
-        doc.roundedRect(ml + 5, barY, barW * Math.min(1, ratio), 2.5, 1, 1, "F");
+      checkPage(5);
+      const barW = contentW - 12;
+      const pct = Math.min(1, ratio);
+      doc.setFillColor(220, 225, 235);
+      doc.roundedRect(marginL + 6, y, barW, 2.5, 1, 1, "F");
+      if (pct > 0) {
+        doc.setFillColor(...scoreColor);
+        doc.roundedRect(marginL + 6, y, barW * pct, 2.5, 1, 1, "F");
       }
+      y += 6;
 
-      // Sub-items
-      let subY = barY + 7;
+      // Subitems with badge-style status
       for (const sub of item.subitems) {
-        const sBg = statusBg(sub.status);
-        const sColor = statusColor(sub.status);
-        const sLabel = getStatusLabel(sub.status);
-        const descLines = doc.splitTextToSize(sanitize(sub.description), cw - 50);
-        const rowH = Math.max(6, descLines.length * lh) + 2;
-
-        // Row background
-        doc.setFillColor(...sBg);
-        doc.roundedRect(ml + 3, subY - 3, cw - 6, rowH, 1, 1, "F");
+        checkPage(10);
+        const statusLabel = getStatusLabel(sub.status);
+        const statusColor = getStatusColor(sub.status);
 
         // Status badge
         doc.setFontSize(6.5);
         doc.setFont("helvetica", "bold");
-        const badgeW = doc.getTextWidth(sLabel) + 5;
-        doc.setFillColor(...sColor);
-        doc.roundedRect(ml + 5, subY - 2, badgeW, 4, 1, 1, "F");
+        const badgeW = doc.getTextWidth(statusLabel) + 5;
+        doc.setFillColor(...statusColor);
+        doc.roundedRect(marginL + 8, y - 2.8, badgeW, 4, 1, 1, "F");
         doc.setTextColor(...WHITE);
-        doc.text(sLabel, ml + 7.5, subY + 1);
+        doc.text(statusLabel, marginL + 10.5, y);
 
         // Description
-        doc.setFontSize(8);
         doc.setFont("helvetica", "normal");
-        doc.setTextColor(...TEXT_PRIMARY);
-        doc.text(descLines, ml + badgeW + 9, subY + 1);
+        doc.setFontSize(8);
+        doc.setTextColor(...DARK);
+        const descLines = doc.splitTextToSize(sanitize(sub.description), contentW - badgeW - 30);
+        doc.text(descLines, marginL + badgeW + 12, y);
 
         // Score
-        doc.setTextColor(...sColor);
+        doc.setTextColor(...statusColor);
         doc.setFont("helvetica", "bold");
         doc.setFontSize(7.5);
-        doc.text(`${sub.earnedScore.toFixed(1)}/${sub.maxScore.toFixed(1)}`, pw - mr - 5, subY + 1, { align: "right" });
+        doc.text(`${sub.earnedScore.toFixed(1)}/${sub.maxScore.toFixed(1)}`, pageW - marginR - 6, y, { align: "right" });
 
-        subY += rowH + 1;
+        y += Math.max(5.5, descLines.length * lineH) + 2;
       }
+      y += 4;
+    }
+  }
 
-      y = subY + 4;
+  // ===== SECTION 6 - POSITIVES =====
+  if (data.correction.positives.length > 0 && data.correction.positives[0] !== "Nenhum ponto do espelho foi adequadamente abordado.") {
+    sectionTitle("6", "Pontos Positivos");
+    for (const p of data.correction.positives) {
+      bulletItem(p, "Acerto", GREEN);
     }
     y += 2;
   }
 
-  // ═══════════════════════════════════════════
-  // PONTOS POSITIVOS / ERROS / OMISSOES - 3 columns
-  // ═══════════════════════════════════════════
-  const hasPositives = data.correction.positives.length > 0 && data.correction.positives[0] !== "Nenhum ponto do espelho foi adequadamente abordado.";
-  const hasErrors = data.correction.errors.length > 0;
-  const hasOmissions = data.correction.omissions.length > 0;
-
-  if (hasPositives || hasErrors || hasOmissions) {
-    needPage(30);
-    sectionLabel("PONTOS POSITIVOS / ERROS / OMISSOES", NAVY);
-
-    const colW = (cw - 6) / 3;
-    const cols = [
-      { label: "PONTOS POSITIVOS", items: hasPositives ? data.correction.positives : [], color: GREEN, bg: GREEN_LIGHT },
-      { label: "ERROS", items: hasErrors ? data.correction.errors : [], color: RED, bg: RED_LIGHT },
-      { label: "OMISSOES", items: hasOmissions ? data.correction.omissions : [], color: AMBER, bg: AMBER_BG },
-    ];
-
-    // Calculate max height across columns
-    let maxH = 16;
-    for (const col of cols) {
-      let h = 12;
-      for (const it of col.items) {
-        const lines = doc.splitTextToSize(sanitize(it), colW - 10);
-        h += lines.length * lh + 2;
-      }
-      if (h > maxH) maxH = h;
+  // ===== SECTION 7 - ERRORS =====
+  if (data.correction.errors.length > 0) {
+    sectionTitle("7", "Erros / Abordagem Incompleta");
+    for (const e of data.correction.errors) {
+      bulletItem(e, "Erro", RED);
     }
-    maxH = Math.min(maxH, ph - y - 20);
-    needPage(maxH + 4);
+    y += 2;
+  }
 
-    for (let i = 0; i < 3; i++) {
-      const col = cols[i];
-      const colX = ml + i * (colW + 3);
-
-      // Card
-      doc.setFillColor(...WHITE);
-      doc.roundedRect(colX, y, colW, maxH, 2, 2, "F");
-      doc.setDrawColor(...CARD_SHADOW);
-      doc.setLineWidth(0.3);
-      doc.roundedRect(colX, y, colW, maxH, 2, 2, "S");
-
-      // Top border accent
-      doc.setFillColor(...col.color);
-      doc.rect(colX, y, colW, 2, "F");
-
-      // Title
-      doc.setFontSize(7);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(...col.color);
-      doc.text(col.label, colX + 4, y + 8);
-
-      // Items
-      let iy = y + 13;
-      doc.setFontSize(7.5);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(...TEXT_PRIMARY);
-      for (const it of col.items) {
-        const lines = doc.splitTextToSize(sanitize(it), colW - 12);
-        // Bullet
-        doc.setFillColor(...col.color);
-        doc.circle(colX + 5, iy - 0.8, 1, "F");
-        for (const line of lines) {
-          if (iy > y + maxH - 3) break;
-          doc.text(line, colX + 8, iy);
-          iy += lh;
-        }
-        iy += 1;
-      }
+  // ===== SECTION 8 - OMISSIONS =====
+  if (data.correction.omissions.length > 0) {
+    sectionTitle("8", "Omissoes");
+    for (const o of data.correction.omissions) {
+      bulletItem(o, "Nao abordado", ORANGE);
     }
-    y += maxH + 6;
+    y += 2;
   }
 
-  // ═══════════════════════════════════════════
-  // ESPELHO RESUMIDO
-  // ═══════════════════════════════════════════
-  sectionLabel("ESPELHO RESUMIDO", NAVY);
-  const mirrorText = sanitize(data.correction.mirror);
-  const mirrorLines = doc.splitTextToSize(mirrorText, cw - 14);
-  const mirrorH = Math.max(14, mirrorLines.length * lh + 10);
-  needPage(Math.min(mirrorH + 4, 60));
+  // ===== SECTION 9 - MIRROR =====
+  sectionTitle("9", "Espelho Resumido");
+  wrappedText(data.correction.mirror);
 
-  doc.setFillColor(...MIRROR_BG);
-  doc.roundedRect(ml, y, cw, mirrorH, 3, 3, "F");
-  doc.setDrawColor(...CARD_SHADOW);
-  doc.setLineWidth(0.3);
-  doc.roundedRect(ml, y, cw, mirrorH, 3, 3, "S");
+  // ===== SECTION 10 - IDEAL ANSWER =====
+  sectionTitle("10", "Resposta Ideal");
+  wrappedText(data.correction.idealAnswer);
 
-  doc.setFontSize(8.5);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(...TEXT_PRIMARY);
-  let my = y + 6;
-  for (const line of mirrorLines) {
-    if (my > ph - 18) { doc.addPage(); my = 14; }
-    doc.text(line, ml + 6, my);
-    my += lh;
-  }
-  y += mirrorH + 6;
-
-  // ═══════════════════════════════════════════
-  // RESPOSTA IDEAL
-  // ═══════════════════════════════════════════
-  sectionLabel("RESPOSTA IDEAL", INDIGO);
-  const idealText = sanitize(data.correction.idealAnswer);
-  const idealParagraphs = idealText.split(/\n\s*\n|\n/);
-  let idealLines: string[] = [];
-  for (const p of idealParagraphs) {
-    if (!p.trim()) continue;
-    idealLines = idealLines.concat(doc.splitTextToSize(p.trim(), cw - 14));
-    idealLines.push(""); // spacer
-  }
-  const idealH = Math.max(14, idealLines.length * lh + 10);
-  needPage(Math.min(idealH + 4, 60));
-
-  card(ml, y, cw, idealH);
-  doc.setFillColor(...INDIGO);
-  doc.rect(ml, y, 2.5, idealH, "F");
-
-  doc.setFontSize(8.5);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(...TEXT_PRIMARY);
-  let idy = y + 6;
-  for (const line of idealLines) {
-    if (idy > ph - 18) { doc.addPage(); idy = 14; }
-    if (line === "") { idy += 2; continue; }
-    doc.text(line, ml + 8, idy);
-    idy += lh;
-  }
-  y += idealH + 6;
-
-  // ═══════════════════════════════════════════
-  // LEGIBILIDADE
-  // ═══════════════════════════════════════════
+  // ===== SECTION 11 - HANDWRITING =====
   if (data.correction.handwritingNote) {
-    sectionLabel("LEGIBILIDADE DA ESCRITA", NAVY);
-    needPage(16);
+    sectionTitle("11", "Observacao sobre Legibilidade");
 
-    const levelLabels: Record<string, { text: string; color: [number, number, number] }> = {
-      plenamente_legivel: { text: "Plenamente legivel", color: GREEN },
-      legivel_com_esforco: { text: "Legivel com esforco", color: AMBER },
-      prejudica_parcialmente: { text: "Prejudica parcialmente", color: AMBER },
-      compromete_correcao: { text: "Compromete a correcao", color: RED },
-    };
-
-    const noteLines = doc.splitTextToSize(sanitize(data.correction.handwritingNote), cw - 50);
-    const legH = Math.max(12, noteLines.length * lh + 8);
-    card(ml, y, cw, legH);
-
-    // Badge
-    const level = data.correction.handwritingLevel ? levelLabels[data.correction.handwritingLevel] : null;
-    if (level) {
-      const badgeW = doc.getTextWidth(level.text) * 0.6 + 8;
-      doc.setFillColor(...level.color);
-      doc.roundedRect(ml + 5, y + 3, badgeW, 5, 1.5, 1.5, "F");
-      doc.setFontSize(7);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(...WHITE);
-      doc.text(level.text, ml + 7, y + 6.5);
+    if (data.correction.handwritingLevel) {
+      const levelLabels: Record<string, { text: string; color: [number, number, number] }> = {
+        plenamente_legivel: { text: "Plenamente legivel", color: GREEN },
+        legivel_com_esforco: { text: "Legivel com esforco", color: YELLOW },
+        prejudica_parcialmente: { text: "Prejudica parcialmente", color: ORANGE },
+        compromete_correcao: { text: "Compromete a correcao", color: RED },
+      };
+      const level = levelLabels[data.correction.handwritingLevel];
+      if (level) {
+        checkPage(8);
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(...MUTED);
+        doc.text("Legibilidade:", marginL + 4, y);
+        // Badge
+        const badgeW = doc.getTextWidth(level.text) + 6;
+        doc.setFillColor(...level.color);
+        doc.roundedRect(marginL + 28, y - 3, badgeW, 4.5, 1, 1, "F");
+        doc.setTextColor(...WHITE);
+        doc.setFontSize(7);
+        doc.text(level.text, marginL + 31, y);
+        y += 7;
+      }
     }
 
-    // Note text
-    doc.setFontSize(8.5);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(...TEXT_PRIMARY);
-    let ly = y + (level ? 12 : 6);
-    for (const line of noteLines) {
-      doc.text(line, ml + 6, ly);
-      ly += lh;
-    }
-
-    y += legH + 6;
+    wrappedText(data.correction.handwritingNote);
   }
 
-  // ═══════════════════════════════════════════
-  // FOOTERS
-  // ═══════════════════════════════════════════
+  // Draw footers on all pages
   const totalPages = doc.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
-    doc.setDrawColor(...CARD_SHADOW);
-    doc.setLineWidth(0.3);
-    doc.line(ml, ph - 12, pw - mr, ph - 12);
-    doc.setFontSize(6.5);
-    doc.setTextColor(...TEXT_SECONDARY);
-    doc.setFont("helvetica", "normal");
-    doc.text("Salinha de Estudos - Relatorio de Correcao Discursiva", ml, ph - 7);
-    doc.text(`Pagina ${i} de ${totalPages}`, pw - mr, ph - 7, { align: "right" });
+    drawFooter(i, totalPages);
   }
 
   // Download
