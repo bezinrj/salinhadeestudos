@@ -572,7 +572,7 @@ export async function generateCorrectionReport(data: ReportData) {
       compromete_correcao: { text: "Compromete a correcao", color: RED },
     };
 
-    const noteLines = doc.splitTextToSize(sanitize(data.correction.handwritingNote), cw - 50);
+    const noteLines = doc.splitTextToSize(sanitize(data.correction.handwritingNote), textMaxW);
     const legH = Math.max(12, noteLines.length * lh + 8);
     card(ml, y, cw, legH);
 
