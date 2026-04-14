@@ -133,11 +133,13 @@ export async function generateCorrectionReport(data: ReportData) {
   // ═══════════════════════════════════════════
   // HEADER – dark navy bar
   // ═══════════════════════════════════════════
-  const headerH = 38;
+  const headerH = 40;
   doc.setFillColor(...NAVY);
   doc.rect(0, 0, pw, headerH, "F");
 
-  // Logo
+  // Logo — vertically centered in header
+  const logoSize = 14;
+  const logoY = (headerH - logoSize) / 2;
   try {
     const img = new Image();
     img.crossOrigin = "anonymous";
@@ -146,45 +148,47 @@ export async function generateCorrectionReport(data: ReportData) {
       img.onerror = () => rej();
       img.src = logoImg;
     });
-    doc.addImage(img, "PNG", ml, 5, 16, 16);
+    doc.addImage(img, "PNG", ml, logoY, logoSize, logoSize);
   } catch {
     // skip
   }
 
-  // Header text left side
-  const textX = ml + 20;
-  doc.setFontSize(6.5);
+  // Header text left side — vertically centered with logo
+  const textX = ml + logoSize + 4;
+  const headerCenterY = headerH / 2;
+
+  doc.setFontSize(6);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(180, 190, 220);
-  doc.text("SALINHA DE ESTUDOS", textX, 11);
+  doc.text("SALINHA DE ESTUDOS", textX, headerCenterY - 8);
 
-  doc.setFontSize(13);
+  doc.setFontSize(12);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(...WHITE);
-  doc.text("Relatorio de Correcao Discursiva", textX, 19);
+  doc.text("Relatorio de Correcao Discursiva", textX, headerCenterY);
 
   const now = new Date();
   doc.setFontSize(7);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(160, 170, 200);
-  doc.text(`Gerado em ${now.toLocaleDateString("pt-BR")} as ${now.toLocaleTimeString("pt-BR")}`, textX, 25);
+  doc.text(`Gerado em ${now.toLocaleDateString("pt-BR")} as ${now.toLocaleTimeString("pt-BR")}`, textX, headerCenterY + 7);
 
-  // Grade circle on the right
+  // Grade circle on the right — perfectly centered
   const grade = data.correction.grade;
   const maxGrade = data.correction.maxGrade;
   const pct = Math.min(1, grade / maxGrade);
   const gradeColor: [number, number, number] = pct >= 0.7 ? GREEN : pct >= 0.4 ? AMBER : RED;
 
   const cx = pw - mr - 16;
-  const cy = 19;
-  const radius = 12;
+  const cy = headerH / 2;
+  const radius = 13;
 
   // Track circle
   doc.setDrawColor(60, 70, 100);
   doc.setLineWidth(2.5);
   doc.circle(cx, cy, radius, "S");
 
-  // Progress arc (approximate with colored arc segments)
+  // Progress arc
   doc.setDrawColor(...gradeColor);
   doc.setLineWidth(2.5);
   const segments = Math.floor(pct * 36);
@@ -198,19 +202,20 @@ export async function generateCorrectionReport(data: ReportData) {
     doc.line(x1, y1, x2, y2);
   }
 
-  // Grade number
+  // Grade number — perfectly centered in circle
   doc.setFontSize(16);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(...WHITE);
   const gradeText = grade.toFixed(1);
-  doc.text(gradeText, cx, cy + 2, { align: "center" });
+  // Vertical center: baseline offset ~1/3 of font cap height
+  doc.text(gradeText, cx, cy + 1, { align: "center" });
 
   doc.setFontSize(7);
   doc.setTextColor(160, 170, 200);
-  doc.text(`/ ${maxGrade}`, cx, cy + 7, { align: "center" });
+  doc.text(`/ ${maxGrade}`, cx, cy + 6, { align: "center" });
 
   doc.setFontSize(5.5);
-  doc.text("NOTA FINAL", cx, cy + 11, { align: "center" });
+  doc.text("NOTA FINAL", cx, cy + 10.5, { align: "center" });
 
   y = headerH + 6;
 
