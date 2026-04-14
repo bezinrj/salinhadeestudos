@@ -133,13 +133,11 @@ export async function generateCorrectionReport(data: ReportData) {
   // ═══════════════════════════════════════════
   // HEADER – dark navy bar
   // ═══════════════════════════════════════════
-  const headerH = 40;
+  const headerH = 38;
   doc.setFillColor(...NAVY);
   doc.rect(0, 0, pw, headerH, "F");
 
-  // Logo — vertically centered in header
-  const logoSize = 14;
-  const logoY = (headerH - logoSize) / 2;
+  // Logo
   try {
     const img = new Image();
     img.crossOrigin = "anonymous";
@@ -148,47 +146,45 @@ export async function generateCorrectionReport(data: ReportData) {
       img.onerror = () => rej();
       img.src = logoImg;
     });
-    doc.addImage(img, "PNG", ml, logoY, logoSize, logoSize);
+    doc.addImage(img, "PNG", ml, 5, 16, 16);
   } catch {
     // skip
   }
 
-  // Header text left side — vertically centered with logo
-  const textX = ml + logoSize + 4;
-  const headerCenterY = headerH / 2;
-
-  doc.setFontSize(6);
+  // Header text left side
+  const textX = ml + 20;
+  doc.setFontSize(6.5);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(180, 190, 220);
-  doc.text("SALINHA DE ESTUDOS", textX, headerCenterY - 8);
+  doc.text("SALINHA DE ESTUDOS", textX, 11);
 
-  doc.setFontSize(12);
+  doc.setFontSize(13);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(...WHITE);
-  doc.text("Relatorio de Correcao Discursiva", textX, headerCenterY);
+  doc.text("Relatorio de Correcao Discursiva", textX, 19);
 
   const now = new Date();
   doc.setFontSize(7);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(160, 170, 200);
-  doc.text(`Gerado em ${now.toLocaleDateString("pt-BR")} as ${now.toLocaleTimeString("pt-BR")}`, textX, headerCenterY + 7);
+  doc.text(`Gerado em ${now.toLocaleDateString("pt-BR")} as ${now.toLocaleTimeString("pt-BR")}`, textX, 25);
 
-  // Grade circle on the right — perfectly centered
+  // Grade circle on the right
   const grade = data.correction.grade;
   const maxGrade = data.correction.maxGrade;
   const pct = Math.min(1, grade / maxGrade);
   const gradeColor: [number, number, number] = pct >= 0.7 ? GREEN : pct >= 0.4 ? AMBER : RED;
 
   const cx = pw - mr - 16;
-  const cy = headerH / 2;
-  const radius = 13;
+  const cy = 19;
+  const radius = 12;
 
   // Track circle
   doc.setDrawColor(60, 70, 100);
   doc.setLineWidth(2.5);
   doc.circle(cx, cy, radius, "S");
 
-  // Progress arc
+  // Progress arc (approximate with colored arc segments)
   doc.setDrawColor(...gradeColor);
   doc.setLineWidth(2.5);
   const segments = Math.floor(pct * 36);
@@ -202,20 +198,19 @@ export async function generateCorrectionReport(data: ReportData) {
     doc.line(x1, y1, x2, y2);
   }
 
-  // Grade number — perfectly centered in circle
+  // Grade number
   doc.setFontSize(16);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(...WHITE);
   const gradeText = grade.toFixed(1);
-  // Vertical center: baseline offset ~1/3 of font cap height
-  doc.text(gradeText, cx, cy + 1, { align: "center" });
+  doc.text(gradeText, cx, cy + 2, { align: "center" });
 
   doc.setFontSize(7);
   doc.setTextColor(160, 170, 200);
-  doc.text(`/ ${maxGrade}`, cx, cy + 6, { align: "center" });
+  doc.text(`/ ${maxGrade}`, cx, cy + 7, { align: "center" });
 
   doc.setFontSize(5.5);
-  doc.text("NOTA FINAL", cx, cy + 10.5, { align: "center" });
+  doc.text("NOTA FINAL", cx, cy + 11, { align: "center" });
 
   y = headerH + 6;
 
@@ -252,15 +247,13 @@ export async function generateCorrectionReport(data: ReportData) {
   // ═══════════════════════════════════════════
   // ENUNCIADO
   // ═══════════════════════════════════════════
-  const cardPad = 6; // consistent inner padding for all text cards
-  const textMaxW = cw - cardPad * 2 - 4; // safe text width inside cards
-
   sectionLabel("ENUNCIADO DA QUESTAO", INDIGO);
   const stmtText = sanitize(data.question.statement);
-  const stmtLines = doc.splitTextToSize(stmtText, textMaxW);
-  const stmtH = Math.max(14, stmtLines.length * lh + 12);
+  const stmtLines = doc.splitTextToSize(stmtText, cw - 14);
+  const stmtH = Math.max(14, stmtLines.length * lh + 10);
   needPage(stmtH + 4);
 
+  // Card with indigo left border
   card(ml, y, cw, stmtH);
   doc.setFillColor(...INDIGO);
   doc.rect(ml, y, 2.5, stmtH, "F");
@@ -268,10 +261,10 @@ export async function generateCorrectionReport(data: ReportData) {
   doc.setFontSize(8.5);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(...TEXT_PRIMARY);
-  let sy = y + 7;
+  let sy = y + 6;
   for (const line of stmtLines) {
     if (sy > ph - 18) { doc.addPage(); sy = 14; }
-    doc.text(line, ml + cardPad + 2, sy);
+    doc.text(line, ml + 8, sy);
     sy += lh;
   }
   y += stmtH + 6;
@@ -282,8 +275,8 @@ export async function generateCorrectionReport(data: ReportData) {
   sectionLabel("RESPOSTA DO ALUNO");
   const answerMeta = `${getSubmissionLabel(data.submissionType)}${data.uploadedFileName ? ` | Arquivo: ${data.uploadedFileName}` : ""}`;
   const ansText = sanitize(data.answerText || "---");
-  const ansLines = doc.splitTextToSize(ansText, textMaxW);
-  const ansH = Math.max(14, ansLines.length * lh + 18);
+  const ansLines = doc.splitTextToSize(ansText, cw - 14);
+  const ansH = Math.max(14, ansLines.length * lh + 16);
   needPage(Math.min(ansH + 4, 60));
 
   card(ml, y, cw, ansH);
@@ -293,52 +286,41 @@ export async function generateCorrectionReport(data: ReportData) {
   doc.setFontSize(7);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(...TEXT_SECONDARY);
-  doc.text(sanitize(answerMeta), ml + cardPad + 2, y + 5.5);
+  doc.text(sanitize(answerMeta), ml + 8, y + 5);
 
   doc.setFontSize(8.5);
   doc.setTextColor(...TEXT_PRIMARY);
-  let ay = y + 12;
+  let ay = y + 11;
   for (const line of ansLines) {
     if (ay > ph - 18) { doc.addPage(); ay = 14; }
-    doc.text(line, ml + cardPad + 2, ay);
+    doc.text(line, ml + 8, ay);
     ay += lh;
   }
   y += ansH + 6;
 
   // ═══════════════════════════════════════════
-  // FEEDBACK GERAL — cream card with lamp emoji
+  // FEEDBACK GERAL
   // ═══════════════════════════════════════════
-  const CREAM_BG: [number, number, number] = [255, 250, 240];
-  const AMBER_BORDER: [number, number, number] = [233, 185, 73];
-  const BROWN_TEXT: [number, number, number] = [154, 90, 34];
-
+  sectionLabel("FEEDBACK GERAL", AMBER);
   const fbText = sanitize(data.correction.feedback);
-  const fbLines = doc.splitTextToSize(fbText, textMaxW);
-  const fbTitleH = 8;
-  const fbH = Math.max(18, fbLines.length * lh + fbTitleH + 12);
+  const fbLines = doc.splitTextToSize(fbText, cw - 14);
+  const fbH = Math.max(14, fbLines.length * lh + 10);
   needPage(Math.min(fbH + 4, 60));
 
-  // Cream background card
-  doc.setFillColor(...CREAM_BG);
+  // Amber-tinted card
+  doc.setFillColor(...AMBER_BG);
   doc.roundedRect(ml, y, cw, fbH, 3, 3, "F");
-  doc.setDrawColor(...AMBER_BORDER);
-  doc.setLineWidth(0.5);
+  doc.setDrawColor(251, 191, 36);
+  doc.setLineWidth(0.4);
   doc.roundedRect(ml, y, cw, fbH, 3, 3, "S");
 
-  // Title with lamp emoji
-  doc.setFontSize(7.5);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(...BROWN_TEXT);
-  doc.text("FEEDBACK GERAL", ml + cardPad, y + 6.5);
-
-  // Body text in italic brown
   doc.setFontSize(8.5);
-  doc.setFont("helvetica", "italic");
-  doc.setTextColor(...BROWN_TEXT);
-  let fy = y + fbTitleH + 6;
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(...TEXT_PRIMARY);
+  let fy = y + 6;
   for (const line of fbLines) {
     if (fy > ph - 18) { doc.addPage(); fy = 14; }
-    doc.text(line, ml + cardPad, fy);
+    doc.text(line, ml + 6, fy);
     fy += lh;
   }
   y += fbH + 6;
@@ -392,7 +374,7 @@ export async function generateCorrectionReport(data: ReportData) {
         const sBg = statusBg(sub.status);
         const sColor = statusColor(sub.status);
         const sLabel = getStatusLabel(sub.status);
-        const descLines = doc.splitTextToSize(sanitize(sub.description), cw - 55);
+        const descLines = doc.splitTextToSize(sanitize(sub.description), cw - 50);
         const rowH = Math.max(6, descLines.length * lh) + 2;
 
         // Row background
@@ -506,8 +488,8 @@ export async function generateCorrectionReport(data: ReportData) {
   // ═══════════════════════════════════════════
   sectionLabel("ESPELHO RESUMIDO", NAVY);
   const mirrorText = sanitize(data.correction.mirror);
-  const mirrorLines = doc.splitTextToSize(mirrorText, textMaxW);
-  const mirrorH = Math.max(14, mirrorLines.length * lh + 12);
+  const mirrorLines = doc.splitTextToSize(mirrorText, cw - 14);
+  const mirrorH = Math.max(14, mirrorLines.length * lh + 10);
   needPage(Math.min(mirrorH + 4, 60));
 
   doc.setFillColor(...MIRROR_BG);
@@ -519,10 +501,10 @@ export async function generateCorrectionReport(data: ReportData) {
   doc.setFontSize(8.5);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(...TEXT_PRIMARY);
-  let my = y + 7;
+  let my = y + 6;
   for (const line of mirrorLines) {
     if (my > ph - 18) { doc.addPage(); my = 14; }
-    doc.text(line, ml + cardPad, my);
+    doc.text(line, ml + 6, my);
     my += lh;
   }
   y += mirrorH + 6;
@@ -536,10 +518,10 @@ export async function generateCorrectionReport(data: ReportData) {
   let idealLines: string[] = [];
   for (const p of idealParagraphs) {
     if (!p.trim()) continue;
-    idealLines = idealLines.concat(doc.splitTextToSize(p.trim(), textMaxW));
+    idealLines = idealLines.concat(doc.splitTextToSize(p.trim(), cw - 14));
     idealLines.push(""); // spacer
   }
-  const idealH = Math.max(14, idealLines.length * lh + 12);
+  const idealH = Math.max(14, idealLines.length * lh + 10);
   needPage(Math.min(idealH + 4, 60));
 
   card(ml, y, cw, idealH);
@@ -549,11 +531,11 @@ export async function generateCorrectionReport(data: ReportData) {
   doc.setFontSize(8.5);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(...TEXT_PRIMARY);
-  let idy = y + 7;
+  let idy = y + 6;
   for (const line of idealLines) {
     if (idy > ph - 18) { doc.addPage(); idy = 14; }
     if (line === "") { idy += 2; continue; }
-    doc.text(line, ml + cardPad + 2, idy);
+    doc.text(line, ml + 8, idy);
     idy += lh;
   }
   y += idealH + 6;
@@ -572,7 +554,7 @@ export async function generateCorrectionReport(data: ReportData) {
       compromete_correcao: { text: "Compromete a correcao", color: RED },
     };
 
-    const noteLines = doc.splitTextToSize(sanitize(data.correction.handwritingNote), textMaxW);
+    const noteLines = doc.splitTextToSize(sanitize(data.correction.handwritingNote), cw - 50);
     const legH = Math.max(12, noteLines.length * lh + 8);
     card(ml, y, cw, legH);
 
