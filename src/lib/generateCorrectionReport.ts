@@ -1,4 +1,3 @@
-import jsPDF from "jspdf";
 import type { CorrectionResult } from "@/data/mockData";
 import logoImg from "@/assets/logo-report.png";
 
@@ -20,409 +19,410 @@ interface ReportData {
   userName?: string;
 }
 
-// Colors
-const PRIMARY: [number, number, number] = [37, 99, 235];
-const DARK: [number, number, number] = [30, 41, 59];
-const MUTED: [number, number, number] = [100, 116, 139];
-const LIGHT_BG: [number, number, number] = [241, 245, 249];
-const GREEN: [number, number, number] = [22, 163, 74];
-const RED: [number, number, number] = [220, 38, 38];
-const YELLOW: [number, number, number] = [161, 98, 7];
-const ORANGE: [number, number, number] = [234, 88, 12];
-const WHITE: [number, number, number] = [255, 255, 255];
-const GOLD: [number, number, number] = [180, 140, 50];
-const SECTION_BG: [number, number, number] = [248, 250, 252];
+function esc(text: string): string {
+  if (!text) return "";
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
 
 function getSubmissionLabel(type: string): string {
   if (type === "transcricao") return "Resposta transcrita de imagem/PDF";
-  if (type === "correcao_direta") return "Resposta enviada por imagem/PDF (correcao direta)";
+  if (type === "correcao_direta") return "Resposta enviada por imagem/PDF (correção direta)";
   return "Resposta digitada manualmente";
 }
 
-function getStatusLabel(status: "full" | "partial" | "missed"): string {
-  if (status === "full") return "Atendido";
-  if (status === "partial") return "Parcial";
-  return "Nao atendido";
+function getScoreColor(ratio: number): string {
+  if (ratio >= 0.75) return "#16a34a";
+  if (ratio >= 0.4) return "#d97706";
+  return "#dc2626";
 }
 
-function getStatusColor(status: "full" | "partial" | "missed"): [number, number, number] {
-  if (status === "full") return GREEN;
-  if (status === "partial") return YELLOW;
-  return RED;
+function getLegibilityBadge(level: string): { label: string; bg: string; color: string } {
+  const map: Record<string, { label: string; bg: string; color: string }> = {
+    plenamente_legivel: { label: "Legível", bg: "#dcfce7", color: "#065f46" },
+    legivel_com_esforco: { label: "Legível com esforço", bg: "#fef3c7", color: "#92400e" },
+    prejudica_parcialmente: { label: "Prejudica parcialmente", bg: "#ffedd5", color: "#9a3412" },
+    compromete_correcao: { label: "Ilegível", bg: "#fef2f2", color: "#991b1b" },
+  };
+  return map[level] || { label: level, bg: "#f1f5f9", color: "#475569" };
 }
 
-function sanitize(text: string): string {
-  if (!text) return "";
-  // Replace problematic unicode chars with safe alternatives
-  return text
-    .replace(/[\u2018\u2019]/g, "'")
-    .replace(/[\u201C\u201D]/g, '"')
-    .replace(/\u2014/g, " - ")
-    .replace(/\u2013/g, " - ")
-    .replace(/\u2026/g, "...")
-    .replace(/\u00A0/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"');
+function toBase64(url: string): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      const c = document.createElement("canvas");
+      c.width = img.naturalWidth;
+      c.height = img.naturalHeight;
+      c.getContext("2d")!.drawImage(img, 0, 0);
+      resolve(c.toDataURL("image/png"));
+    };
+    img.onerror = () => resolve("");
+    img.src = url;
+  });
 }
 
 export async function generateCorrectionReport(data: ReportData) {
-  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-  const pageW = doc.internal.pageSize.getWidth();
-  const pageH = doc.internal.pageSize.getHeight();
-  const marginL = 18;
-  const marginR = 18;
-  const contentW = pageW - marginL - marginR;
-  let y = 0;
-  const lineH = 4.2;
-
-  const checkPage = (needed: number) => {
-    if (y + needed > pageH - 22) {
-      doc.addPage();
-      y = 18;
-    }
-  };
-
-  const drawFooter = (pageNum: number, totalPages: number) => {
-    doc.setDrawColor(220, 225, 230);
-    doc.setLineWidth(0.3);
-    doc.line(marginL, pageH - 14, pageW - marginR, pageH - 14);
-    doc.setFontSize(7);
-    doc.setTextColor(...MUTED);
-    doc.setFont("helvetica", "normal");
-    doc.text("Salinha de Estudos", marginL, pageH - 9);
-    doc.text("Relatorio de Correcao Discursiva", marginL, pageH - 5.5);
-    doc.text(`Pagina ${pageNum} de ${totalPages}`, pageW - marginR, pageH - 9, { align: "right" });
-  };
-
-  const sectionTitle = (num: string, title: string) => {
-    checkPage(14);
-    // Draw accent bar
-    doc.setFillColor(...PRIMARY);
-    doc.rect(marginL, y, 3, 8, "F");
-    // Draw section background
-    doc.setFillColor(...LIGHT_BG);
-    doc.rect(marginL + 3, y, contentW - 3, 8, "F");
-    // Section text
-    doc.setFontSize(10);
-    doc.setTextColor(...DARK);
-    doc.setFont("helvetica", "bold");
-    doc.text(`${num}. ${sanitize(title)}`, marginL + 7, y + 5.5);
-    y += 12;
-  };
-
-  const labelValue = (label: string, value: string, labelW = 28) => {
-    checkPage(8);
-    doc.setFontSize(8.5);
-    doc.setTextColor(...MUTED);
-    doc.setFont("helvetica", "bold");
-    doc.text(sanitize(label), marginL + 4, y);
-    doc.setTextColor(...DARK);
-    doc.setFont("helvetica", "normal");
-    const lines = doc.splitTextToSize(sanitize(value || "---"), contentW - labelW - 6);
-    doc.text(lines, marginL + labelW, y);
-    y += Math.max(5, lines.length * lineH) + 1.5;
-  };
-
-  const wrappedText = (text: string, fontSize = 9, color = DARK, indent = 4) => {
-    doc.setFontSize(fontSize);
-    doc.setTextColor(...color);
-    doc.setFont("helvetica", "normal");
-    const cleaned = sanitize(text);
-    // Split into paragraphs first for better readability
-    const paragraphs = cleaned.split(/\n\s*\n|\n/);
-    for (const para of paragraphs) {
-      if (!para.trim()) continue;
-      const lines = doc.splitTextToSize(para.trim(), contentW - indent * 2);
-      for (let i = 0; i < lines.length; i++) {
-        checkPage(5);
-        doc.text(lines[i], marginL + indent, y);
-        y += lineH;
-      }
-      y += 2; // paragraph spacing
-    }
-  };
-
-  const bulletItem = (text: string, bulletLabel: string, bulletColor: [number, number, number]) => {
-    checkPage(8);
-    // Draw badge-style label
-    doc.setFontSize(7);
-    doc.setFont("helvetica", "bold");
-    const badgeW = doc.getTextWidth(bulletLabel) + 4;
-    doc.setFillColor(...bulletColor);
-    doc.roundedRect(marginL + 4, y - 3, badgeW, 4.5, 1, 1, "F");
-    doc.setTextColor(...WHITE);
-    doc.text(bulletLabel, marginL + 6, y);
-
-    doc.setFontSize(8.5);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(...DARK);
-    const textLines = doc.splitTextToSize(sanitize(text), contentW - badgeW - 12);
-    doc.text(textLines, marginL + badgeW + 8, y);
-    y += Math.max(5, textLines.length * lineH) + 2;
-  };
-
-  // ===== HEADER =====
-  try {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    await new Promise<void>((resolve, reject) => {
-      img.onload = () => resolve();
-      img.onerror = () => reject();
-      img.src = logoImg;
-    });
-    doc.addImage(img, "PNG", marginL, 8, 20, 20);
-  } catch {
-    // Skip logo if loading fails
-  }
-
-  // Platform name & title
-  doc.setFontSize(16);
-  doc.setTextColor(...PRIMARY);
-  doc.setFont("helvetica", "bold");
-  doc.text("Salinha de Estudos", marginL + 24, 16);
-
-  doc.setFontSize(10);
-  doc.setTextColor(...DARK);
-  doc.setFont("helvetica", "normal");
-  doc.text("Relatorio de Correcao Discursiva", marginL + 24, 22);
-
-  // Date
+  const logoBase64 = await toBase64(logoImg);
   const now = new Date();
-  doc.setFontSize(7.5);
-  doc.setTextColor(...MUTED);
-  const dateStr = `Gerado em ${now.toLocaleDateString("pt-BR")} as ${now.toLocaleTimeString("pt-BR")}`;
-  doc.text(dateStr, marginL + 24, 27);
-
-  // Grade box on the right
+  const dateStr = `${now.toLocaleDateString("pt-BR")} às ${now.toLocaleTimeString("pt-BR")}`;
   const grade = data.correction.grade;
-  const gradeColor = grade >= 8 ? GREEN : grade >= 6 ? PRIMARY : grade >= 4 ? YELLOW : RED;
-  const boxW = 38;
-  const boxX = pageW - marginR - boxW;
-  doc.setFillColor(...LIGHT_BG);
-  doc.roundedRect(boxX, 8, boxW, 22, 2, 2, "F");
-  doc.setDrawColor(...gradeColor);
-  doc.setLineWidth(0.6);
-  doc.roundedRect(boxX, 8, boxW, 22, 2, 2, "S");
-
-  doc.setFontSize(7);
-  doc.setTextColor(...MUTED);
-  doc.setFont("helvetica", "bold");
-  doc.text("NOTA FINAL", boxX + boxW / 2, 14, { align: "center" });
-
-  doc.setFontSize(20);
-  doc.setTextColor(...gradeColor);
-  doc.setFont("helvetica", "bold");
-  doc.text(`${grade.toFixed(1)}`, boxX + boxW / 2 - 5, 24);
-
-  doc.setFontSize(10);
-  doc.setTextColor(...MUTED);
-  doc.setFont("helvetica", "normal");
-  doc.text(`/ ${data.correction.maxGrade}`, boxX + boxW / 2 + 9, 24);
-
-  // Separator
-  doc.setDrawColor(...PRIMARY);
-  doc.setLineWidth(0.8);
-  doc.line(marginL, 33, pageW - marginR, 33);
-  y = 38;
-
-  // ===== SECTION 1 - IDENTIFICATION =====
-  sectionTitle("1", "Identificacao da Questao");
-  labelValue("ID:", `Q-${String(data.question.publicId).padStart(3, "0")}`);
-  labelValue("Cargo:", data.question.career);
-  labelValue("Materia:", data.question.discipline);
-  if (data.question.subject) labelValue("Assunto:", data.question.subject);
-  y += 2;
-
-  // ===== SECTION 2 - STATEMENT =====
-  sectionTitle("2", "Enunciado");
-  wrappedText(data.question.statement);
-
-  // ===== SECTION 3 - STUDENT ANSWER =====
-  sectionTitle("3", "Resposta do Aluno");
-  labelValue("Tipo de envio:", getSubmissionLabel(data.submissionType));
-  if (data.uploadedFileName) {
-    labelValue("Arquivo:", data.uploadedFileName);
-  }
-  y += 1;
-
-  doc.setFontSize(8);
-  doc.setTextColor(...MUTED);
-  doc.setFont("helvetica", "bold");
-  doc.text("Conteudo considerado na correcao:", marginL + 4, y);
-  y += 5;
-
-  // Answer box
-  const answerText = sanitize(data.answerText || "---");
-  const answerLines = doc.splitTextToSize(answerText, contentW - 10);
-  const answerH = Math.max(12, answerLines.length * lineH + 8);
-  checkPage(answerH + 4);
-  doc.setFillColor(...SECTION_BG);
-  doc.roundedRect(marginL + 2, y, contentW - 4, answerH, 1.5, 1.5, "F");
-  doc.setDrawColor(210, 218, 226);
-  doc.setLineWidth(0.3);
-  doc.roundedRect(marginL + 2, y, contentW - 4, answerH, 1.5, 1.5, "S");
-  doc.setFontSize(8.5);
-  doc.setTextColor(...DARK);
-  doc.setFont("helvetica", "normal");
-  for (let i = 0; i < answerLines.length; i++) {
-    if (y + 5 + i * lineH > pageH - 22) {
-      doc.addPage();
-      y = 18;
-      // Redraw box continuation on new page
-    }
-    doc.text(answerLines[i], marginL + 6, y + 5 + i * lineH);
-  }
-  y += answerH + 6;
-
-  // ===== SECTION 4 - GENERAL FEEDBACK =====
-  sectionTitle("4", "Feedback Geral");
-  wrappedText(data.correction.feedback);
-
-  // ===== SECTION 5 - DETAILED ANALYSIS =====
-  if (data.correction.baremaBreakdown && data.correction.baremaBreakdown.length > 0) {
-    sectionTitle("5", "Analise Detalhada por Criterio");
-
-    for (const item of data.correction.baremaBreakdown) {
-      checkPage(18);
-
-      // Criterion header bar
-      doc.setFillColor(235, 240, 248);
-      doc.roundedRect(marginL + 2, y, contentW - 4, 8, 1, 1, "F");
-      doc.setFontSize(9);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(...DARK);
-      doc.text(sanitize(`${item.letter}) ${item.title}`), marginL + 6, y + 5.5);
-
-      const ratio = item.earnedScore / item.maxScore;
-      const scoreColor = ratio >= 0.8 ? GREEN : ratio >= 0.5 ? YELLOW : RED;
-      doc.setTextColor(...scoreColor);
-      doc.text(`${item.earnedScore.toFixed(1)} / ${item.maxScore.toFixed(1)}`, pageW - marginR - 6, y + 5.5, { align: "right" });
-      y += 11;
-
-      // Progress bar
-      checkPage(5);
-      const barW = contentW - 12;
-      const pct = Math.min(1, ratio);
-      doc.setFillColor(220, 225, 235);
-      doc.roundedRect(marginL + 6, y, barW, 2.5, 1, 1, "F");
-      if (pct > 0) {
-        doc.setFillColor(...scoreColor);
-        doc.roundedRect(marginL + 6, y, barW * pct, 2.5, 1, 1, "F");
-      }
-      y += 6;
-
-      // Subitems with badge-style status
-      for (const sub of item.subitems) {
-        checkPage(10);
-        const statusLabel = getStatusLabel(sub.status);
-        const statusColor = getStatusColor(sub.status);
-
-        // Status badge
-        doc.setFontSize(6.5);
-        doc.setFont("helvetica", "bold");
-        const badgeW = doc.getTextWidth(statusLabel) + 5;
-        doc.setFillColor(...statusColor);
-        doc.roundedRect(marginL + 8, y - 2.8, badgeW, 4, 1, 1, "F");
-        doc.setTextColor(...WHITE);
-        doc.text(statusLabel, marginL + 10.5, y);
-
-        // Description
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(8);
-        doc.setTextColor(...DARK);
-        const descLines = doc.splitTextToSize(sanitize(sub.description), contentW - badgeW - 30);
-        doc.text(descLines, marginL + badgeW + 12, y);
-
-        // Score
-        doc.setTextColor(...statusColor);
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(7.5);
-        doc.text(`${sub.earnedScore.toFixed(1)}/${sub.maxScore.toFixed(1)}`, pageW - marginR - 6, y, { align: "right" });
-
-        y += Math.max(5.5, descLines.length * lineH) + 2;
-      }
-      y += 4;
-    }
-  }
-
-  // ===== SECTION 6 - POSITIVES =====
-  if (data.correction.positives.length > 0 && data.correction.positives[0] !== "Nenhum ponto do espelho foi adequadamente abordado.") {
-    sectionTitle("6", "Pontos Positivos");
-    for (const p of data.correction.positives) {
-      bulletItem(p, "Acerto", GREEN);
-    }
-    y += 2;
-  }
-
-  // ===== SECTION 7 - ERRORS =====
-  if (data.correction.errors.length > 0) {
-    sectionTitle("7", "Erros / Abordagem Incompleta");
-    for (const e of data.correction.errors) {
-      bulletItem(e, "Erro", RED);
-    }
-    y += 2;
-  }
-
-  // ===== SECTION 8 - OMISSIONS =====
-  if (data.correction.omissions.length > 0) {
-    sectionTitle("8", "Omissoes");
-    for (const o of data.correction.omissions) {
-      bulletItem(o, "Nao abordado", ORANGE);
-    }
-    y += 2;
-  }
-
-  // ===== SECTION 9 - MIRROR =====
-  sectionTitle("9", "Espelho Resumido");
-  wrappedText(data.correction.mirror);
-
-  // ===== SECTION 10 - IDEAL ANSWER =====
-  sectionTitle("10", "Resposta Ideal");
-  wrappedText(data.correction.idealAnswer);
-
-  // ===== SECTION 11 - HANDWRITING =====
-  if (data.correction.handwritingNote) {
-    sectionTitle("11", "Observacao sobre Legibilidade");
-
-    if (data.correction.handwritingLevel) {
-      const levelLabels: Record<string, { text: string; color: [number, number, number] }> = {
-        plenamente_legivel: { text: "Plenamente legivel", color: GREEN },
-        legivel_com_esforco: { text: "Legivel com esforco", color: YELLOW },
-        prejudica_parcialmente: { text: "Prejudica parcialmente", color: ORANGE },
-        compromete_correcao: { text: "Compromete a correcao", color: RED },
-      };
-      const level = levelLabels[data.correction.handwritingLevel];
-      if (level) {
-        checkPage(8);
-        doc.setFontSize(8);
-        doc.setFont("helvetica", "bold");
-        doc.setTextColor(...MUTED);
-        doc.text("Legibilidade:", marginL + 4, y);
-        // Badge
-        const badgeW = doc.getTextWidth(level.text) + 6;
-        doc.setFillColor(...level.color);
-        doc.roundedRect(marginL + 28, y - 3, badgeW, 4.5, 1, 1, "F");
-        doc.setTextColor(...WHITE);
-        doc.setFontSize(7);
-        doc.text(level.text, marginL + 31, y);
-        y += 7;
-      }
-    }
-
-    wrappedText(data.correction.handwritingNote);
-  }
-
-  // Draw footers on all pages
-  const totalPages = doc.getNumberOfPages();
-  for (let i = 1; i <= totalPages; i++) {
-    doc.setPage(i);
-    drawFooter(i, totalPages);
-  }
-
-  // Download
+  const maxGrade = data.correction.maxGrade;
+  const pct = Math.min(100, (grade / maxGrade) * 100);
+  const circumference = 2 * Math.PI * 34; // ~213.6
+  const offset = circumference - (circumference * pct) / 100;
   const qCode = `Q-${String(data.question.publicId).padStart(3, "0")}`;
-  const dStr = now.toISOString().slice(0, 10);
-  doc.save(`relatorio-correcao-${qCode}-${dStr}.pdf`);
+
+  const answerText = data.answerText || data.correction.answer || "[Sem resposta disponível]";
+
+  // Build criteria HTML
+  let criteriaHTML = "";
+  if (data.correction.baremaBreakdown && data.correction.baremaBreakdown.length > 0) {
+    for (const item of data.correction.baremaBreakdown) {
+      const ratio = item.maxScore > 0 ? item.earnedScore / item.maxScore : 0;
+      const color = getScoreColor(ratio);
+      const barPct = Math.min(100, ratio * 100);
+
+      let subitemsHTML = "";
+      for (const sub of item.subitems) {
+        const isOk = sub.status === "full";
+        const isPartial = sub.status === "partial";
+        const icon = isOk ? "✓" : "✗";
+        const iconColor = isOk ? "#16a34a" : isPartial ? "#d97706" : "#dc2626";
+        const bg = isOk ? "#f0fdf4" : "#fef2f2";
+        const scoreColor = isOk ? "#16a34a" : isPartial ? "#d97706" : "#dc2626";
+        subitemsHTML += `
+          <div style="display:flex;align-items:center;gap:8px;background:${bg};border-radius:8px;padding:8px 10px;margin-bottom:5px;">
+            <span style="font-size:13px;font-weight:700;color:${iconColor};flex-shrink:0;width:18px;text-align:center;">${icon}</span>
+            <span style="flex:1;font-size:12px;color:#374151;line-height:1.5;">${esc(sub.description)}</span>
+            <span style="font-size:11px;font-weight:600;color:${scoreColor};flex-shrink:0;">${sub.earnedScore.toFixed(1)}/${sub.maxScore.toFixed(1)}</span>
+          </div>`;
+      }
+
+      criteriaHTML += `
+        <div style="border:0.5px solid #e2e8f0;border-radius:12px;padding:16px;margin-bottom:10px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:13px;font-weight:600;color:#1e2a4a;">${esc(item.letter + ") " + item.title)}</span>
+            <span style="font-size:13px;font-weight:700;color:${color};">${item.earnedScore.toFixed(1)} / ${item.maxScore.toFixed(1)}</span>
+          </div>
+          <div style="height:5px;background:#f1f5f9;border-radius:99px;margin:10px 0;overflow:hidden;">
+            <div class="progress-bar" style="height:100%;width:0%;background:${color};border-radius:99px;transition:width 0.9s ease-out;" data-width="${barPct}%"></div>
+          </div>
+          ${subitemsHTML}
+        </div>`;
+    }
+  }
+
+  // Build bullet lists
+  const buildList = (items: string[], bulletChar: string, bulletColor: string) =>
+    items.map(t => `<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;">
+      <span style="color:${bulletColor};font-size:14px;line-height:1;margin-top:2px;">${bulletChar}</span>
+      <span style="font-size:12px;color:#374151;line-height:1.6;">${esc(t)}</span>
+    </div>`).join("");
+
+  const hasPositives = data.correction.positives.length > 0 && data.correction.positives[0] !== "Nenhum ponto do espelho foi adequadamente abordado.";
+  const hasErrors = data.correction.errors.length > 0;
+  const hasOmissions = data.correction.omissions.length > 0;
+
+  // Legibility section
+  let legibilityHTML = "";
+  if (data.correction.handwritingNote) {
+    const badge = getLegibilityBadge(data.correction.handwritingLevel || "");
+    legibilityHTML = `
+      <div style="border:0.5px solid #e2e8f0;border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:12px;margin-top:20px;">
+        <span style="display:inline-block;padding:4px 12px;border-radius:99px;font-size:11px;font-weight:600;background:${badge.bg};color:${badge.color};">${esc(badge.label)}</span>
+        <span style="font-size:12px;color:#475569;line-height:1.6;">${esc(data.correction.handwritingNote)}</span>
+      </div>`;
+  }
+
+  // Paragraphize text
+  const paragraphize = (text: string) =>
+    esc(text).split(/\n\s*\n|\n/).filter(p => p.trim()).map(p => `<p style="margin:0 0 10px 0;">${p.trim()}</p>`).join("");
+
+  const logoHTML = logoBase64
+    ? `<img src="${logoBase64}" style="height:48px;width:auto;object-fit:contain;" />`
+    : `<svg viewBox="0 0 48 48" width="48" height="48"><circle cx="24" cy="24" r="22" fill="#2d3f6a"/><text x="24" y="30" text-anchor="middle" fill="#c8d6f0" font-size="20" font-weight="bold">⚖</text></svg>`;
+
+  const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<title>Relatório de Correção - ${qCode}</title>
+<style>
+  @media print {
+    body { margin: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .no-print { display: none !important; }
+    .page-break { page-break-before: always; }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; background: #f8f9fc; color: #1e2a4a; line-height: 1.5; }
+  .container { max-width: 800px; margin: 0 auto; padding: 0; }
+  
+  .header { background: #1e2a4a; padding: 24px; display: flex; justify-content: space-between; align-items: center; }
+  .header-left { display: flex; flex-direction: column; gap: 6px; }
+  .header-brand { display: flex; align-items: center; gap: 10px; }
+  .header-brand span { font-size: 11px; font-weight: 700; color: #fff; letter-spacing: 0.1em; text-transform: uppercase; }
+  .header-title { font-size: 22px; font-weight: 700; color: #fff; }
+  .header-date { font-size: 12px; color: #93a8d4; }
+  
+  .grade-ring { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .grade-ring svg { display: block; }
+  .grade-label { font-size: 11px; color: #93a8d4; }
+  
+  .cards-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 16px 24px; }
+  .id-card { border: 0.5px solid #e2e8f0; border-radius: 10px; background: #fff; padding: 12px 14px; }
+  .id-card-label { font-size: 11px; font-weight: 600; color: #6366f1; text-transform: uppercase; display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+  .id-card-label svg { width: 16px; height: 16px; flex-shrink: 0; }
+  .id-card-value { font-size: 15px; font-weight: 700; color: #1e2a4a; }
+  
+  .section { padding: 0 24px; margin-top: 20px; }
+  .section-label { font-size: 11px; text-transform: uppercase; font-weight: 600; color: #94a3b8; letter-spacing: 0.05em; margin-bottom: 12px; }
+  
+  .accordion { border: 0.5px solid #e2e8f0; border-radius: 12px; overflow: hidden; }
+  .accordion-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; cursor: pointer; user-select: none; background: #fff; }
+  .accordion-header span { font-size: 14px; font-weight: 700; color: #1e2a4a; }
+  .accordion-arrow { font-size: 14px; color: #94a3b8; transition: transform 0.3s ease; }
+  .accordion-body { max-height: 2000px; overflow: hidden; transition: max-height 0.3s ease; padding: 0 16px 16px 16px; }
+  .accordion-body.closed { max-height: 0; padding-bottom: 0; }
+  .accordion-text { font-size: 13px; line-height: 1.8; color: #374151; border-left: 3px solid #6366f1; padding-left: 14px; }
+  
+  .feedback-card { background: #fffbeb; border: 0.5px solid #fbbf24; border-radius: 12px; padding: 16px; }
+  .feedback-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .feedback-header svg { width: 16px; height: 16px; }
+  .feedback-header span { font-size: 11px; font-weight: 700; color: #92400e; text-transform: uppercase; }
+  .feedback-text { font-size: 13px; font-style: italic; color: #78350f; line-height: 1.75; }
+  
+  .trio-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .trio-card { border: 0.5px solid #e2e8f0; border-radius: 12px; padding: 16px; background: #fff; }
+  .trio-card-header { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 0.5px solid #e2e8f0; }
+  .trio-card-header span { font-size: 11px; font-weight: 700; text-transform: uppercase; }
+  
+  .mirror-card { background: #f8fafc; border-radius: 12px; padding: 16px; }
+  .mirror-text { font-size: 13px; line-height: 1.8; color: #475569; }
+  
+  .ideal-card { border: 1px solid #6366f1; border-radius: 12px; overflow: hidden; }
+  .ideal-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; cursor: pointer; background: #fff; }
+  .ideal-header span { font-size: 14px; font-weight: 600; color: #6366f1; }
+  .ideal-body { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; padding: 0 16px; }
+  .ideal-body.open { max-height: 3000px; padding-bottom: 16px; }
+  .ideal-text { font-size: 13px; line-height: 1.8; color: #374151; }
+  
+  .answer-section { border: 0.5px solid #e2e8f0; border-radius: 12px; padding: 16px; background: #fff; }
+  .answer-meta { font-size: 11px; color: #94a3b8; margin-bottom: 8px; }
+  .answer-meta strong { color: #6366f1; font-weight: 600; }
+  .answer-text { font-size: 13px; line-height: 1.8; color: #374151; background: #f8fafc; border-radius: 8px; padding: 14px; border: 0.5px solid #e2e8f0; white-space: pre-wrap; word-break: break-word; }
+  
+  .footer { text-align: center; padding: 20px 24px; border-top: 0.5px solid #e2e8f0; margin-top: 24px; }
+  .footer span { font-size: 10px; color: #94a3b8; }
+  
+  .print-btn { position: fixed; bottom: 24px; right: 24px; background: #1e2a4a; color: #fff; border: none; padding: 14px 28px; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 20px rgba(0,0,0,0.2); z-index: 999; }
+  .print-btn:hover { background: #2d3f6a; }
+  
+  @media (max-width: 768px) {
+    .cards-grid, .trio-grid { grid-template-columns: 1fr; }
+    .header { padding: 16px; flex-direction: column; gap: 16px; align-items: flex-start; }
+    .grade-ring { align-self: center; }
+    .section { padding: 0 12px; }
+    .cards-grid { padding: 12px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-left">
+      <div class="header-brand">
+        ${logoHTML}
+        <span>SALINHA DE ESTUDOS</span>
+      </div>
+      <div class="header-title">Relatório de Correção Discursiva</div>
+      <div class="header-date">Gerado em ${esc(dateStr)}</div>
+    </div>
+    <div class="grade-ring">
+      <svg viewBox="0 0 80 80" width="80" height="80">
+        <circle cx="40" cy="40" r="34" fill="none" stroke="#2d3f6a" stroke-width="7"/>
+        <circle cx="40" cy="40" r="34" fill="none" stroke="#20c997" stroke-width="7" stroke-linecap="round"
+          stroke-dasharray="${circumference.toFixed(1)}" stroke-dashoffset="${circumference.toFixed(1)}"
+          transform="rotate(-90 40 40)" class="grade-arc" data-target="${offset.toFixed(1)}"/>
+        <text x="40" y="40" text-anchor="middle" dominant-baseline="central" fill="#fff" font-size="24" font-weight="700">${grade.toFixed(1)}</text>
+        <text x="40" y="56" text-anchor="middle" fill="#93a8d4" font-size="11">/${maxGrade}</text>
+      </svg>
+      <span class="grade-label">nota final</span>
+    </div>
+  </div>
+
+  <!-- ID CARDS -->
+  <div class="cards-grid">
+    <div class="id-card">
+      <div class="id-card-label">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>
+        ID QUESTÃO
+      </div>
+      <div class="id-card-value">${esc(qCode)}</div>
+    </div>
+    <div class="id-card">
+      <div class="id-card-label">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        CARGO
+      </div>
+      <div class="id-card-value">${esc(data.question.career)}</div>
+    </div>
+    <div class="id-card">
+      <div class="id-card-label">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+        MATÉRIA
+      </div>
+      <div class="id-card-value">${esc(data.question.discipline)}</div>
+    </div>
+  </div>
+
+  <!-- ENUNCIADO -->
+  <div class="section">
+    <div class="accordion" id="acc-enunciado">
+      <div class="accordion-header" onclick="toggleAcc('acc-enunciado')">
+        <span>📝 Enunciado da questão</span>
+        <span class="accordion-arrow">▾</span>
+      </div>
+      <div class="accordion-body">
+        <div class="accordion-text">${paragraphize(data.question.statement)}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESPOSTA DO ALUNO -->
+  <div class="section">
+    <div class="section-label">RESPOSTA DO ALUNO</div>
+    <div class="answer-section">
+      <div class="answer-meta">
+        <strong>Tipo de envio:</strong> ${esc(getSubmissionLabel(data.submissionType))}
+        ${data.uploadedFileName ? `<br/><strong>Arquivo:</strong> ${esc(data.uploadedFileName)}` : ""}
+      </div>
+      <div class="answer-text">${esc(answerText)}</div>
+    </div>
+  </div>
+
+  <!-- FEEDBACK GERAL -->
+  <div class="section">
+    <div class="feedback-card">
+      <div class="feedback-header">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 017 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 01-1 1h-6a1 1 0 01-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 017-7z"/></svg>
+        <span>FEEDBACK GERAL</span>
+      </div>
+      <div class="feedback-text">${paragraphize(data.correction.feedback)}</div>
+    </div>
+  </div>
+
+  <!-- ANÁLISE POR CRITÉRIO -->
+  ${criteriaHTML ? `
+  <div class="section">
+    <div class="section-label">ANÁLISE POR CRITÉRIO</div>
+    ${criteriaHTML}
+  </div>` : ""}
+
+  <!-- PONTOS / ERROS / OMISSÕES -->
+  ${(hasPositives || hasErrors || hasOmissions) ? `
+  <div class="section">
+    <div class="trio-grid">
+      ${hasPositives ? `
+      <div class="trio-card" style="border-top:3px solid #10b981;">
+        <div class="trio-card-header">
+          <span style="color:#065f46;">✓ PONTOS POSITIVOS</span>
+        </div>
+        ${buildList(data.correction.positives, "●", "#10b981")}
+      </div>` : ""}
+      ${hasErrors ? `
+      <div class="trio-card" style="border-top:3px solid #ef4444;">
+        <div class="trio-card-header">
+          <span style="color:#991b1b;">✗ ERROS</span>
+        </div>
+        ${buildList(data.correction.errors, "■", "#ef4444")}
+      </div>` : ""}
+      ${hasOmissions ? `
+      <div class="trio-card" style="border-top:3px solid #f59e0b;">
+        <div class="trio-card-header">
+          <span style="color:#92400e;">○ OMISSÕES</span>
+        </div>
+        ${buildList(data.correction.omissions, "●", "#f59e0b")}
+      </div>` : ""}
+    </div>
+  </div>` : ""}
+
+  <!-- ESPELHO RESUMIDO -->
+  <div class="section">
+    <div class="mirror-card">
+      <div class="section-label">ESPELHO RESUMIDO</div>
+      <div class="mirror-text">${paragraphize(data.correction.mirror)}</div>
+    </div>
+  </div>
+
+  <!-- RESPOSTA IDEAL -->
+  <div class="section">
+    <div class="ideal-card" id="acc-ideal">
+      <div class="ideal-header" onclick="toggleIdeal()">
+        <span>💡 Resposta ideal</span>
+        <span class="accordion-arrow" id="ideal-arrow">▸</span>
+      </div>
+      <div class="ideal-body" id="ideal-body">
+        <div class="ideal-text">${paragraphize(data.correction.idealAnswer)}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LEGIBILIDADE -->
+  ${legibilityHTML ? `<div class="section">${legibilityHTML}</div>` : ""}
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <span>Salinha de Estudos — Relatório de Correção Discursiva — ${esc(dateStr)}</span>
+  </div>
+
+</div>
+
+<button class="print-btn no-print" onclick="window.print()">📄 Salvar como PDF</button>
+
+<script>
+  // Animate progress bars
+  setTimeout(function() {
+    var bars = document.querySelectorAll('.progress-bar');
+    bars.forEach(function(b) { b.style.width = b.getAttribute('data-width'); });
+  }, 200);
+
+  // Animate grade arc
+  setTimeout(function() {
+    var arc = document.querySelector('.grade-arc');
+    if (arc) {
+      arc.style.transition = 'stroke-dashoffset 1.2s ease-out';
+      arc.style.strokeDashoffset = arc.getAttribute('data-target');
+    }
+  }, 100);
+
+  // Accordion toggles
+  function toggleAcc(id) {
+    var el = document.getElementById(id);
+    var body = el.querySelector('.accordion-body');
+    var arrow = el.querySelector('.accordion-arrow');
+    body.classList.toggle('closed');
+    arrow.textContent = body.classList.contains('closed') ? '▸' : '▾';
+  }
+  function toggleIdeal() {
+    var body = document.getElementById('ideal-body');
+    var arrow = document.getElementById('ideal-arrow');
+    body.classList.toggle('open');
+    arrow.textContent = body.classList.contains('open') ? '▾' : '▸';
+  }
+</script>
+</body>
+</html>`;
+
+  const w = window.open("", "_blank");
+  if (w) {
+    w.document.write(html);
+    w.document.close();
+  }
 }
