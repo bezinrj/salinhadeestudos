@@ -25,8 +25,7 @@ export function BottomNav() {
   const adminItem = { path: "/admin", icon: Shield, label: "Admin" };
   const allNavItems = [
     ...navItems,
-    cronogramaItem,
-    ...((isAdmin || isModerator) ? [adminItem] : []),
+    ...((isAdmin || isModerator) ? [cronogramaItem, adminItem] : []),
   ];
 
   const handleLogout = () => {
