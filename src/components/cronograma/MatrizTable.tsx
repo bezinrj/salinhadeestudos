@@ -382,7 +382,7 @@ export default function MatrizTable({ cronogramaId, topicos, progress, isAdminOr
                   <Input placeholder="Fonte Legal" value={newFonteLegal} onChange={e => setNewFonteLegal(e.target.value)} className="h-8 text-xs" />
                   <Input placeholder="Link Questões (URL)" value={newLinkQ} onChange={e => setNewLinkQ(e.target.value)} className="h-8 text-xs" />
                   <Input placeholder="Link DOD (URL)" value={newLinkD} onChange={e => setNewLinkD(e.target.value)} className="h-8 text-xs" />
-                  <Input type="number" placeholder="Horas" value={newHoras} onChange={e => setNewHoras(Number(e.target.value))} className="h-8 text-xs" min={1} />
+                  <Input type="number" placeholder="Horas estimadas" value={newHoras} onChange={e => setNewHoras(Number(e.target.value))} className="h-8 text-xs" min={1} />
                 </div>
                 <div className="flex gap-2">
                   <Button size="sm" className="h-8" disabled={!newMateria.trim()} onClick={() => addTopico.mutate()}>Adicionar</Button>

@@ -7,13 +7,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { ArrowLeft, Calendar, BookOpen, BarChart3, Clock } from "lucide-react";
+import { ArrowLeft, Calendar, BookOpen, BarChart3 } from "lucide-react";
 import { useState, useMemo } from "react";
 
 import CronogramaProgressBar from "@/components/cronograma/CronogramaProgressBar";
 import MatrizTable from "@/components/cronograma/MatrizTable";
 import CronogramaCalendar from "@/components/cronograma/CronogramaCalendar";
-import CronogramaTimer from "@/components/cronograma/CronogramaTimer";
 import CronogramaPerformance from "@/components/cronograma/CronogramaPerformance";
 
 export default function ScheduleDetail() {
@@ -26,7 +25,6 @@ export default function ScheduleDetail() {
 
   const isAdminOrMod = isAdmin || isModerator;
 
-  // Fetch schedule info
   const { data: cronograma } = useQuery({
     queryKey: ["cronograma", id],
     queryFn: async () => {
@@ -37,7 +35,6 @@ export default function ScheduleDetail() {
     enabled: !!id,
   });
 
-  // Fetch matriz
   const { data: topicos = [] } = useQuery({
     queryKey: ["cronograma-matriz", id],
     queryFn: async () => {
@@ -52,7 +49,6 @@ export default function ScheduleDetail() {
     enabled: !!id,
   });
 
-  // Fetch user progress
   const { data: progress = [] } = useQuery({
     queryKey: ["user-progress", id],
     queryFn: async () => {
@@ -70,7 +66,6 @@ export default function ScheduleDetail() {
     enabled: !!user && topicos.length > 0,
   });
 
-  // Fetch calendar events
   const { data: calendarEvents = [] } = useQuery({
     queryKey: ["calendar-events", id],
     queryFn: async () => {
@@ -88,7 +83,6 @@ export default function ScheduleDetail() {
     enabled: !!user && topicos.length > 0,
   });
 
-  // Fetch study sessions
   const { data: studySessions = [] } = useQuery({
     queryKey: ["study-sessions", id],
     queryFn: async () => {
@@ -110,7 +104,6 @@ export default function ScheduleDetail() {
 
   return (
     <div className="p-4 md:p-6 space-y-5 pb-24 md:pb-6">
-      {/* Header */}
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" onClick={() => navigate("/cronograma")}>
           <ArrowLeft className="h-5 w-5" />
@@ -125,22 +118,17 @@ export default function ScheduleDetail() {
         </div>
       </div>
 
-      {/* Progress bar */}
       {topicos.length > 0 && (
         <CronogramaProgressBar completed={completedCount} total={topicos.length} />
       )}
 
-      {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="w-full grid grid-cols-4">
+        <TabsList className="w-full grid grid-cols-3">
           <TabsTrigger value="matriz" className="gap-1 text-xs">
             <Calendar className="h-3.5 w-3.5" /> Matriz
           </TabsTrigger>
           <TabsTrigger value="calendario" className="gap-1 text-xs">
             <BookOpen className="h-3.5 w-3.5" /> Calendário
-          </TabsTrigger>
-          <TabsTrigger value="cronometro" className="gap-1 text-xs">
-            <Clock className="h-3.5 w-3.5" /> Estudar
           </TabsTrigger>
           <TabsTrigger value="desempenho" className="gap-1 text-xs">
             <BarChart3 className="h-3.5 w-3.5" /> Desempenho
@@ -160,19 +148,6 @@ export default function ScheduleDetail() {
         <TabsContent value="calendario" className="mt-5">
           {user && id ? (
             <CronogramaCalendar
-              cronogramaId={id}
-              userId={user.id}
-              events={calendarEvents}
-              topicos={topicos}
-            />
-          ) : (
-            <p className="text-center text-muted-foreground py-8">Faça login para acessar.</p>
-          )}
-        </TabsContent>
-
-        <TabsContent value="cronometro" className="mt-5">
-          {user && id ? (
-            <CronogramaTimer
               cronogramaId={id}
               userId={user.id}
               events={calendarEvents}
