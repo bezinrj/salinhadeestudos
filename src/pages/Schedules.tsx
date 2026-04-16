@@ -10,13 +10,14 @@ import { Button } from "@/components/ui/button";
 import { Calendar, Lock, ChevronLeft, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-type Cronograma = {
+type Schedule = {
   id: string;
-  nome: string;
-  categoria: string | null;
-  imagem_url: string | null;
-  premium: boolean;
-  created_at: string;
+  title: string;
+  career: string | null;
+  cover_image_url: string | null;
+  access_type: string;
+  status: string;
+  sort_order: number;
 };
 
 export default function Schedules() {
@@ -25,22 +26,25 @@ export default function Schedules() {
   const { subscribed } = useAuth();
   const navigate = useNavigate();
 
-  const { data: cronogramas = [], isLoading } = useQuery({
-    queryKey: ["cronogramas"],
+  const { data: schedules = [], isLoading } = useQuery({
+    queryKey: ["schedules-listing"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("cronogramas")
-        .select("*")
-        .order("created_at", { ascending: false });
+        .from("schedules")
+        .select("id, title, career, cover_image_url, access_type, status, sort_order")
+        .order("sort_order", { ascending: true });
       if (error) throw error;
-      return data as Cronograma[];
+      return data as Schedule[];
     },
   });
 
-  const grouped = cronogramas.reduce<Record<string, Cronograma[]>>((acc, c) => {
-    const key = c.categoria || "Outros";
+  // Non-admin users only see published schedules
+  const visible = (isAdmin || isModerator) ? schedules : schedules.filter(s => s.status === "published");
+
+  const grouped = visible.reduce<Record<string, Schedule[]>>((acc, s) => {
+    const key = s.career || "Outros";
     if (!acc[key]) acc[key] = [];
-    acc[key].push(c);
+    acc[key].push(s);
     return acc;
   }, {});
 
@@ -54,12 +58,13 @@ export default function Schedules() {
     return ia - ib;
   });
 
-  const handleClick = (c: Cronograma) => {
-    if (c.premium && !subscribed && !isAdmin && !isModerator) {
+  const handleClick = (s: Schedule) => {
+    const isPremium = s.access_type === "premium";
+    if (isPremium && !subscribed && !isAdmin && !isModerator) {
       navigate("/meu-plano");
       return;
     }
-    navigate(`/cronograma/${c.id}`);
+    navigate(`/cronograma/${s.id}`);
   };
 
   return (
@@ -71,7 +76,7 @@ export default function Schedules() {
 
       {isLoading ? (
         <div className="text-center py-16 text-muted-foreground">Carregando cronogramas...</div>
-      ) : cronogramas.length === 0 ? (
+      ) : visible.length === 0 ? (
         <div className="text-center py-16">
           <Calendar className="mx-auto h-14 w-14 text-muted-foreground/30 mb-4" />
           <p className="text-muted-foreground text-lg">Nenhum cronograma disponível</p>
