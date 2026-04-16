@@ -583,6 +583,12 @@ export default function CronogramaCalendar({ cronogramaId, userId, events, topic
                 const t = topicoMap.get(ev.topico_id);
                 const color = colorMap.get(ev.topico_id) || "#888";
                 const status = getEventStatus(ev);
+                const fontes: { sigla: string; descricao: string; link_questoes: string; link_dod: string }[] =
+                  Array.isArray(t?.fontes) && (t?.fontes as any[]).length > 0
+                    ? (t.fontes as any[])
+                    : [];
+                const hasMultipleFontes = fontes.length > 0;
+
                 return (
                   <div key={ev.id} className="p-3 rounded-lg" style={{ backgroundColor: "#ffffff", border: "1px solid #e5e7eb" }}>
                     <span
@@ -592,13 +598,36 @@ export default function CronogramaCalendar({ cronogramaId, userId, events, topic
                       {ev.is_revisao ? "Rev: " : ""}{t?.materia || "?"}
                     </span>
                     <p style={{ color: "#111827", fontSize: 13, fontWeight: 500 }}>{t?.assunto || "—"}</p>
-                    {t?.fonte_legal && <p style={{ color: "#6b7280", fontSize: 11, marginTop: 2 }}>{t.fonte_legal}</p>}
-                    {(t?.link_questoes || t?.link_dod) && (
-                      <div className="flex gap-3 mt-1.5">
-                        {t?.link_questoes && <a href={t.link_questoes} target="_blank" rel="noopener noreferrer" style={{ color: "#378ADD", fontSize: 11 }} className="hover:underline">Questões ↗</a>}
-                        {t?.link_dod && <a href={t.link_dod} target="_blank" rel="noopener noreferrer" style={{ color: "#378ADD", fontSize: 11 }} className="hover:underline">DOD ↗</a>}
+
+                    {hasMultipleFontes ? (
+                      <div style={{ marginTop: 6 }}>
+                        {fontes.map((f, idx) => (
+                          <div key={idx} style={{ paddingBottom: 6, marginBottom: 6, borderBottom: idx < fontes.length - 1 ? "1px solid #f3f4f6" : "none" }}>
+                            <p style={{ fontSize: 12 }}>
+                              <span style={{ fontWeight: 600, color: "#111827" }}>{f.sigla}</span>
+                              {f.descricao && <span style={{ color: "#6b7280", marginLeft: 4 }}>({f.descricao})</span>}
+                            </p>
+                            {(f.link_questoes || f.link_dod) && (
+                              <div className="flex gap-3" style={{ marginTop: 2, paddingLeft: 2 }}>
+                                {f.link_questoes && <a href={f.link_questoes} target="_blank" rel="noopener noreferrer" style={{ color: "#378ADD", fontSize: 11 }} className="hover:underline">Questões ↗</a>}
+                                {f.link_dod && <a href={f.link_dod} target="_blank" rel="noopener noreferrer" style={{ color: "#378ADD", fontSize: 11 }} className="hover:underline">DOD ↗</a>}
+                              </div>
+                            )}
+                          </div>
+                        ))}
                       </div>
+                    ) : (
+                      <>
+                        {t?.fonte_legal && <p style={{ color: "#6b7280", fontSize: 11, marginTop: 2 }}>{t.fonte_legal}</p>}
+                        {(t?.link_questoes || t?.link_dod) && (
+                          <div className="flex gap-3 mt-1.5">
+                            {t?.link_questoes && <a href={t.link_questoes} target="_blank" rel="noopener noreferrer" style={{ color: "#378ADD", fontSize: 11 }} className="hover:underline">Questões ↗</a>}
+                            {t?.link_dod && <a href={t.link_dod} target="_blank" rel="noopener noreferrer" style={{ color: "#378ADD", fontSize: 11 }} className="hover:underline">DOD ↗</a>}
+                          </div>
+                        )}
+                      </>
                     )}
+
                     <p style={{ color: status.color, fontSize: 12, fontWeight: 500, marginTop: 6 }}>
                       {status.label}
                     </p>
