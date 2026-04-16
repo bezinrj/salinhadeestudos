@@ -92,11 +92,11 @@ export default function Schedules() {
 
 function CareerRow({ category, items, subscribed, isAdmin, isModerator, onClick }: {
   category: string;
-  items: Cronograma[];
+  items: Schedule[];
   subscribed: boolean;
   isAdmin: boolean;
   isModerator: boolean;
-  onClick: (c: Cronograma) => void;
+  onClick: (s: Schedule) => void;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const scroll = (dir: number) => scrollRef.current?.scrollBy({ left: dir * 280, behavior: "smooth" });
@@ -111,11 +111,12 @@ function CareerRow({ category, items, subscribed, isAdmin, isModerator, onClick 
         </div>
       </div>
       <div ref={scrollRef} className="flex gap-4 overflow-x-auto scrollbar-hide pb-2 -mx-1 px-1" style={{ scrollSnapType: "x mandatory" }}>
-        {items.map((c, i) => {
-          const locked = c.premium && !subscribed && !isAdmin && !isModerator;
+        {items.map((s, i) => {
+          const isPremium = s.access_type === "premium";
+          const locked = isPremium && !subscribed && !isAdmin && !isModerator;
           return (
             <motion.div
-              key={c.id}
+              key={s.id}
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.04, duration: 0.3 }}
@@ -124,17 +125,17 @@ function CareerRow({ category, items, subscribed, isAdmin, isModerator, onClick 
             >
               <div
                 className="group relative cursor-pointer rounded-xl overflow-hidden border border-border/50 bg-card hover:border-primary/40 transition-all duration-300 hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-1"
-                onClick={() => onClick(c)}
+                onClick={() => onClick(s)}
               >
                 <div className="relative aspect-[3/4] bg-muted/50 overflow-hidden">
-                  {c.imagem_url ? (
-                    <img src={c.imagem_url} alt={c.nome} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
+                  {s.cover_image_url ? (
+                    <img src={s.cover_image_url} alt={s.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-secondary to-muted">
                       <Calendar className="h-10 w-10 text-muted-foreground/30" />
                     </div>
                   )}
-                  {c.premium ? (
+                  {isPremium ? (
                     <Badge className="absolute top-2 left-2 bg-accent text-accent-foreground text-[10px] px-1.5 py-0.5 border-0 font-semibold">Premium</Badge>
                   ) : (
                     <Badge variant="outline" className="absolute top-2 left-2 bg-background/70 backdrop-blur-sm text-[10px] px-1.5 py-0.5 border-border/50 text-foreground">Gratuito</Badge>
@@ -149,7 +150,7 @@ function CareerRow({ category, items, subscribed, isAdmin, isModerator, onClick 
                   )}
                 </div>
                 <div className="p-3">
-                  <p className="text-sm font-medium text-foreground line-clamp-2 leading-snug">{c.nome}</p>
+                  <p className="text-sm font-medium text-foreground line-clamp-2 leading-snug">{s.title}</p>
                 </div>
               </div>
             </motion.div>
