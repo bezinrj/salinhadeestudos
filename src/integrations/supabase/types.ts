@@ -892,6 +892,41 @@ export type Database = {
           },
         ]
       }
+      user_fonte_progress: {
+        Row: {
+          concluido: boolean
+          id: number
+          sigla: string
+          topico_id: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          concluido?: boolean
+          id?: never
+          sigla: string
+          topico_id: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          concluido?: boolean
+          id?: never
+          sigla?: string
+          topico_id?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_fonte_progress_topico_id_fkey"
+            columns: ["topico_id"]
+            isOneToOne: false
+            referencedRelation: "cronograma_matriz"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string
