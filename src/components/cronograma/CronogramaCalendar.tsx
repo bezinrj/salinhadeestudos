@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { ChevronLeft, ChevronRight, RotateCcw, Info, Play, Pause, Square, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, RotateCcw, Info, Play, Pause, Square, X, AlertTriangle, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import type { TopicoMatriz } from "./MatrizTable";
 
@@ -89,6 +89,7 @@ export default function CronogramaCalendar({ cronogramaId, userId, events, topic
   const [paused, setPaused] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [showModal, setShowModal] = useState(false);
+  const [showClearModal, setShowClearModal] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const topicoMap = useMemo(() => new Map(topicos.map(t => [t.id, t])), [topicos]);
@@ -324,6 +325,32 @@ export default function CronogramaCalendar({ cronogramaId, userId, events, topic
     onError: () => toast.error("Erro ao salvar sessão"),
   });
 
+  const clearAll = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("user_calendar_events").delete().eq("user_id", userId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["calendar-events", cronogramaId] });
+      setShowClearModal(false);
+      toast.success("Calendário limpo!");
+    },
+    onError: () => toast.error("Erro ao limpar calendário"),
+  });
+
+  const clearPending = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("user_calendar_events").delete().eq("user_id", userId).eq("concluido", false);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["calendar-events", cronogramaId] });
+      setShowClearModal(false);
+      toast.success("Eventos pendentes removidos!");
+    },
+    onError: () => toast.error("Erro ao limpar pendentes"),
+  });
+
   function getEventStatus(ev: CalendarEvent) {
     if (ev.concluido) return { label: "✓ Concluído", color: "#1D9E75" };
     const diff = Math.floor((today.getTime() - new Date(ev.data + "T23:59:59").getTime()) / 86400000);
@@ -443,6 +470,13 @@ export default function CronogramaCalendar({ cronogramaId, userId, events, topic
               <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => shiftEvents.mutate(-1)}>−1d</Button>
               <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => shiftEvents.mutate(1)}>+1d</Button>
               <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => shiftEvents.mutate(7)}>+7d</Button>
+              <button
+                onClick={() => setShowClearModal(true)}
+                style={{ border: "1px solid #E24B4A", color: "#E24B4A", borderRadius: 8, padding: "4px 12px", fontSize: 12, background: "transparent" }}
+                className="hover:bg-[#FFF0F0] transition-colors"
+              >
+                Limpar
+              </button>
             </div>
 
             <div className="flex items-center gap-2">
@@ -750,6 +784,63 @@ export default function CronogramaCalendar({ cronogramaId, userId, events, topic
                   {saveSessions.isPending ? "Salvando..." : "Salvar sessão"}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Clear Calendar Modal */}
+      {showClearModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => setShowClearModal(false)}>
+          <div className="absolute inset-0 bg-black/50" />
+          <div
+            className="relative rounded-xl shadow-2xl w-[420px] max-h-[80vh] overflow-y-auto p-6 bg-white dark:bg-[#1e1e2e]"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-5">
+              <h3 style={{ color: "#111827", fontSize: 16, fontWeight: 500 }}>Limpar calendário</h3>
+              <button onClick={() => setShowClearModal(false)} className="w-7 h-7 rounded-full flex items-center justify-center hover:opacity-70 transition-opacity" style={{ backgroundColor: "#e5e7eb" }}>
+                <X className="h-4 w-4" style={{ color: "#374151" }} />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              {/* Card 1 - Clear all */}
+              <button
+                className="w-full text-left p-4 rounded-lg transition-opacity hover:opacity-80"
+                style={{ border: "1px solid #E24B4A", backgroundColor: "#FFF0F0" }}
+                onClick={() => clearAll.mutate()}
+                disabled={clearAll.isPending || clearPending.isPending}
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <AlertTriangle className="h-4 w-4" style={{ color: "#E24B4A" }} />
+                  <span style={{ color: "#E24B4A", fontWeight: 500, fontSize: 14 }}>Limpar todos os registros</span>
+                </div>
+                <p style={{ color: "#6b7280", fontSize: 12, lineHeight: 1.4 }}>
+                  Remove todos os eventos do calendário, incluindo os já concluídos. Esta ação não pode ser desfeita.
+                </p>
+              </button>
+
+              {/* Card 2 - Clear pending only */}
+              <button
+                className="w-full text-left p-4 rounded-lg transition-opacity hover:opacity-80"
+                style={{ border: "1px solid #e5e7eb", backgroundColor: "#f9fafb" }}
+                onClick={() => clearPending.mutate()}
+                disabled={clearAll.isPending || clearPending.isPending}
+              >
+                <span style={{ color: "#374151", fontWeight: 500, fontSize: 14 }}>Limpar apenas as não concluídas</span>
+                <p style={{ color: "#6b7280", fontSize: 12, lineHeight: 1.4, marginTop: 4 }}>
+                  Remove somente os eventos pendentes. Os já concluídos permanecem. Use para recalcular o cronograma do zero.
+                </p>
+              </button>
+
+              <button
+                className="w-full py-2 rounded-lg font-medium text-sm transition-colors hover:opacity-80 mt-2"
+                style={{ backgroundColor: "#f3f4f6", color: "#374151", border: "1px solid #e5e7eb" }}
+                onClick={() => setShowClearModal(false)}
+              >
+                Cancelar
+              </button>
             </div>
           </div>
         </div>
