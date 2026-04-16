@@ -325,7 +325,32 @@ export default function CronogramaCalendar({ cronogramaId, userId, events, topic
     onError: () => toast.error("Erro ao salvar sessão"),
   });
 
-  function getEventStatus(ev: CalendarEvent) {
+  const clearAll = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("user_calendar_events").delete().eq("user_id", userId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["calendar-events", cronogramaId] });
+      setShowClearModal(false);
+      toast.success("Calendário limpo!");
+    },
+    onError: () => toast.error("Erro ao limpar calendário"),
+  });
+
+  const clearPending = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("user_calendar_events").delete().eq("user_id", userId).eq("concluido", false);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["calendar-events", cronogramaId] });
+      setShowClearModal(false);
+      toast.success("Eventos pendentes removidos!");
+    },
+    onError: () => toast.error("Erro ao limpar pendentes"),
+  });
+
     if (ev.concluido) return { label: "✓ Concluído", color: "#1D9E75" };
     const diff = Math.floor((today.getTime() - new Date(ev.data + "T23:59:59").getTime()) / 86400000);
     if (diff >= 4) return { label: `Atrasado ${diff} dias`, color: "#E24B4A" };
