@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { ChevronLeft, ChevronRight, RotateCcw, Info, Play, Pause, Square, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, RotateCcw, Info, Play, Pause, Square, X, AlertTriangle, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import type { TopicoMatriz } from "./MatrizTable";
 
