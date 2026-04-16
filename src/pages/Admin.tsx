@@ -27,6 +27,7 @@ import { cn } from "@/lib/utils";
 import { SubjectTreeSelect } from "@/components/SubjectTreeSelect";
 import ModerationRequestsTab from "@/components/ModerationRequestsTab";
 import AdminAlertsTab from "@/components/AdminAlertsTab";
+import AdminCronogramasTab from "@/components/cronograma/AdminCronogramasTab";
 
 const ABSOLUTE_ADMIN_ID = "ffdb2f38-0e5b-4f29-8cb8-712fcfde53f6";
 
