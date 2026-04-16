@@ -299,6 +299,9 @@ export default function MatrizTable({ cronogramaId, topicos, progress, isAdminOr
       setNewHoras(3);
       toast.success("Tópico adicionado!");
     },
+    onError: (err: any) => {
+      toast.error("Erro ao adicionar tópico: " + (err?.message || "tente novamente"));
+    },
   });
 
   const handleDragEnd = async (event: DragEndEvent) => {
