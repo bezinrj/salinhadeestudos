@@ -21,11 +21,10 @@ export function BottomNav() {
   const { isAdmin } = useIsAdmin();
   const { isModerator } = useIsModerator();
 
-  const cronogramaItem = { path: "/cronograma", icon: CalendarRange, label: "Cronograma" };
   const adminItem = { path: "/admin", icon: Shield, label: "Admin" };
   const allNavItems = [
     ...navItems,
-    ...((isAdmin || isModerator) ? [cronogramaItem, adminItem] : []),
+    ...((isAdmin || isModerator) ? [adminItem] : []),
   ];
 
   const handleLogout = () => {
