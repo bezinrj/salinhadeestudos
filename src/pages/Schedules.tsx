@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Calendar, Lock, ChevronLeft, ChevronRight, Plus, Pencil, Trash2 } from "lucide-react";
+import { Calendar, Lock, ChevronLeft, ChevronRight, Plus, Pencil, Trash2, Upload, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -37,7 +37,9 @@ export default function Schedules() {
   const [formTitle, setFormTitle] = useState("");
   const [formCareer, setFormCareer] = useState("");
   const [formCoverUrl, setFormCoverUrl] = useState("");
-  const [formAccessType, setFormAccessType] = useState(false); // false=free, true=premium
+  const [formAccessType, setFormAccessType] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: schedules = [], isLoading } = useQuery({
     queryKey: ["schedules-listing"],
@@ -182,10 +184,60 @@ export default function Schedules() {
               <Input value={formCareer} onChange={e => setFormCareer(e.target.value)} placeholder="Ex: Delegado" />
             </div>
             <div>
-              <label className="text-xs text-muted-foreground mb-1 block">URL da imagem de capa</label>
-              <Input value={formCoverUrl} onChange={e => setFormCoverUrl(e.target.value)} placeholder="https://..." />
-              {formCoverUrl && (
-                <img src={formCoverUrl} alt="Preview" className="mt-2 w-full h-32 object-cover rounded-lg border border-border/50" />
+              <label className="text-xs text-muted-foreground mb-1 block">Imagem de capa</label>
+              <p className="text-[10px] text-muted-foreground/70 mb-2">Tamanho ideal: <strong>540 × 720 px</strong> (proporção 3:4, JPG ou PNG)</p>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  if (file.size > 5 * 1024 * 1024) {
+                    toast.error("Imagem muito grande (máx 5MB)");
+                    return;
+                  }
+                  setUploading(true);
+                  const ext = file.name.split(".").pop() || "jpg";
+                  const path = `covers/${Date.now()}.${ext}`;
+                  const { error } = await supabase.storage.from("schedule-covers").upload(path, file, { upsert: true });
+                  if (error) {
+                    toast.error("Erro ao enviar imagem");
+                    setUploading(false);
+                    return;
+                  }
+                  const { data: urlData } = supabase.storage.from("schedule-covers").getPublicUrl(path);
+                  setFormCoverUrl(urlData.publicUrl);
+                  setUploading(false);
+                  toast.success("Imagem enviada!");
+                }}
+              />
+              {formCoverUrl ? (
+                <div className="relative">
+                  <img src={formCoverUrl} alt="Preview" className="w-full h-36 object-cover rounded-lg border border-border/50" />
+                  <button
+                    className="absolute top-1.5 right-1.5 h-6 w-6 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center hover:bg-destructive/20"
+                    onClick={() => setFormCoverUrl("")}
+                  >
+                    <X className="h-3 w-3 text-foreground" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  className="w-full h-28 rounded-lg border-2 border-dashed border-border/50 flex flex-col items-center justify-center gap-1.5 hover:border-primary/40 transition-colors"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                >
+                  {uploading ? (
+                    <span className="text-xs text-muted-foreground">Enviando...</span>
+                  ) : (
+                    <>
+                      <Upload className="h-5 w-5 text-muted-foreground/50" />
+                      <span className="text-xs text-muted-foreground">Clique para enviar imagem</span>
+                    </>
+                  )}
+                </button>
               )}
             </div>
             <div className="flex items-center gap-2">
