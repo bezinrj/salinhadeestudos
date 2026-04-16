@@ -39,11 +39,42 @@ function getNextBusinessDay() {
   return d.toISOString().split("T")[0];
 }
 
+function formatDateBR(dateStr: string) {
+  const [y, m, d] = dateStr.split("-");
+  return `${d}/${m}/${y}`;
+}
+
+const COLOR_PALETTE = [
+  "#1D9E75", "#378ADD", "#D85A30", "#9B59B6", "#E67E22",
+  "#2ECC71", "#E74C3C", "#1ABC9C", "#3498DB", "#F39C12",
+  "#8E44AD", "#16A085",
+];
+
+function hashString(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) - hash) + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash);
+}
+
+function getMateriaColor(t: TopicoMatriz): string {
+  if (t.cor) return t.cor;
+  return COLOR_PALETTE[hashString(t.materia) % COLOR_PALETTE.length];
+}
+
+function getPctPillStyle(pct: number) {
+  if (pct >= 80) return { backgroundColor: "rgba(21,128,61,0.15)", color: "#15803d" };
+  if (pct >= 60) return { backgroundColor: "rgba(34,197,94,0.15)", color: "#16a34a" };
+  if (pct >= 50) return { backgroundColor: "rgba(239,159,39,0.15)", color: "#d97706" };
+  return { backgroundColor: "rgba(226,75,74,0.15)", color: "#dc2626" };
+}
+
 export default function CronogramaPerformance({ cronogramaId, userId, sessions, topicos }: Props) {
   const queryClient = useQueryClient();
   const topicoMap = useMemo(() => new Map(topicos.map(t => [t.id, t])), [topicos]);
 
-  // Avg per topico for this user
   const userAvgs = useMemo(() => {
     const map: Record<number, number[]> = {};
     sessions.forEach(s => {
@@ -59,7 +90,6 @@ export default function CronogramaPerformance({ cronogramaId, userId, sessions, 
     return result;
   }, [sessions]);
 
-  // Global averages
   const { data: globalAvgs = {} } = useQuery({
     queryKey: ["global-avgs", cronogramaId],
     queryFn: async () => {
@@ -110,7 +140,6 @@ export default function CronogramaPerformance({ cronogramaId, userId, sessions, 
     },
   });
 
-  // Recent sessions
   const recentSessions = useMemo(() => {
     return [...sessions].sort((a, b) => b.data.localeCompare(a.data)).slice(0, 20);
   }, [sessions]);
@@ -177,34 +206,48 @@ export default function CronogramaPerformance({ cronogramaId, userId, sessions, 
         </div>
       )}
 
-      {/* Session history */}
+      {/* Session history - enhanced layout */}
       <div>
         <h3 className="text-sm font-semibold text-foreground mb-3">Histórico de sessões</h3>
         {recentSessions.length === 0 ? (
           <p className="text-xs text-muted-foreground">Nenhuma sessão registrada ainda.</p>
         ) : (
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             {recentSessions.map(s => {
               const t = topicoMap.get(s.topico_id);
+              const color = t ? getMateriaColor(t) : "#888";
               return (
-                <div key={s.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/20 border border-border/30">
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="text-[9px]">{t?.materia || "?"}</Badge>
-                    <span className="text-[11px] text-muted-foreground">{s.data}</span>
-                    <span className="text-[11px] text-foreground/70">{s.tempo_estudado}</span>
-                  </div>
-                  {s.questoes > 0 && (
-                    <Badge
-                      className={`text-[9px] px-1.5 py-0 border-0 ${
-                        s.percentual_acerto >= 80 ? "bg-green-700/30 text-green-400"
-                        : s.percentual_acerto >= 60 ? "bg-green-500/20 text-green-400"
-                        : s.percentual_acerto >= 50 ? "bg-orange-500/20 text-orange-400"
-                        : "bg-red-500/20 text-red-400"
-                      }`}
+                <div key={s.id} className="flex items-start justify-between p-3 rounded-lg bg-muted/20 border border-border/30">
+                  <div className="flex items-start gap-2.5 min-w-0">
+                    <span
+                      className="text-[10px] font-medium text-white rounded-full px-2.5 py-0.5 mt-0.5 whitespace-nowrap flex-shrink-0"
+                      style={{ backgroundColor: color }}
                     >
-                      {s.percentual_acerto}%
-                    </Badge>
-                  )}
+                      {t?.materia || "?"}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-[13px] font-medium text-foreground truncate">{t?.assunto || "—"}</p>
+                      {t?.fonte_legal && (
+                        <p className="text-[11px] mt-0.5" style={{ color: "#6b7280" }}>{t.fonte_legal}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 flex-shrink-0 ml-3">
+                    <span className="text-[11px] text-muted-foreground whitespace-nowrap">{formatDateBR(s.data)}</span>
+                    <span className="text-[11px] text-foreground/70 whitespace-nowrap">{s.tempo_estudado || "—"}</span>
+                    {s.questoes > 0 ? (
+                      <span
+                        className="text-[10px] font-semibold rounded-full px-2 py-0.5 whitespace-nowrap"
+                        style={getPctPillStyle(s.percentual_acerto)}
+                      >
+                        {s.percentual_acerto}%
+                      </span>
+                    ) : (
+                      <span className="text-[10px] rounded-full px-2 py-0.5 whitespace-nowrap" style={{ backgroundColor: "rgba(107,114,128,0.15)", color: "#6b7280" }}>
+                        sem questões
+                      </span>
+                    )}
+                  </div>
                 </div>
               );
             })}

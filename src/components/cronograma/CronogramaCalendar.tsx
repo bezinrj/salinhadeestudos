@@ -93,14 +93,12 @@ export default function CronogramaCalendar({ cronogramaId, userId, events, topic
 
   const topicoMap = useMemo(() => new Map(topicos.map(t => [t.id, t])), [topicos]);
 
-  // Build color map from topicos
   const colorMap = useMemo(() => {
     const m = new Map<number, string>();
     topicos.forEach(t => m.set(t.id, getMateriaColor(t)));
     return m;
   }, [topicos]);
 
-  // Auto-save generated colors to DB
   useEffect(() => {
     const toUpdate = topicos.filter(t => !t.cor);
     if (toUpdate.length === 0) return;
@@ -130,7 +128,6 @@ export default function CronogramaCalendar({ cronogramaId, userId, events, topic
     return map;
   }, [events]);
 
-  // Legend: unique materias in current month + status pills
   const legendItems = useMemo(() => {
     const monthPrefix = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}`;
     const monthEvents = events.filter(e => e.data.startsWith(monthPrefix));
@@ -141,9 +138,7 @@ export default function CronogramaCalendar({ cronogramaId, userId, events, topic
 
     monthEvents.forEach(e => {
       const t = topicoMap.get(e.topico_id);
-      if (t) {
-        materiaSet.set(t.materia, colorMap.get(t.id) || "#888");
-      }
+      if (t) materiaSet.set(t.materia, colorMap.get(t.id) || "#888");
       if (e.is_revisao && !e.concluido) hasRevisao = true;
       if (!e.concluido) {
         const diff = Math.floor((today.getTime() - new Date(e.data + "T23:59:59").getTime()) / 86400000);
@@ -252,7 +247,7 @@ export default function CronogramaCalendar({ cronogramaId, userId, events, topic
     }
   };
 
-  // --- Timer functions ---
+  // Timer functions
   const startTimer = () => {
     setRunning(true);
     setPaused(false);
@@ -337,20 +332,40 @@ export default function CronogramaCalendar({ cronogramaId, userId, events, topic
     return { label: "Pendente", color: "#9CA3AF" };
   }
 
+  // Compute cell background/border based on events delay status
+  function getCellStyle(dayEvents: CalendarEvent[]): { bg: string; border: string } | null {
+    if (dayEvents.length === 0) return null;
+    const allDone = dayEvents.every(e => e.concluido);
+    if (allDone) return null;
+
+    const pendingEvents = dayEvents.filter(e => !e.concluido);
+    let maxDelay = 0;
+    let hasRevisao = false;
+
+    for (const ev of pendingEvents) {
+      if (ev.is_revisao) hasRevisao = true;
+      const diff = Math.floor((today.getTime() - new Date(ev.data + "T23:59:59").getTime()) / 86400000);
+      if (diff > maxDelay) maxDelay = diff;
+    }
+
+    if (maxDelay >= 4) return { bg: "#FFF0F0", border: "#E24B4A" };
+    if (maxDelay >= 1) return { bg: "#FFFBEA", border: "#EF9F27" };
+    if (hasRevisao) return { bg: "#EFF6FF", border: "#378ADD" };
+    return null;
+  }
+
   const dayNames = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
   const cells: (number | null)[] = [];
   for (let i = 0; i < firstDay; i++) cells.push(null);
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);
   while (cells.length % 7 !== 0) cells.push(null);
 
-  // Detail modal data
   const detailEvents = detailDay ? (eventsByDay[detailDay] || []) : [];
   const detailDate = detailDay ? new Date(detailDay + "T12:00:00") : null;
   const detailDateLabel = detailDate
     ? `${WEEKDAYS[detailDate.getDay()]}, ${detailDate.getDate()} de ${MONTHS_LABEL[detailDate.getMonth()]} de ${detailDate.getFullYear()}`
     : "";
 
-  // Dragged event color for drop target highlight
   const draggedColor = useMemo(() => {
     if (!draggedEventId) return null;
     const ev = events.find(e => e.id === draggedEventId);
@@ -453,11 +468,11 @@ export default function CronogramaCalendar({ cronogramaId, userId, events, topic
         </div>
       )}
 
-      {/* Calendar Grid - Clean layout */}
+      {/* Calendar Grid */}
       <div className="rounded-xl border border-[#e5e7eb] dark:border-border/50 overflow-hidden bg-white dark:bg-card/30">
         <div className="grid grid-cols-7">
           {dayNames.map(d => (
-            <div key={d} className="p-2 text-center text-[11px] font-semibold text-muted-foreground uppercase border-b border-[#e5e7eb] dark:border-border/30 bg-gray-50 dark:bg-muted/20">
+            <div key={d} className="p-2 text-center text-[11px] font-semibold uppercase border-b border-[#e5e7eb] dark:border-border/30 bg-gray-50 dark:bg-muted/20" style={{ color: "#6B7280" }}>
               {d}
             </div>
           ))}
@@ -468,24 +483,40 @@ export default function CronogramaCalendar({ cronogramaId, userId, events, topic
             const dayEvents = eventsByDay[dayStr] || [];
             const isToday = dayStr === todayStr;
             const isDropTarget = dropTarget === dayStr && draggedEventId !== null;
+            const cellStyle = getCellStyle(dayEvents);
+
+            // Build inline styles for the cell
+            let cellInline: React.CSSProperties = {};
+            if (isDropTarget && draggedColor) {
+              cellInline = { borderColor: draggedColor, borderWidth: 2, backgroundColor: `${draggedColor}10` };
+            } else if (cellStyle) {
+              cellInline = { backgroundColor: cellStyle.bg, borderColor: cellStyle.border, borderWidth: "1px", borderStyle: "solid" };
+            }
 
             return (
               <div
                 key={i}
                 className={`min-h-[80px] border-b border-r border-[#e5e7eb] dark:border-border/20 p-1.5 transition-all duration-200 ${
-                  isToday ? "ring-2 ring-primary ring-inset bg-primary/5" : "bg-white dark:bg-card/30"
+                  !cellStyle && !isDropTarget ? "bg-white dark:bg-card/30" : ""
                 }`}
-                style={isDropTarget && draggedColor ? {
-                  borderColor: draggedColor,
-                  borderWidth: 2,
-                  backgroundColor: `${draggedColor}10`,
-                } : undefined}
+                style={cellInline}
                 onDragOver={e => { e.preventDefault(); setDropTarget(dayStr); }}
                 onDragLeave={() => setDropTarget(null)}
                 onDrop={() => handleDrop(dayStr)}
               >
                 <div className="flex items-center justify-between mb-1">
-                  <span className={`text-[12px] font-medium ${isToday ? "text-primary font-bold" : "text-foreground/60"}`}>{day}</span>
+                  {isToday ? (
+                    <span
+                      className="text-[12px] font-semibold text-white flex items-center justify-center rounded-full"
+                      style={{ backgroundColor: "#1D9E75", width: 24, height: 24 }}
+                    >
+                      {day}
+                    </span>
+                  ) : (
+                    <span className="text-[12px] font-medium text-[#374151] dark:text-[#e5e7eb]">
+                      {day}
+                    </span>
+                  )}
                   {dayEvents.length > 0 && (
                     <button
                       onClick={() => setDetailDay(dayStr)}
@@ -495,21 +526,19 @@ export default function CronogramaCalendar({ cronogramaId, userId, events, topic
                     </button>
                   )}
                 </div>
-                {/* All events shown - no truncation */}
                 {dayEvents.map(ev => {
                   const t = topicoMap.get(ev.topico_id);
                   const materia = t?.materia || "—";
                   const color = colorMap.get(ev.topico_id) || "#888";
 
                   let pillBg = color;
-                  let pillText = "white";
                   let extraClass = "";
 
                   if (ev.concluido) {
                     pillBg = "#9CA3AF";
                     extraClass = "line-through opacity-60";
                   } else if (ev.is_revisao) {
-                    pillBg = "#378ADD";
+                    pillBg = "#6B7280";
                   }
 
                   return (
@@ -517,12 +546,11 @@ export default function CronogramaCalendar({ cronogramaId, userId, events, topic
                       key={ev.id}
                       draggable={!ev.concluido}
                       onDragStart={() => handleDragStart(ev.id, ev)}
-                      className={`text-[11px] px-2 py-[2px] rounded-full mb-[3px] font-medium transition-all duration-200 ${
+                      className={`text-[11px] px-2 py-[2px] rounded-full mb-[3px] font-medium text-white transition-all duration-200 ${
                         ev.concluido ? "cursor-default" : "cursor-grab active:cursor-grabbing"
                       } ${extraClass}`}
                       style={{
                         backgroundColor: pillBg,
-                        color: pillText,
                         opacity: draggedEventId === ev.id ? 0.5 : undefined,
                       }}
                     >
@@ -536,12 +564,12 @@ export default function CronogramaCalendar({ cronogramaId, userId, events, topic
         </div>
       </div>
 
-      {/* Detail Modal - Centered */}
+      {/* Detail Modal */}
       {detailDay && detailEvents.length > 0 && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => setDetailDay(null)}>
           <div className="absolute inset-0 bg-black/50" />
           <div
-            className="relative bg-white dark:bg-[#1a1a1a] rounded-xl shadow-2xl w-[420px] max-h-[80vh] overflow-y-auto p-6"
+            className="relative rounded-xl shadow-2xl w-[420px] max-h-[80vh] overflow-y-auto p-6 bg-white dark:bg-[#1e1e2e]"
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
@@ -559,7 +587,7 @@ export default function CronogramaCalendar({ cronogramaId, userId, events, topic
                   <div key={ev.id} className="p-3 rounded-lg border border-[#e5e7eb] dark:border-border/30 bg-gray-50 dark:bg-muted/20">
                     <span
                       className="inline-block text-[10px] font-medium text-white rounded-full px-2.5 py-0.5 mb-1.5"
-                      style={{ backgroundColor: ev.concluido ? "#9CA3AF" : ev.is_revisao ? "#378ADD" : color }}
+                      style={{ backgroundColor: ev.concluido ? "#9CA3AF" : ev.is_revisao ? "#6B7280" : color }}
                     >
                       {ev.is_revisao ? "Rev: " : ""}{t?.materia || "?"}
                     </span>
@@ -582,18 +610,18 @@ export default function CronogramaCalendar({ cronogramaId, userId, events, topic
         </div>
       )}
 
-      {/* Session Modal */}
+      {/* Session Modal - improved legibility */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => { setShowModal(false); setElapsed(0); }}>
           <div className="absolute inset-0 bg-black/50" />
           <div
-            className="relative bg-white dark:bg-[#1a1a1a] rounded-xl shadow-2xl w-[480px] max-h-[80vh] overflow-y-auto p-6"
+            className="relative rounded-xl shadow-2xl w-[480px] max-h-[80vh] overflow-y-auto p-6 bg-white dark:bg-[#1e1e2e]"
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-semibold text-foreground">Registrar sessão de estudo</h3>
-              <button onClick={() => { setShowModal(false); setElapsed(0); }} className="w-7 h-7 rounded-full bg-muted/50 flex items-center justify-center hover:bg-muted transition-colors">
-                <X className="h-4 w-4 text-foreground/70" />
+              <h3 className="text-base font-semibold" style={{ color: "#111827" }}>Registrar sessão de estudo</h3>
+              <button onClick={() => { setShowModal(false); setElapsed(0); }} className="w-7 h-7 rounded-full flex items-center justify-center hover:opacity-70 transition-opacity" style={{ backgroundColor: "#f3f4f6" }}>
+                <X className="h-4 w-4" style={{ color: "#6b7280" }} />
               </button>
             </div>
             <div className="space-y-4">
@@ -605,55 +633,93 @@ export default function CronogramaCalendar({ cronogramaId, userId, events, topic
                 const pct = d.questoes > 0 ? Math.round(Math.min(d.acertos, d.questoes) / d.questoes * 100) : null;
 
                 return (
-                  <div key={ev.id} className="p-4 rounded-lg border border-[#e5e7eb] dark:border-border/30 bg-gray-50 dark:bg-muted/20 space-y-3">
+                  <div key={ev.id} className="p-4 rounded-lg space-y-3 bg-[#f9fafb] dark:bg-[#2a2a3e] border border-[#e5e7eb] dark:border-[#3a3a4e]">
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-medium text-white rounded-full px-2.5 py-0.5" style={{ backgroundColor: color }}>
+                      <span className="text-[11px] font-medium text-white rounded-full px-2.5 py-0.5" style={{ backgroundColor: color }}>
                         {t?.materia || "?"}
                       </span>
-                      <span className="text-xs text-foreground/80">{t?.assunto || ""}</span>
+                      <span style={{ color: "#374151", fontSize: "13px" }}>{t?.assunto || ""}</span>
                     </div>
-                    {t?.fonte_legal && <p className="text-[10px] text-muted-foreground">{t.fonte_legal}</p>}
+                    {t?.fonte_legal && <p style={{ color: "#6b7280", fontSize: "11px" }}>{t.fonte_legal}</p>}
 
                     <div className="grid grid-cols-3 gap-2">
                       <div>
-                        <label className="text-[10px] text-muted-foreground block mb-1">Tempo</label>
-                        <Input value={d.tempo} onChange={e => updateField(ev.id, "tempo", e.target.value)} className="h-7 text-xs" />
+                        <label style={{ color: "#6b7280", fontSize: "12px", display: "block", marginBottom: 4 }}>Tempo</label>
+                        <input
+                          value={d.tempo}
+                          onChange={e => updateField(ev.id, "tempo", e.target.value)}
+                          className="w-full"
+                          style={{ backgroundColor: "#ffffff", border: "1px solid #d1d5db", color: "#111827", borderRadius: 8, padding: "8px 12px", fontSize: 13, outline: "none" }}
+                        />
                       </div>
                       <div>
-                        <label className="text-[10px] text-muted-foreground block mb-1">Questões</label>
-                        <Input type="number" min={0} value={d.questoes} onChange={e => updateField(ev.id, "questoes", Number(e.target.value))} className="h-7 text-xs" />
+                        <label style={{ color: "#6b7280", fontSize: "12px", display: "block", marginBottom: 4 }}>Questões</label>
+                        <input
+                          type="number"
+                          min={0}
+                          value={d.questoes}
+                          onChange={e => updateField(ev.id, "questoes", Number(e.target.value))}
+                          className="w-full"
+                          style={{ backgroundColor: "#ffffff", border: "1px solid #d1d5db", color: "#111827", borderRadius: 8, padding: "8px 12px", fontSize: 13, outline: "none" }}
+                        />
                       </div>
                       <div>
-                        <label className="text-[10px] text-muted-foreground block mb-1">Acertos</label>
-                        <Input type="number" min={0} value={d.acertos} onChange={e => updateField(ev.id, "acertos", Number(e.target.value))} className="h-7 text-xs" />
+                        <label style={{ color: "#6b7280", fontSize: "12px", display: "block", marginBottom: 4 }}>Acertos</label>
+                        <input
+                          type="number"
+                          min={0}
+                          value={d.acertos}
+                          onChange={e => updateField(ev.id, "acertos", Number(e.target.value))}
+                          className="w-full"
+                          style={{ backgroundColor: "#ffffff", border: "1px solid #d1d5db", color: "#111827", borderRadius: 8, padding: "8px 12px", fontSize: 13, outline: "none" }}
+                        />
                       </div>
                     </div>
 
                     {pct !== null && (
                       <div>
-                        <div className="flex justify-between text-[10px] mb-1">
-                          <span className="text-muted-foreground">Percentual</span>
-                          <span className="font-semibold text-foreground">{pct}%</span>
+                        <div className="flex justify-between" style={{ fontSize: 11, marginBottom: 4 }}>
+                          <span style={{ color: "#6b7280" }}>Percentual</span>
+                          <span style={{ color: "#111827", fontWeight: 600 }}>{pct}%</span>
                         </div>
-                        <div className="h-2 rounded-full bg-secondary overflow-hidden">
-                          <div className={`h-full rounded-full transition-all duration-300 ${getPercentColor(pct)}`} style={{ width: `${pct}%` }} />
+                        <div style={{ height: 8, borderRadius: 999, backgroundColor: "#e5e7eb", overflow: "hidden" }}>
+                          <div
+                            style={{
+                              height: "100%",
+                              borderRadius: 999,
+                              width: `${pct}%`,
+                              transition: "width 0.3s",
+                              backgroundColor: pct < 50 ? "#E24B4A" : pct < 60 ? "#EF9F27" : pct < 80 ? "#22c55e" : "#15803d",
+                            }}
+                          />
                         </div>
                       </div>
                     )}
 
                     <div className="flex items-center gap-2">
                       <Switch checked={d.concluir} onCheckedChange={v => updateField(ev.id, "concluir", v)} />
-                      <span className="text-xs text-foreground/80">Marcar como concluída</span>
+                      <span style={{ color: "#374151", fontSize: 13 }}>Marcar como concluída</span>
                     </div>
                   </div>
                 );
               })}
 
               <div className="flex gap-2">
-                <Button variant="outline" className="flex-1" onClick={() => { setShowModal(false); setElapsed(0); }}>Descartar</Button>
-                <Button className="flex-1" onClick={() => saveSessions.mutate()} disabled={saveSessions.isPending}>
+                <button
+                  className="flex-1 py-2 rounded-lg font-medium text-sm transition-colors hover:opacity-80"
+                  style={{ backgroundColor: "#f3f4f6", color: "#374151", border: "1px solid #d1d5db" }}
+                  onClick={() => { setShowModal(false); setElapsed(0); }}
+                >
+                  Descartar
+                </button>
+                <button
+                  className="flex-1 py-2 rounded-lg font-medium text-sm text-white transition-colors hover:opacity-90 disabled:opacity-50"
+                  style={{ backgroundColor: "#1D9E75" }}
+                  onClick={() => saveSessions.mutate()}
+                  disabled={saveSessions.isPending}
+                >
                   {saveSessions.isPending ? "Salvando..." : "Salvar sessão"}
-                </Button>
+                </button>
               </div>
             </div>
           </div>
