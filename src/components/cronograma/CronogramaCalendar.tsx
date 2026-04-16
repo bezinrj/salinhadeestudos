@@ -470,6 +470,13 @@ export default function CronogramaCalendar({ cronogramaId, userId, events, topic
               <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => shiftEvents.mutate(-1)}>−1d</Button>
               <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => shiftEvents.mutate(1)}>+1d</Button>
               <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => shiftEvents.mutate(7)}>+7d</Button>
+              <button
+                onClick={() => setShowClearModal(true)}
+                style={{ border: "1px solid #E24B4A", color: "#E24B4A", borderRadius: 8, padding: "4px 12px", fontSize: 12, background: "transparent" }}
+                className="hover:bg-[#FFF0F0] transition-colors"
+              >
+                Limpar
+              </button>
             </div>
 
             <div className="flex items-center gap-2">
