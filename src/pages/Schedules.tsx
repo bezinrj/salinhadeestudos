@@ -10,13 +10,14 @@ import { Button } from "@/components/ui/button";
 import { Calendar, Lock, ChevronLeft, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-type Cronograma = {
+type Schedule = {
   id: string;
-  nome: string;
-  categoria: string | null;
-  imagem_url: string | null;
-  premium: boolean;
-  created_at: string;
+  title: string;
+  career: string | null;
+  cover_image_url: string | null;
+  access_type: string;
+  status: string;
+  sort_order: number;
 };
 
 export default function Schedules() {
@@ -25,22 +26,25 @@ export default function Schedules() {
   const { subscribed } = useAuth();
   const navigate = useNavigate();
 
-  const { data: cronogramas = [], isLoading } = useQuery({
-    queryKey: ["cronogramas"],
+  const { data: schedules = [], isLoading } = useQuery({
+    queryKey: ["schedules-listing"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("cronogramas")
-        .select("*")
-        .order("created_at", { ascending: false });
+        .from("schedules")
+        .select("id, title, career, cover_image_url, access_type, status, sort_order")
+        .order("sort_order", { ascending: true });
       if (error) throw error;
-      return data as Cronograma[];
+      return data as Schedule[];
     },
   });
 
-  const grouped = cronogramas.reduce<Record<string, Cronograma[]>>((acc, c) => {
-    const key = c.categoria || "Outros";
+  // Non-admin users only see published schedules
+  const visible = (isAdmin || isModerator) ? schedules : schedules.filter(s => s.status === "published");
+
+  const grouped = visible.reduce<Record<string, Schedule[]>>((acc, s) => {
+    const key = s.career || "Outros";
     if (!acc[key]) acc[key] = [];
-    acc[key].push(c);
+    acc[key].push(s);
     return acc;
   }, {});
 
@@ -54,12 +58,13 @@ export default function Schedules() {
     return ia - ib;
   });
 
-  const handleClick = (c: Cronograma) => {
-    if (c.premium && !subscribed && !isAdmin && !isModerator) {
+  const handleClick = (s: Schedule) => {
+    const isPremium = s.access_type === "premium";
+    if (isPremium && !subscribed && !isAdmin && !isModerator) {
       navigate("/meu-plano");
       return;
     }
-    navigate(`/cronograma/${c.id}`);
+    navigate(`/cronograma/${s.id}`);
   };
 
   return (
@@ -71,7 +76,7 @@ export default function Schedules() {
 
       {isLoading ? (
         <div className="text-center py-16 text-muted-foreground">Carregando cronogramas...</div>
-      ) : cronogramas.length === 0 ? (
+      ) : visible.length === 0 ? (
         <div className="text-center py-16">
           <Calendar className="mx-auto h-14 w-14 text-muted-foreground/30 mb-4" />
           <p className="text-muted-foreground text-lg">Nenhum cronograma disponível</p>
@@ -87,11 +92,11 @@ export default function Schedules() {
 
 function CareerRow({ category, items, subscribed, isAdmin, isModerator, onClick }: {
   category: string;
-  items: Cronograma[];
+  items: Schedule[];
   subscribed: boolean;
   isAdmin: boolean;
   isModerator: boolean;
-  onClick: (c: Cronograma) => void;
+  onClick: (s: Schedule) => void;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const scroll = (dir: number) => scrollRef.current?.scrollBy({ left: dir * 280, behavior: "smooth" });
@@ -106,11 +111,12 @@ function CareerRow({ category, items, subscribed, isAdmin, isModerator, onClick 
         </div>
       </div>
       <div ref={scrollRef} className="flex gap-4 overflow-x-auto scrollbar-hide pb-2 -mx-1 px-1" style={{ scrollSnapType: "x mandatory" }}>
-        {items.map((c, i) => {
-          const locked = c.premium && !subscribed && !isAdmin && !isModerator;
+        {items.map((s, i) => {
+          const isPremium = s.access_type === "premium";
+          const locked = isPremium && !subscribed && !isAdmin && !isModerator;
           return (
             <motion.div
-              key={c.id}
+              key={s.id}
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.04, duration: 0.3 }}
@@ -119,17 +125,17 @@ function CareerRow({ category, items, subscribed, isAdmin, isModerator, onClick 
             >
               <div
                 className="group relative cursor-pointer rounded-xl overflow-hidden border border-border/50 bg-card hover:border-primary/40 transition-all duration-300 hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-1"
-                onClick={() => onClick(c)}
+                onClick={() => onClick(s)}
               >
                 <div className="relative aspect-[3/4] bg-muted/50 overflow-hidden">
-                  {c.imagem_url ? (
-                    <img src={c.imagem_url} alt={c.nome} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
+                  {s.cover_image_url ? (
+                    <img src={s.cover_image_url} alt={s.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-secondary to-muted">
                       <Calendar className="h-10 w-10 text-muted-foreground/30" />
                     </div>
                   )}
-                  {c.premium ? (
+                  {isPremium ? (
                     <Badge className="absolute top-2 left-2 bg-accent text-accent-foreground text-[10px] px-1.5 py-0.5 border-0 font-semibold">Premium</Badge>
                   ) : (
                     <Badge variant="outline" className="absolute top-2 left-2 bg-background/70 backdrop-blur-sm text-[10px] px-1.5 py-0.5 border-border/50 text-foreground">Gratuito</Badge>
@@ -144,7 +150,7 @@ function CareerRow({ category, items, subscribed, isAdmin, isModerator, onClick 
                   )}
                 </div>
                 <div className="p-3">
-                  <p className="text-sm font-medium text-foreground line-clamp-2 leading-snug">{c.nome}</p>
+                  <p className="text-sm font-medium text-foreground line-clamp-2 leading-snug">{s.title}</p>
                 </div>
               </div>
             </motion.div>
