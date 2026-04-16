@@ -513,7 +513,7 @@ export default function CronogramaCalendar({ cronogramaId, userId, events, topic
                       {day}
                     </span>
                   ) : (
-                    <span className="text-[12px] font-medium" style={{ color: "var(--cal-day-num, #374151)" }}>
+                    <span className="text-[12px] font-medium text-[#374151] dark:text-[#e5e7eb]">
                       {day}
                     </span>
                   )}
