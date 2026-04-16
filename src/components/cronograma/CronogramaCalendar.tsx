@@ -633,7 +633,7 @@ export default function CronogramaCalendar({ cronogramaId, userId, events, topic
                 const pct = d.questoes > 0 ? Math.round(Math.min(d.acertos, d.questoes) / d.questoes * 100) : null;
 
                 return (
-                  <div key={ev.id} className="p-4 rounded-lg space-y-3" style={{ backgroundColor: "#f9fafb", border: "1px solid #e5e7eb" }}>
+                  <div key={ev.id} className="p-4 rounded-lg space-y-3 bg-[#f9fafb] dark:bg-[#2a2a3e] border border-[#e5e7eb] dark:border-[#3a3a4e]">
                     <div className="flex items-center gap-2">
                       <span className="text-[11px] font-medium text-white rounded-full px-2.5 py-0.5" style={{ backgroundColor: color }}>
                         {t?.materia || "?"}
