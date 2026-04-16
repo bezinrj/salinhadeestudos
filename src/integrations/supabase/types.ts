@@ -80,6 +80,80 @@ export type Database = {
           },
         ]
       }
+      cronograma_matriz: {
+        Row: {
+          assunto: string | null
+          created_at: string
+          cronograma_id: string
+          fonte_legal: string | null
+          horas_estimadas: number
+          id: number
+          link_dod: string | null
+          link_questoes: string | null
+          materia: string
+          ordem: number
+        }
+        Insert: {
+          assunto?: string | null
+          created_at?: string
+          cronograma_id: string
+          fonte_legal?: string | null
+          horas_estimadas?: number
+          id?: number
+          link_dod?: string | null
+          link_questoes?: string | null
+          materia: string
+          ordem?: number
+        }
+        Update: {
+          assunto?: string | null
+          created_at?: string
+          cronograma_id?: string
+          fonte_legal?: string | null
+          horas_estimadas?: number
+          id?: number
+          link_dod?: string | null
+          link_questoes?: string | null
+          materia?: string
+          ordem?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cronograma_matriz_cronograma_id_fkey"
+            columns: ["cronograma_id"]
+            isOneToOne: false
+            referencedRelation: "cronogramas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cronogramas: {
+        Row: {
+          categoria: string | null
+          created_at: string
+          id: string
+          imagem_url: string | null
+          nome: string
+          premium: boolean
+        }
+        Insert: {
+          categoria?: string | null
+          created_at?: string
+          id?: string
+          imagem_url?: string | null
+          nome: string
+          premium?: boolean
+        }
+        Update: {
+          categoria?: string | null
+          created_at?: string
+          id?: string
+          imagem_url?: string | null
+          nome?: string
+          premium?: boolean
+        }
+        Relationships: []
+      }
       discipline_subjects: {
         Row: {
           category: string | null
@@ -674,6 +748,50 @@ export type Database = {
           },
         ]
       }
+      study_sessions: {
+        Row: {
+          acertos: number | null
+          created_at: string
+          data: string
+          id: number
+          percentual_acerto: number | null
+          questoes: number | null
+          tempo_estudado: string | null
+          topico_id: number
+          user_id: string
+        }
+        Insert: {
+          acertos?: number | null
+          created_at?: string
+          data?: string
+          id?: number
+          percentual_acerto?: number | null
+          questoes?: number | null
+          tempo_estudado?: string | null
+          topico_id: number
+          user_id: string
+        }
+        Update: {
+          acertos?: number | null
+          created_at?: string
+          data?: string
+          id?: number
+          percentual_acerto?: number | null
+          questoes?: number | null
+          tempo_estudado?: string | null
+          topico_id?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_sessions_topico_id_fkey"
+            columns: ["topico_id"]
+            isOneToOne: false
+            referencedRelation: "cronograma_matriz"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       suppressed_emails: {
         Row: {
           created_at: string
@@ -727,6 +845,47 @@ export type Database = {
           },
         ]
       }
+      user_calendar_events: {
+        Row: {
+          concluido: boolean
+          created_at: string
+          data: string
+          horas_dia: number
+          id: number
+          is_revisao: boolean
+          topico_id: number
+          user_id: string
+        }
+        Insert: {
+          concluido?: boolean
+          created_at?: string
+          data: string
+          horas_dia?: number
+          id?: number
+          is_revisao?: boolean
+          topico_id: number
+          user_id: string
+        }
+        Update: {
+          concluido?: boolean
+          created_at?: string
+          data?: string
+          horas_dia?: number
+          id?: number
+          is_revisao?: boolean
+          topico_id?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_calendar_events_topico_id_fkey"
+            columns: ["topico_id"]
+            isOneToOne: false
+            referencedRelation: "cronograma_matriz"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string
@@ -767,6 +926,41 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: true
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_topico_progress: {
+        Row: {
+          concluido: boolean
+          id: number
+          para_revisao: boolean
+          topico_id: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          concluido?: boolean
+          id?: number
+          para_revisao?: boolean
+          topico_id: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          concluido?: boolean
+          id?: number
+          para_revisao?: boolean
+          topico_id?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_topico_progress_topico_id_fkey"
+            columns: ["topico_id"]
+            isOneToOne: false
+            referencedRelation: "cronograma_matriz"
             referencedColumns: ["id"]
           },
         ]
