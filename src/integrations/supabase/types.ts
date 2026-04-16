@@ -87,6 +87,7 @@ export type Database = {
           created_at: string
           cronograma_id: string
           fonte_legal: string | null
+          fontes: Json | null
           horas_estimadas: number
           id: number
           link_dod: string | null
@@ -100,6 +101,7 @@ export type Database = {
           created_at?: string
           cronograma_id: string
           fonte_legal?: string | null
+          fontes?: Json | null
           horas_estimadas?: number
           id?: number
           link_dod?: string | null
@@ -113,6 +115,7 @@ export type Database = {
           created_at?: string
           cronograma_id?: string
           fonte_legal?: string | null
+          fontes?: Json | null
           horas_estimadas?: number
           id?: number
           link_dod?: string | null
