@@ -252,7 +252,7 @@ export default function CronogramaPerformance({ cronogramaId, userId, sessions, 
       {/* Revision history */}
       {revisionHistory.length > 0 && (
         <div>
-          <h3 style={{ fontSize: 14, fontWeight: 600, color: "#111827", marginBottom: 12 }} className="dark:!text-[#e5e7eb]">
+          <h3 style={{ fontSize: 14, fontWeight: 600, color: "#ffffff", marginBottom: 12 }}>
             Histórico de Revisões
           </h3>
           <div className="space-y-1.5">
