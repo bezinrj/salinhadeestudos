@@ -3,10 +3,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  ExternalLink, Plus, Trash2, GripVertical, BookmarkPlus, ChevronRight, ChevronLeft,
+  ExternalLink, Plus, Trash2, GripVertical, BookmarkPlus, Pencil,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -25,6 +24,7 @@ export type TopicoMatriz = {
   link_questoes: string | null;
   link_dod: string | null;
   horas_estimadas: number;
+  cor: string | null;
 };
 
 export type UserProgress = {
@@ -33,24 +33,24 @@ export type UserProgress = {
   para_revisao: boolean;
 };
 
-const MATERIA_COLORS: Record<string, string> = {
-  "Direito Constitucional": "bg-teal-500/15 text-teal-400 border-teal-500/30",
-  "Direito Civil": "bg-blue-500/15 text-blue-400 border-blue-500/30",
-  "Processo Civil": "bg-amber-500/15 text-amber-400 border-amber-500/30",
-  "Direito Processual Civil": "bg-amber-500/15 text-amber-400 border-amber-500/30",
-  "Direito Penal": "bg-red-400/15 text-red-400 border-red-400/30",
-  "Direito Processual Penal": "bg-orange-500/15 text-orange-400 border-orange-500/30",
-  "Direito Administrativo": "bg-cyan-500/15 text-cyan-400 border-cyan-500/30",
-  "Direito Tributário": "bg-yellow-500/15 text-yellow-400 border-yellow-500/30",
-  "Direito Empresarial": "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
-  "Direitos Humanos": "bg-indigo-500/15 text-indigo-400 border-indigo-500/30",
-  "Legislação Penal Especial": "bg-purple-500/15 text-purple-400 border-purple-500/30",
-  "Criminologia": "bg-rose-500/15 text-rose-400 border-rose-500/30",
-  "Medicina Legal": "bg-lime-500/15 text-lime-400 border-lime-500/30",
-};
+const COLOR_PALETTE = [
+  "#1D9E75", "#378ADD", "#D85A30", "#9B59B6", "#E67E22",
+  "#2ECC71", "#E74C3C", "#1ABC9C", "#3498DB", "#F39C12",
+  "#8E44AD", "#16A085",
+];
 
-function getMateriaBadgeClass(materia: string) {
-  return MATERIA_COLORS[materia] || "bg-muted text-muted-foreground border-border";
+function hashString(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) - hash) + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash);
+}
+
+function getMateriaColor(topico: { materia: string; cor?: string | null }): string {
+  if (topico.cor) return topico.cor;
+  return COLOR_PALETTE[hashString(topico.materia) % COLOR_PALETTE.length];
 }
 
 interface Props {
@@ -61,7 +61,7 @@ interface Props {
   userId: string;
 }
 
-// Inline edit row for admin
+// Admin editable row
 function AdminEditableRow({
   topico, index, onSave, onDelete, dragHandleProps,
 }: {
@@ -78,6 +78,8 @@ function AdminEditableRow({
   const [linkQ, setLinkQ] = useState(topico.link_questoes || "");
   const [linkD, setLinkD] = useState(topico.link_dod || "");
 
+  const color = getMateriaColor(topico);
+
   const save = () => {
     onSave(topico.id, { materia, assunto, fonte_legal: fonteLegal, link_questoes: linkQ, link_dod: linkD });
     setEditing(false);
@@ -86,18 +88,25 @@ function AdminEditableRow({
   return (
     <tr className="border-b border-border/30 hover:bg-muted/20 transition-colors">
       <td className="p-2 text-center text-xs text-muted-foreground w-12">
-        {dragHandleProps && (
-          <button {...dragHandleProps} className="cursor-grab text-muted-foreground hover:text-foreground mr-1 inline-block">
-            <GripVertical className="h-3.5 w-3.5" />
-          </button>
-        )}
-        {index + 1}
+        <div className="flex items-center gap-1 justify-center">
+          {dragHandleProps && (
+            <button {...dragHandleProps} className="cursor-grab text-muted-foreground hover:text-foreground">
+              <GripVertical className="h-3.5 w-3.5" />
+            </button>
+          )}
+          {index + 1}
+        </div>
       </td>
       <td className="p-2">
         {editing ? (
           <Input value={materia} onChange={e => setMateria(e.target.value)} className="h-7 text-xs" />
         ) : (
-          <Badge variant="outline" className={`text-[10px] px-1.5 py-0.5 ${getMateriaBadgeClass(topico.materia)}`}>{topico.materia}</Badge>
+          <span
+            className="inline-block text-[10px] font-medium text-white rounded-full px-2.5 py-0.5"
+            style={{ backgroundColor: color }}
+          >
+            {topico.materia}
+          </span>
         )}
       </td>
       <td className="p-2 text-xs text-foreground/90">
@@ -126,14 +135,16 @@ function AdminEditableRow({
       </td>
       <td className="p-2 text-center">
         {editing ? (
-          <div className="flex gap-1">
+          <div className="flex gap-1 justify-center">
             <Button size="sm" variant="ghost" className="h-6 text-[10px]" onClick={save}>Salvar</Button>
             <Button size="sm" variant="ghost" className="h-6 text-[10px]" onClick={() => setEditing(false)}>✕</Button>
           </div>
         ) : (
           <div className="flex gap-1 justify-center">
-            <Button size="sm" variant="ghost" className="h-6 text-[10px]" onClick={() => setEditing(true)}>Editar</Button>
-            <Button size="sm" variant="ghost" className="h-6 text-[10px] text-destructive" onClick={() => onDelete(topico.id)}>
+            <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setEditing(true)}>
+              <Pencil className="h-3 w-3" />
+            </Button>
+            <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-destructive" onClick={() => onDelete(topico.id)}>
               <Trash2 className="h-3 w-3" />
             </Button>
           </div>
@@ -159,7 +170,7 @@ function SortableAdminRow(props: {
   );
 }
 
-// Student row
+// Student row with checkbox
 function StudentRow({
   topico, index, progress, onToggleConcluido, onToggleRevisao,
 }: {
@@ -171,35 +182,56 @@ function StudentRow({
 }) {
   const done = progress?.concluido ?? false;
   const rev = progress?.para_revisao ?? false;
+  const color = getMateriaColor(topico);
 
   return (
-    <tr className={`border-b border-border/30 transition-colors ${done ? "bg-green-500/5" : "hover:bg-muted/20"}`}>
-      <td className="p-2 text-center text-xs text-muted-foreground w-12">{index + 1}</td>
-      <td className="p-2">
-        <Badge variant="outline" className={`text-[10px] px-1.5 py-0.5 ${getMateriaBadgeClass(topico.materia)}`}>{topico.materia}</Badge>
+    <tr
+      className="border-b border-border/30 transition-all duration-200"
+      style={done ? { backgroundColor: "rgba(29, 158, 117, 0.08)" } : undefined}
+    >
+      <td className="p-2 text-center w-12">
+        <div className="flex items-center gap-1.5 justify-center">
+          <Checkbox
+            checked={done}
+            onCheckedChange={() => onToggleConcluido(topico.id)}
+            className={`h-4 w-4 ${done ? "border-[#1D9E75] bg-[#1D9E75] text-white data-[state=checked]:bg-[#1D9E75] data-[state=checked]:border-[#1D9E75]" : ""}`}
+          />
+          <span className={`text-xs ${done ? "text-[#888780]" : "text-muted-foreground"}`}>{index + 1}</span>
+        </div>
       </td>
-      <td className={`p-2 text-xs ${done ? "line-through text-muted-foreground" : "text-foreground/90"}`}>{topico.assunto || "—"}</td>
-      <td className="p-2 text-xs text-foreground/70">{topico.fonte_legal || "—"}</td>
+      <td className="p-2">
+        <span
+          className="inline-block text-[10px] font-medium text-white rounded-full px-2.5 py-0.5 transition-opacity duration-200"
+          style={{ backgroundColor: color, opacity: done ? 0.5 : 1 }}
+        >
+          {topico.materia}
+        </span>
+      </td>
+      <td className={`p-2 text-xs transition-all duration-200 ${done ? "line-through text-[#888780]" : "text-foreground/90"}`}>
+        {topico.assunto || "—"}
+      </td>
+      <td className={`p-2 text-xs transition-all duration-200 ${done ? "text-[#888780]" : "text-foreground/70"}`}>
+        {topico.fonte_legal || "—"}
+      </td>
       <td className="p-2 text-center">
         {topico.link_questoes ? (
-          <a href={topico.link_questoes} target="_blank" rel="noopener noreferrer" className="text-primary hover:text-primary/80">
+          <a href={topico.link_questoes} target="_blank" rel="noopener noreferrer" className={`hover:text-primary/80 ${done ? "text-[#888780]" : "text-primary"}`}>
             <ExternalLink className="h-3.5 w-3.5 inline" />
           </a>
         ) : "—"}
       </td>
       <td className="p-2 text-center">
         {topico.link_dod ? (
-          <a href={topico.link_dod} target="_blank" rel="noopener noreferrer" className="text-primary hover:text-primary/80">
+          <a href={topico.link_dod} target="_blank" rel="noopener noreferrer" className={`hover:text-primary/80 ${done ? "text-[#888780]" : "text-primary"}`}>
             <ExternalLink className="h-3.5 w-3.5 inline" />
           </a>
         ) : "—"}
       </td>
       <td className="p-2">
         <div className="flex items-center gap-2 justify-center">
-          <Checkbox checked={done} onCheckedChange={() => onToggleConcluido(topico.id)} />
           <button
             onClick={() => onToggleRevisao(topico.id)}
-            className={`p-1 rounded ${rev ? "text-amber-400" : "text-muted-foreground/50 hover:text-amber-400"}`}
+            className={`p-1 rounded transition-colors ${rev ? "text-amber-400" : "text-muted-foreground/50 hover:text-amber-400"}`}
             title={rev ? "Remover revisão" : "Marcar para revisão"}
           >
             <BookmarkPlus className="h-3.5 w-3.5" />
@@ -212,7 +244,6 @@ function StudentRow({
 
 export default function MatrizTable({ cronogramaId, topicos, progress, isAdminOrMod, userId }: Props) {
   const queryClient = useQueryClient();
-  const [cyclesOpen, setCyclesOpen] = useState(false);
   const [newRow, setNewRow] = useState(false);
   const [newMateria, setNewMateria] = useState("");
   const [newAssunto, setNewAssunto] = useState("");
@@ -222,7 +253,6 @@ export default function MatrizTable({ cronogramaId, topicos, progress, isAdminOr
   const [newHoras, setNewHoras] = useState(3);
 
   const progressMap = new Map(progress.map(p => [p.topico_id, p]));
-  const pending = topicos.filter(t => !progressMap.get(t.id)?.concluido);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -247,8 +277,20 @@ export default function MatrizTable({ cronogramaId, topicos, progress, isAdminOr
         });
         if (error) throw error;
       }
+
+      // Bidirectional sync: update calendar events when marking completed
+      if (concluido !== undefined) {
+        await supabase
+          .from("user_calendar_events")
+          .update({ concluido })
+          .eq("user_id", userId)
+          .eq("topico_id", topicoId);
+      }
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["user-progress", cronogramaId] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["user-progress", cronogramaId] });
+      queryClient.invalidateQueries({ queryKey: ["calendar-events", cronogramaId] });
+    },
   });
 
   const updateTopico = useMutation({
@@ -276,6 +318,7 @@ export default function MatrizTable({ cronogramaId, topicos, progress, isAdminOr
   const addTopico = useMutation({
     mutationFn: async () => {
       const maxOrdem = topicos.reduce((max, t) => Math.max(max, t.ordem), -1);
+      const cor = COLOR_PALETTE[hashString(newMateria) % COLOR_PALETTE.length];
       const { error } = await supabase.from("cronograma_matriz").insert({
         cronograma_id: cronogramaId,
         ordem: maxOrdem + 1,
@@ -285,6 +328,7 @@ export default function MatrizTable({ cronogramaId, topicos, progress, isAdminOr
         link_questoes: newLinkQ || null,
         link_dod: newLinkD || null,
         horas_estimadas: newHoras || 3,
+        cor,
       });
       if (error) throw error;
     },
@@ -318,116 +362,82 @@ export default function MatrizTable({ cronogramaId, topicos, progress, isAdminOr
   };
 
   return (
-    <div className="flex gap-0">
-      {/* Main table */}
-      <div className="flex-1 min-w-0">
-        <div className="overflow-x-auto rounded-xl border border-border/50 bg-card/50">
-          <table className="w-full min-w-[800px] text-left">
-            <thead>
-              <tr className="border-b border-border/50 bg-muted/30">
-                <th className="p-2 text-[10px] font-semibold text-muted-foreground uppercase w-12 text-center">#</th>
-                <th className="p-2 text-[10px] font-semibold text-muted-foreground uppercase">Matéria</th>
-                <th className="p-2 text-[10px] font-semibold text-muted-foreground uppercase">Assunto</th>
-                <th className="p-2 text-[10px] font-semibold text-muted-foreground uppercase">Fonte Legal</th>
-                <th className="p-2 text-[10px] font-semibold text-muted-foreground uppercase text-center">Questões</th>
-                <th className="p-2 text-[10px] font-semibold text-muted-foreground uppercase text-center">DOD</th>
-                <th className="p-2 text-[10px] font-semibold text-muted-foreground uppercase text-center">Ações</th>
-              </tr>
-            </thead>
-            {isAdminOrMod ? (
-              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                <SortableContext items={topicos.map(t => t.id)} strategy={verticalListSortingStrategy}>
-                  {topicos.map((t, i) => (
-                    <SortableAdminRow
-                      key={t.id}
-                      topico={t}
-                      index={i}
-                      onSave={(id, data) => updateTopico.mutate({ id, data })}
-                      onDelete={(id) => { if (confirm("Excluir este tópico?")) deleteTopico.mutate(id); }}
-                    />
-                  ))}
-                </SortableContext>
-              </DndContext>
-            ) : (
-              <tbody>
+    <div>
+      <div className="overflow-x-auto rounded-xl border border-border/50 bg-card/50">
+        <table className="w-full min-w-[800px] text-left">
+          <thead>
+            <tr className="border-b border-border/50 bg-muted/30">
+              <th className="p-2 text-[10px] font-semibold text-muted-foreground uppercase w-12 text-center">#</th>
+              <th className="p-2 text-[10px] font-semibold text-muted-foreground uppercase">Matéria</th>
+              <th className="p-2 text-[10px] font-semibold text-muted-foreground uppercase">Assunto</th>
+              <th className="p-2 text-[10px] font-semibold text-muted-foreground uppercase">Fonte Legal</th>
+              <th className="p-2 text-[10px] font-semibold text-muted-foreground uppercase text-center">Questões</th>
+              <th className="p-2 text-[10px] font-semibold text-muted-foreground uppercase text-center">DOD</th>
+              <th className="p-2 text-[10px] font-semibold text-muted-foreground uppercase text-center">Ações</th>
+            </tr>
+          </thead>
+          {isAdminOrMod ? (
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={topicos.map(t => t.id)} strategy={verticalListSortingStrategy}>
                 {topicos.map((t, i) => (
-                  <StudentRow
+                  <SortableAdminRow
                     key={t.id}
                     topico={t}
                     index={i}
-                    progress={progressMap.get(t.id)}
-                    onToggleConcluido={(id) => {
-                      const cur = progressMap.get(id);
-                      upsertProgress.mutate({ topicoId: id, concluido: !(cur?.concluido) });
-                    }}
-                    onToggleRevisao={(id) => {
-                      const cur = progressMap.get(id);
-                      upsertProgress.mutate({ topicoId: id, para_revisao: !(cur?.para_revisao) });
-                    }}
+                    onSave={(id, data) => updateTopico.mutate({ id, data })}
+                    onDelete={(id) => { if (confirm("Excluir este tópico?")) deleteTopico.mutate(id); }}
                   />
                 ))}
-              </tbody>
-            )}
-          </table>
+              </SortableContext>
+            </DndContext>
+          ) : (
+            <tbody>
+              {topicos.map((t, i) => (
+                <StudentRow
+                  key={t.id}
+                  topico={t}
+                  index={i}
+                  progress={progressMap.get(t.id)}
+                  onToggleConcluido={(id) => {
+                    const cur = progressMap.get(id);
+                    upsertProgress.mutate({ topicoId: id, concluido: !(cur?.concluido) });
+                  }}
+                  onToggleRevisao={(id) => {
+                    const cur = progressMap.get(id);
+                    upsertProgress.mutate({ topicoId: id, para_revisao: !(cur?.para_revisao) });
+                  }}
+                />
+              ))}
+            </tbody>
+          )}
+        </table>
+      </div>
+
+      {/* Add row for admin */}
+      {isAdminOrMod && (
+        <div className="mt-3">
+          {newRow ? (
+            <div className="space-y-2 p-3 rounded-lg border border-border/50 bg-muted/20">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
+                <Input placeholder="Matéria" value={newMateria} onChange={e => setNewMateria(e.target.value)} className="h-8 text-xs" />
+                <Input placeholder="Assunto" value={newAssunto} onChange={e => setNewAssunto(e.target.value)} className="h-8 text-xs" />
+                <Input placeholder="Fonte Legal" value={newFonteLegal} onChange={e => setNewFonteLegal(e.target.value)} className="h-8 text-xs" />
+                <Input placeholder="Link Questões (URL)" value={newLinkQ} onChange={e => setNewLinkQ(e.target.value)} className="h-8 text-xs" />
+                <Input placeholder="Link DOD (URL)" value={newLinkD} onChange={e => setNewLinkD(e.target.value)} className="h-8 text-xs" />
+                <Input type="number" placeholder="Horas estimadas" value={newHoras} onChange={e => setNewHoras(Number(e.target.value))} className="h-8 text-xs" min={1} />
+              </div>
+              <div className="flex gap-2">
+                <Button size="sm" className="h-8" disabled={!newMateria.trim()} onClick={() => addTopico.mutate()}>Adicionar</Button>
+                <Button size="sm" variant="ghost" className="h-8" onClick={() => setNewRow(false)}>✕</Button>
+              </div>
+            </div>
+          ) : (
+            <Button size="sm" variant="outline" className="gap-1" onClick={() => setNewRow(true)}>
+              <Plus className="h-3.5 w-3.5" /> Novo tópico
+            </Button>
+          )}
         </div>
-
-        {/* Add row for admin */}
-        {isAdminOrMod && (
-          <div className="mt-3">
-            {newRow ? (
-              <div className="space-y-2 p-3 rounded-lg border border-border/50 bg-muted/20">
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
-                  <Input placeholder="Matéria" value={newMateria} onChange={e => setNewMateria(e.target.value)} className="h-8 text-xs" />
-                  <Input placeholder="Assunto" value={newAssunto} onChange={e => setNewAssunto(e.target.value)} className="h-8 text-xs" />
-                  <Input placeholder="Fonte Legal" value={newFonteLegal} onChange={e => setNewFonteLegal(e.target.value)} className="h-8 text-xs" />
-                  <Input placeholder="Link Questões (URL)" value={newLinkQ} onChange={e => setNewLinkQ(e.target.value)} className="h-8 text-xs" />
-                  <Input placeholder="Link DOD (URL)" value={newLinkD} onChange={e => setNewLinkD(e.target.value)} className="h-8 text-xs" />
-                  <Input type="number" placeholder="Horas estimadas" value={newHoras} onChange={e => setNewHoras(Number(e.target.value))} className="h-8 text-xs" min={1} />
-                </div>
-                <div className="flex gap-2">
-                  <Button size="sm" className="h-8" disabled={!newMateria.trim()} onClick={() => addTopico.mutate()}>Adicionar</Button>
-                  <Button size="sm" variant="ghost" className="h-8" onClick={() => setNewRow(false)}>✕</Button>
-                </div>
-              </div>
-            ) : (
-              <Button size="sm" variant="outline" className="gap-1" onClick={() => setNewRow(true)}>
-                <Plus className="h-3.5 w-3.5" /> Novo tópico
-              </Button>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Cycles panel */}
-      <div
-        className="border-l border-border/50 bg-card/30 overflow-hidden flex-shrink-0"
-        style={{ width: cyclesOpen ? 280 : 40, transition: "width 0.3s ease" }}
-      >
-        <button
-          className="w-full h-10 flex items-center justify-center text-muted-foreground hover:text-foreground"
-          onClick={() => setCyclesOpen(!cyclesOpen)}
-        >
-          {cyclesOpen ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-        </button>
-        {!cyclesOpen && (
-          <div className="text-center">
-            <span className="text-xs font-bold text-primary">{pending.length}</span>
-            <p className="text-[8px] text-muted-foreground leading-tight">pend.</p>
-          </div>
-        )}
-        {cyclesOpen && (
-          <div className="px-3 pb-3 space-y-1 overflow-y-auto max-h-[60vh]">
-            <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-2">Ciclos restantes ({pending.length})</p>
-            {pending.map(t => (
-              <div key={t.id} className="p-2 rounded-lg bg-muted/30 border border-border/30">
-                <Badge variant="outline" className={`text-[9px] px-1 py-0 ${getMateriaBadgeClass(t.materia)}`}>{t.materia}</Badge>
-                <p className="text-[11px] text-foreground/80 mt-0.5">{t.assunto || "—"}</p>
-                <p className="text-[9px] text-muted-foreground">{t.horas_estimadas}h estimadas</p>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 }
