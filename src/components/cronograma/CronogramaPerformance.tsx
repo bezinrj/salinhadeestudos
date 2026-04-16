@@ -174,7 +174,7 @@ export default function CronogramaPerformance({ cronogramaId, userId, sessions, 
       {/* Weak subjects panel */}
       {weakTopicos.length > 0 && (
         <div>
-          <h3 style={{ fontSize: 14, fontWeight: 600, color: "#111827", marginBottom: 12 }}>
+          <h3 style={{ fontSize: 14, fontWeight: 600, color: "#ffffff", marginBottom: 12 }}>
             Matérias abaixo de 60%
           </h3>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 10 }}>
