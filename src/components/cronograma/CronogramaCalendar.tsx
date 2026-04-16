@@ -569,8 +569,7 @@ export default function CronogramaCalendar({ cronogramaId, userId, events, topic
         <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => setDetailDay(null)}>
           <div className="absolute inset-0 bg-black/50" />
           <div
-            className="relative rounded-xl shadow-2xl w-[420px] max-h-[80vh] overflow-y-auto p-6"
-            style={{ backgroundColor: "var(--detail-modal-bg, #ffffff)" }}
+            className="relative rounded-xl shadow-2xl w-[420px] max-h-[80vh] overflow-y-auto p-6 bg-white dark:bg-[#1e1e2e]"
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
@@ -616,8 +615,7 @@ export default function CronogramaCalendar({ cronogramaId, userId, events, topic
         <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => { setShowModal(false); setElapsed(0); }}>
           <div className="absolute inset-0 bg-black/50" />
           <div
-            className="relative rounded-xl shadow-2xl w-[480px] max-h-[80vh] overflow-y-auto p-6"
-            style={{ backgroundColor: "var(--session-modal-bg, #ffffff)" }}
+            className="relative rounded-xl shadow-2xl w-[480px] max-h-[80vh] overflow-y-auto p-6 bg-white dark:bg-[#1e1e2e]"
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
