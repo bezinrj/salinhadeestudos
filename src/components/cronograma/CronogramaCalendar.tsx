@@ -351,6 +351,7 @@ export default function CronogramaCalendar({ cronogramaId, userId, events, topic
     onError: () => toast.error("Erro ao limpar pendentes"),
   });
 
+  function getEventStatus(ev: CalendarEvent) {
     if (ev.concluido) return { label: "✓ Concluído", color: "#1D9E75" };
     const diff = Math.floor((today.getTime() - new Date(ev.data + "T23:59:59").getTime()) / 86400000);
     if (diff >= 4) return { label: `Atrasado ${diff} dias`, color: "#E24B4A" };
