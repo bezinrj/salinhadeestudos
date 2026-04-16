@@ -1,0 +1,1 @@
+ALTER TABLE public.cronograma_matriz ADD COLUMN IF NOT EXISTS fontes jsonb DEFAULT '[]'::jsonb;

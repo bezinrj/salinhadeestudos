@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  ExternalLink, Plus, Trash2, GripVertical, BookmarkPlus, Pencil,
+  ExternalLink, Plus, Trash2, GripVertical, Pencil, X,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -13,6 +13,13 @@ import {
 } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+
+export type FonteItem = {
+  sigla: string;
+  descricao: string;
+  link_questoes: string;
+  link_dod: string;
+};
 
 export type TopicoMatriz = {
   id: number;
@@ -25,6 +32,7 @@ export type TopicoMatriz = {
   link_dod: string | null;
   horas_estimadas: number;
   cor: string | null;
+  fontes?: FonteItem[] | null;
 };
 
 export type UserProgress = {
@@ -53,6 +61,96 @@ function getMateriaColor(topico: { materia: string; cor?: string | null }): stri
   return COLOR_PALETTE[hashString(topico.materia) % COLOR_PALETTE.length];
 }
 
+function parseFontes(topico: TopicoMatriz): FonteItem[] {
+  if (topico.fontes && Array.isArray(topico.fontes) && topico.fontes.length > 0) {
+    return topico.fontes;
+  }
+  // Fallback: migrate old single fields into array
+  if (topico.fonte_legal || topico.link_questoes || topico.link_dod) {
+    return [{
+      sigla: "",
+      descricao: topico.fonte_legal || "",
+      link_questoes: topico.link_questoes || "",
+      link_dod: topico.link_dod || "",
+    }];
+  }
+  return [];
+}
+
+// ─── Fontes editor (used in admin edit mode and add form) ───
+function FontesEditor({ fontes, onChange }: { fontes: FonteItem[]; onChange: (f: FonteItem[]) => void }) {
+  const update = (idx: number, field: keyof FonteItem, value: string) => {
+    const copy = [...fontes];
+    copy[idx] = { ...copy[idx], [field]: value };
+    onChange(copy);
+  };
+  const add = () => onChange([...fontes, { sigla: "", descricao: "", link_questoes: "", link_dod: "" }]);
+  const remove = (idx: number) => onChange(fontes.filter((_, i) => i !== idx));
+
+  return (
+    <div className="space-y-2">
+      {fontes.map((f, i) => (
+        <div key={i} className="flex flex-col gap-1.5 p-2 rounded-md border border-border/40 bg-muted/10 relative">
+          {fontes.length > 1 && (
+            <button
+              type="button"
+              onClick={() => remove(i)}
+              className="absolute top-1 right-1 text-muted-foreground hover:text-destructive"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+          <div className="grid grid-cols-2 gap-1.5">
+            <Input placeholder="Sigla (ex: CF)" value={f.sigla} onChange={e => update(i, "sigla", e.target.value)} className="h-7 text-xs" />
+            <Input placeholder="Descrição (ex: Art.1 ao Art.4)" value={f.descricao} onChange={e => update(i, "descricao", e.target.value)} className="h-7 text-xs" />
+          </div>
+          <div className="grid grid-cols-2 gap-1.5">
+            <Input placeholder="Link Questões (URL)" value={f.link_questoes} onChange={e => update(i, "link_questoes", e.target.value)} className="h-7 text-xs" />
+            <Input placeholder="Link DOD (URL)" value={f.link_dod} onChange={e => update(i, "link_dod", e.target.value)} className="h-7 text-xs" />
+          </div>
+        </div>
+      ))}
+      <Button type="button" size="sm" variant="ghost" className="h-6 text-[10px] gap-1" onClick={add}>
+        <Plus className="h-3 w-3" /> Adicionar fonte
+      </Button>
+    </div>
+  );
+}
+
+// ─── Read-only fontes display ───
+function FontesDisplay({ fontes, done }: { fontes: FonteItem[]; done: boolean }) {
+  if (fontes.length === 0) return <span style={{ color: done ? "#9ca3af" : undefined }}>—</span>;
+  return (
+    <div className="space-y-0.5">
+      {fontes.map((f, i) => (
+        <div key={i} className="text-xs flex items-center gap-1.5 flex-wrap" style={{ color: done ? "#9ca3af" : undefined, transition: "all 0.25s ease" }}>
+          {f.sigla && <span className="font-semibold">{f.sigla}</span>}
+          {f.descricao && <span>{f.descricao}</span>}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function FontesLinks({ fontes, done, type }: { fontes: FonteItem[]; done: boolean; type: "link_questoes" | "link_dod" }) {
+  const links = fontes.filter(f => f[type]);
+  if (links.length === 0) return <span style={{ color: done ? "#9ca3af" : undefined }}>—</span>;
+  return (
+    <div className="flex flex-col items-center gap-0.5">
+      {links.map((f, i) => (
+        <a key={i} href={f[type]} target="_blank" rel="noopener noreferrer"
+          style={{ color: done ? "#9ca3af" : undefined }}
+          className={done ? "" : "text-primary hover:text-primary/80"}
+          title={f.sigla || undefined}
+        >
+          <ExternalLink className="h-3.5 w-3.5 inline" />
+          {f.sigla && <span className="text-[9px] ml-0.5">{f.sigla}</span>}
+        </a>
+      ))}
+    </div>
+  );
+}
+
 interface Props {
   cronogramaId: string;
   topicos: TopicoMatriz[];
@@ -61,7 +159,7 @@ interface Props {
   userId: string;
 }
 
-// Admin editable row
+// ─── Admin editable row ───
 function AdminEditableRow({
   topico, index, onSave, onDelete, dragHandleProps, progress, onToggleConcluido,
 }: {
@@ -76,25 +174,31 @@ function AdminEditableRow({
   const [editing, setEditing] = useState(false);
   const [materia, setMateria] = useState(topico.materia);
   const [assunto, setAssunto] = useState(topico.assunto || "");
-  const [fonteLegal, setFonteLegal] = useState(topico.fonte_legal || "");
-  const [linkQ, setLinkQ] = useState(topico.link_questoes || "");
-  const [linkD, setLinkD] = useState(topico.link_dod || "");
+  const initialFontes = parseFontes(topico);
+  const [fontes, setFontes] = useState<FonteItem[]>(initialFontes.length > 0 ? initialFontes : [{ sigla: "", descricao: "", link_questoes: "", link_dod: "" }]);
 
   const done = progress?.concluido ?? false;
   const color = getMateriaColor(topico);
+  const displayFontes = parseFontes(topico);
 
   const save = () => {
-    onSave(topico.id, { materia, assunto, fonte_legal: fonteLegal, link_questoes: linkQ, link_dod: linkD });
+    const cleanFontes = fontes.filter(f => f.sigla || f.descricao || f.link_questoes || f.link_dod);
+    onSave(topico.id, {
+      materia,
+      assunto,
+      fontes: cleanFontes as any,
+      // keep legacy fields synced with first fonte
+      fonte_legal: cleanFontes[0]?.descricao || null,
+      link_questoes: cleanFontes[0]?.link_questoes || null,
+      link_dod: cleanFontes[0]?.link_dod || null,
+    });
     setEditing(false);
   };
 
   return (
     <tr
       className="border-b border-border/30 hover:bg-muted/20 transition-colors"
-      style={{
-        backgroundColor: done ? "rgba(0,0,0,0.04)" : undefined,
-        transition: "all 0.25s ease",
-      }}
+      style={{ backgroundColor: done ? "rgba(0,0,0,0.04)" : undefined, transition: "all 0.25s ease" }}
     >
       <td className="p-2 text-center text-xs w-12">
         <div className="flex items-center gap-1 justify-center">
@@ -117,11 +221,7 @@ function AdminEditableRow({
         ) : (
           <span
             className="inline-block text-[10px] font-medium rounded-full px-2.5 py-0.5"
-            style={{
-              backgroundColor: done ? "#e5e7eb" : color,
-              color: done ? "#9ca3af" : "#ffffff",
-              transition: "all 0.25s ease",
-            }}
+            style={{ backgroundColor: done ? "#e5e7eb" : color, color: done ? "#9ca3af" : "#ffffff", transition: "all 0.25s ease" }}
           >
             {topico.materia}
           </span>
@@ -131,25 +231,17 @@ function AdminEditableRow({
         {editing ? <Input value={assunto} onChange={e => setAssunto(e.target.value)} className="h-7 text-xs" /> : topico.assunto || "—"}
       </td>
       <td className="p-2 text-xs" style={{ color: done ? "#9ca3af" : undefined, transition: "all 0.25s ease" }}>
-        {editing ? <Input value={fonteLegal} onChange={e => setFonteLegal(e.target.value)} className="h-7 text-xs" /> : topico.fonte_legal || "—"}
+        {editing ? (
+          <FontesEditor fontes={fontes} onChange={setFontes} />
+        ) : (
+          <FontesDisplay fontes={displayFontes} done={done} />
+        )}
       </td>
       <td className="p-2 text-center">
-        {editing ? (
-          <Input value={linkQ} onChange={e => setLinkQ(e.target.value)} className="h-7 text-xs" placeholder="URL" />
-        ) : topico.link_questoes ? (
-          <a href={topico.link_questoes} target="_blank" rel="noopener noreferrer" style={{ color: done ? "#9ca3af" : undefined }} className={done ? "" : "text-primary hover:text-primary/80"}>
-            <ExternalLink className="h-3.5 w-3.5 inline" />
-          </a>
-        ) : "—"}
+        {editing ? null : <FontesLinks fontes={displayFontes} done={done} type="link_questoes" />}
       </td>
       <td className="p-2 text-center">
-        {editing ? (
-          <Input value={linkD} onChange={e => setLinkD(e.target.value)} className="h-7 text-xs" placeholder="URL" />
-        ) : topico.link_dod ? (
-          <a href={topico.link_dod} target="_blank" rel="noopener noreferrer" style={{ color: done ? "#9ca3af" : undefined }} className={done ? "" : "text-primary hover:text-primary/80"}>
-            <ExternalLink className="h-3.5 w-3.5 inline" />
-          </a>
-        ) : "—"}
+        {editing ? null : <FontesLinks fontes={displayFontes} done={done} type="link_dod" />}
       </td>
       <td className="p-2 text-center">
         {editing ? (
@@ -190,7 +282,7 @@ function SortableAdminRow(props: {
   );
 }
 
-// Student row with checkbox
+// ─── Student row ───
 function StudentRow({
   topico, index, progress, onToggleConcluido,
 }: {
@@ -201,14 +293,12 @@ function StudentRow({
 }) {
   const done = progress?.concluido ?? false;
   const color = getMateriaColor(topico);
+  const displayFontes = parseFontes(topico);
 
   return (
     <tr
       className="border-b border-border/30"
-      style={{
-        backgroundColor: done ? "rgba(0,0,0,0.04)" : undefined,
-        transition: "all 0.25s ease",
-      }}
+      style={{ backgroundColor: done ? "rgba(0,0,0,0.04)" : undefined, transition: "all 0.25s ease" }}
     >
       <td className="p-2 text-center w-12">
         <div className="flex items-center gap-1.5 justify-center">
@@ -223,11 +313,7 @@ function StudentRow({
       <td className="p-2">
         <span
           className="inline-block text-[10px] font-medium rounded-full px-2.5 py-0.5"
-          style={{
-            backgroundColor: done ? "#e5e7eb" : color,
-            color: done ? "#9ca3af" : "#ffffff",
-            transition: "all 0.25s ease",
-          }}
+          style={{ backgroundColor: done ? "#e5e7eb" : color, color: done ? "#9ca3af" : "#ffffff", transition: "all 0.25s ease" }}
         >
           {topico.materia}
         </span>
@@ -236,21 +322,13 @@ function StudentRow({
         {topico.assunto || "—"}
       </td>
       <td className="p-2 text-xs" style={{ color: done ? "#9ca3af" : undefined, transition: "all 0.25s ease" }}>
-        {topico.fonte_legal || "—"}
+        <FontesDisplay fontes={displayFontes} done={done} />
       </td>
       <td className="p-2 text-center" style={{ transition: "all 0.25s ease" }}>
-        {topico.link_questoes ? (
-          <a href={topico.link_questoes} target="_blank" rel="noopener noreferrer" style={{ color: done ? "#9ca3af" : undefined, transition: "all 0.25s ease" }} className={done ? "" : "text-primary hover:text-primary/80"}>
-            <ExternalLink className="h-3.5 w-3.5 inline" />
-          </a>
-        ) : <span style={{ color: done ? "#9ca3af" : undefined }}>—</span>}
+        <FontesLinks fontes={displayFontes} done={done} type="link_questoes" />
       </td>
       <td className="p-2 text-center" style={{ transition: "all 0.25s ease" }}>
-        {topico.link_dod ? (
-          <a href={topico.link_dod} target="_blank" rel="noopener noreferrer" style={{ color: done ? "#9ca3af" : undefined, transition: "all 0.25s ease" }} className={done ? "" : "text-primary hover:text-primary/80"}>
-            <ExternalLink className="h-3.5 w-3.5 inline" />
-          </a>
-        ) : <span style={{ color: done ? "#9ca3af" : undefined }}>—</span>}
+        <FontesLinks fontes={displayFontes} done={done} type="link_dod" />
       </td>
       <td className="p-2 text-center" style={{ color: done ? "#9ca3af" : undefined, transition: "all 0.25s ease" }}>
         —
@@ -264,9 +342,7 @@ export default function MatrizTable({ cronogramaId, topicos, progress, isAdminOr
   const [newRow, setNewRow] = useState(false);
   const [newMateria, setNewMateria] = useState("");
   const [newAssunto, setNewAssunto] = useState("");
-  const [newFonteLegal, setNewFonteLegal] = useState("");
-  const [newLinkQ, setNewLinkQ] = useState("");
-  const [newLinkD, setNewLinkD] = useState("");
+  const [newFontes, setNewFontes] = useState<FonteItem[]>([{ sigla: "", descricao: "", link_questoes: "", link_dod: "" }]);
   const [newHoras, setNewHoras] = useState(3);
 
   const progressMap = new Map(progress.map(p => [p.topico_id, p]));
@@ -287,31 +363,16 @@ export default function MatrizTable({ cronogramaId, topicos, progress, isAdminOr
         if (error) throw error;
       } else {
         const { error } = await supabase.from("user_topico_progress").insert({
-          user_id: userId,
-          topico_id: topicoId,
-          concluido: concluido ?? false,
-          para_revisao: para_revisao ?? false,
+          user_id: userId, topico_id: topicoId,
+          concluido: concluido ?? false, para_revisao: para_revisao ?? false,
         });
         if (error) throw error;
       }
-
-      // Bidirectional sync: update calendar events when marking completed
       if (concluido !== undefined) {
         if (concluido) {
-          // Mark all calendar events for this topic as completed
-          await supabase
-            .from("user_calendar_events")
-            .update({ concluido: true })
-            .eq("user_id", userId)
-            .eq("topico_id", topicoId);
+          await supabase.from("user_calendar_events").update({ concluido: true }).eq("user_id", userId).eq("topico_id", topicoId);
         } else {
-          // Only unmark non-revision events
-          await supabase
-            .from("user_calendar_events")
-            .update({ concluido: false })
-            .eq("user_id", userId)
-            .eq("topico_id", topicoId)
-            .eq("is_revisao", false);
+          await supabase.from("user_calendar_events").update({ concluido: false }).eq("user_id", userId).eq("topico_id", topicoId).eq("is_revisao", false);
         }
       }
     },
@@ -323,7 +384,7 @@ export default function MatrizTable({ cronogramaId, topicos, progress, isAdminOr
 
   const updateTopico = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: Partial<TopicoMatriz> }) => {
-      const { error } = await supabase.from("cronograma_matriz").update(data).eq("id", id);
+      const { error } = await supabase.from("cronograma_matriz").update(data as any).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -347,17 +408,19 @@ export default function MatrizTable({ cronogramaId, topicos, progress, isAdminOr
     mutationFn: async () => {
       const maxOrdem = topicos.reduce((max, t) => Math.max(max, t.ordem), -1);
       const cor = COLOR_PALETTE[hashString(newMateria) % COLOR_PALETTE.length];
+      const cleanFontes = newFontes.filter(f => f.sigla || f.descricao || f.link_questoes || f.link_dod);
       const { error } = await supabase.from("cronograma_matriz").insert({
         cronograma_id: cronogramaId,
         ordem: maxOrdem + 1,
         materia: newMateria,
         assunto: newAssunto || null,
-        fonte_legal: newFonteLegal || null,
-        link_questoes: newLinkQ || null,
-        link_dod: newLinkD || null,
+        fonte_legal: cleanFontes[0]?.descricao || null,
+        link_questoes: cleanFontes[0]?.link_questoes || null,
+        link_dod: cleanFontes[0]?.link_dod || null,
         horas_estimadas: newHoras || 3,
         cor,
-      });
+        fontes: cleanFontes as any,
+      } as any);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -365,9 +428,7 @@ export default function MatrizTable({ cronogramaId, topicos, progress, isAdminOr
       setNewRow(false);
       setNewMateria("");
       setNewAssunto("");
-      setNewFonteLegal("");
-      setNewLinkQ("");
-      setNewLinkD("");
+      setNewFontes([{ sigla: "", descricao: "", link_questoes: "", link_dod: "" }]);
       setNewHoras(3);
       toast.success("Tópico adicionado!");
     },
@@ -398,7 +459,7 @@ export default function MatrizTable({ cronogramaId, topicos, progress, isAdminOr
               <th className="p-2 text-[10px] font-semibold text-muted-foreground uppercase w-12 text-center">#</th>
               <th className="p-2 text-[10px] font-semibold text-muted-foreground uppercase">Matéria</th>
               <th className="p-2 text-[10px] font-semibold text-muted-foreground uppercase">Assunto</th>
-              <th className="p-2 text-[10px] font-semibold text-muted-foreground uppercase">Fonte Legal</th>
+              <th className="p-2 text-[10px] font-semibold text-muted-foreground uppercase">Fontes</th>
               <th className="p-2 text-[10px] font-semibold text-muted-foreground uppercase text-center">Questões</th>
               <th className="p-2 text-[10px] font-semibold text-muted-foreground uppercase text-center">DOD</th>
               <th className="p-2 text-[10px] font-semibold text-muted-foreground uppercase text-center">Ações</th>
@@ -447,13 +508,14 @@ export default function MatrizTable({ cronogramaId, topicos, progress, isAdminOr
         <div className="mt-3">
           {newRow ? (
             <div className="space-y-2 p-3 rounded-lg border border-border/50 bg-muted/20">
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                 <Input placeholder="Matéria" value={newMateria} onChange={e => setNewMateria(e.target.value)} className="h-8 text-xs" />
                 <Input placeholder="Assunto" value={newAssunto} onChange={e => setNewAssunto(e.target.value)} className="h-8 text-xs" />
-                <Input placeholder="Fonte Legal" value={newFonteLegal} onChange={e => setNewFonteLegal(e.target.value)} className="h-8 text-xs" />
-                <Input placeholder="Link Questões (URL)" value={newLinkQ} onChange={e => setNewLinkQ(e.target.value)} className="h-8 text-xs" />
-                <Input placeholder="Link DOD (URL)" value={newLinkD} onChange={e => setNewLinkD(e.target.value)} className="h-8 text-xs" />
                 <Input type="number" placeholder="Horas estimadas" value={newHoras} onChange={e => setNewHoras(Number(e.target.value))} className="h-8 text-xs" min={1} />
+              </div>
+              <div>
+                <label className="text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">Fontes</label>
+                <FontesEditor fontes={newFontes} onChange={setNewFontes} />
               </div>
               <div className="flex gap-2">
                 <Button size="sm" className="h-8" disabled={!newMateria.trim()} onClick={() => addTopico.mutate()}>Adicionar</Button>
