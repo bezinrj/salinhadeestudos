@@ -172,71 +172,68 @@ function SortableAdminRow(props: {
 
 // Student row with checkbox
 function StudentRow({
-  topico, index, progress, onToggleConcluido, onToggleRevisao,
+  topico, index, progress, onToggleConcluido,
 }: {
   topico: TopicoMatriz;
   index: number;
   progress: UserProgress | undefined;
   onToggleConcluido: (topicoId: number) => void;
-  onToggleRevisao: (topicoId: number) => void;
 }) {
   const done = progress?.concluido ?? false;
-  const rev = progress?.para_revisao ?? false;
   const color = getMateriaColor(topico);
 
   return (
     <tr
-      className="border-b border-border/30 transition-all duration-200"
-      style={done ? { backgroundColor: "rgba(29, 158, 117, 0.08)" } : undefined}
+      className="border-b border-border/30"
+      style={{
+        backgroundColor: done ? "rgba(0,0,0,0.04)" : undefined,
+        transition: "all 0.25s ease",
+      }}
     >
       <td className="p-2 text-center w-12">
         <div className="flex items-center gap-1.5 justify-center">
           <Checkbox
             checked={done}
             onCheckedChange={() => onToggleConcluido(topico.id)}
-            className={`h-4 w-4 ${done ? "border-[#1D9E75] bg-[#1D9E75] text-white data-[state=checked]:bg-[#1D9E75] data-[state=checked]:border-[#1D9E75]" : ""}`}
+            className={`h-4 w-4 rounded ${done ? "border-[#1D9E75] bg-[#1D9E75] text-white data-[state=checked]:bg-[#1D9E75] data-[state=checked]:border-[#1D9E75]" : ""}`}
           />
-          <span className={`text-xs ${done ? "text-[#888780]" : "text-muted-foreground"}`}>{index + 1}</span>
+          <span style={{ fontSize: 12, color: done ? "#9ca3af" : undefined, transition: "all 0.25s ease" }} className={done ? "" : "text-muted-foreground"}>{index + 1}</span>
         </div>
       </td>
       <td className="p-2">
         <span
-          className="inline-block text-[10px] font-medium text-white rounded-full px-2.5 py-0.5 transition-opacity duration-200"
-          style={{ backgroundColor: color, opacity: done ? 0.5 : 1 }}
+          className="inline-block text-[10px] font-medium rounded-full px-2.5 py-0.5"
+          style={{
+            backgroundColor: done ? "#e5e7eb" : color,
+            color: done ? "#9ca3af" : "#ffffff",
+            transition: "all 0.25s ease",
+          }}
         >
           {topico.materia}
         </span>
       </td>
-      <td className={`p-2 text-xs transition-all duration-200 ${done ? "line-through text-[#888780]" : "text-foreground/90"}`}>
+      <td className="p-2 text-xs" style={{ textDecoration: done ? "line-through" : "none", color: done ? "#9ca3af" : undefined, transition: "all 0.25s ease" }}>
         {topico.assunto || "—"}
       </td>
-      <td className={`p-2 text-xs transition-all duration-200 ${done ? "text-[#888780]" : "text-foreground/70"}`}>
+      <td className="p-2 text-xs" style={{ color: done ? "#9ca3af" : undefined, transition: "all 0.25s ease" }}>
         {topico.fonte_legal || "—"}
       </td>
-      <td className="p-2 text-center">
+      <td className="p-2 text-center" style={{ transition: "all 0.25s ease" }}>
         {topico.link_questoes ? (
-          <a href={topico.link_questoes} target="_blank" rel="noopener noreferrer" className={`hover:text-primary/80 ${done ? "text-[#888780]" : "text-primary"}`}>
+          <a href={topico.link_questoes} target="_blank" rel="noopener noreferrer" style={{ color: done ? "#9ca3af" : undefined, transition: "all 0.25s ease" }} className={done ? "" : "text-primary hover:text-primary/80"}>
             <ExternalLink className="h-3.5 w-3.5 inline" />
           </a>
-        ) : "—"}
+        ) : <span style={{ color: done ? "#9ca3af" : undefined }}>—</span>}
       </td>
-      <td className="p-2 text-center">
+      <td className="p-2 text-center" style={{ transition: "all 0.25s ease" }}>
         {topico.link_dod ? (
-          <a href={topico.link_dod} target="_blank" rel="noopener noreferrer" className={`hover:text-primary/80 ${done ? "text-[#888780]" : "text-primary"}`}>
+          <a href={topico.link_dod} target="_blank" rel="noopener noreferrer" style={{ color: done ? "#9ca3af" : undefined, transition: "all 0.25s ease" }} className={done ? "" : "text-primary hover:text-primary/80"}>
             <ExternalLink className="h-3.5 w-3.5 inline" />
           </a>
-        ) : "—"}
+        ) : <span style={{ color: done ? "#9ca3af" : undefined }}>—</span>}
       </td>
-      <td className="p-2">
-        <div className="flex items-center gap-2 justify-center">
-          <button
-            onClick={() => onToggleRevisao(topico.id)}
-            className={`p-1 rounded transition-colors ${rev ? "text-amber-400" : "text-muted-foreground/50 hover:text-amber-400"}`}
-            title={rev ? "Remover revisão" : "Marcar para revisão"}
-          >
-            <BookmarkPlus className="h-3.5 w-3.5" />
-          </button>
-        </div>
+      <td className="p-2 text-center" style={{ color: done ? "#9ca3af" : undefined, transition: "all 0.25s ease" }}>
+        —
       </td>
     </tr>
   );
@@ -280,11 +277,22 @@ export default function MatrizTable({ cronogramaId, topicos, progress, isAdminOr
 
       // Bidirectional sync: update calendar events when marking completed
       if (concluido !== undefined) {
-        await supabase
-          .from("user_calendar_events")
-          .update({ concluido })
-          .eq("user_id", userId)
-          .eq("topico_id", topicoId);
+        if (concluido) {
+          // Mark all calendar events for this topic as completed
+          await supabase
+            .from("user_calendar_events")
+            .update({ concluido: true })
+            .eq("user_id", userId)
+            .eq("topico_id", topicoId);
+        } else {
+          // Only unmark non-revision events
+          await supabase
+            .from("user_calendar_events")
+            .update({ concluido: false })
+            .eq("user_id", userId)
+            .eq("topico_id", topicoId)
+            .eq("is_revisao", false);
+        }
       }
     },
     onSuccess: () => {
@@ -401,10 +409,6 @@ export default function MatrizTable({ cronogramaId, topicos, progress, isAdminOr
                   onToggleConcluido={(id) => {
                     const cur = progressMap.get(id);
                     upsertProgress.mutate({ topicoId: id, concluido: !(cur?.concluido) });
-                  }}
-                  onToggleRevisao={(id) => {
-                    const cur = progressMap.get(id);
-                    upsertProgress.mutate({ topicoId: id, para_revisao: !(cur?.para_revisao) });
                   }}
                 />
               ))}
