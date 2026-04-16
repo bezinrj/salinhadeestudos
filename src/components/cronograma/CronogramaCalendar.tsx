@@ -6,8 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ChevronLeft, ChevronRight, RotateCcw, Info, Play, Pause, Square } from "lucide-react";
+import { ChevronLeft, ChevronRight, RotateCcw, Info, Play, Pause, Square, X } from "lucide-react";
 import { toast } from "sonner";
 import type { TopicoMatriz } from "./MatrizTable";
 
@@ -38,24 +37,24 @@ function getFirstDayOfMonth(year: number, month: number) {
 
 const MONTH_NAMES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
-const MATERIA_COLORS: Record<string, string> = {
-  "Direito Constitucional": "bg-teal-500/20 text-teal-400 border-teal-500/30",
-  "Direito Civil": "bg-blue-500/20 text-blue-400 border-blue-500/30",
-  "Processo Civil": "bg-amber-500/20 text-amber-400 border-amber-500/30",
-  "Direito Processual Civil": "bg-amber-500/20 text-amber-400 border-amber-500/30",
-  "Direito Penal": "bg-red-400/20 text-red-400 border-red-400/30",
-  "Direito Processual Penal": "bg-orange-500/20 text-orange-400 border-orange-500/30",
-  "Direito Administrativo": "bg-cyan-500/20 text-cyan-400 border-cyan-500/30",
-  "Direito Tributário": "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
-  "Direito Empresarial": "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
-  "Direitos Humanos": "bg-indigo-500/20 text-indigo-400 border-indigo-500/30",
-  "Legislação Penal Especial": "bg-purple-500/20 text-purple-400 border-purple-500/30",
-  "Criminologia": "bg-rose-500/20 text-rose-400 border-rose-500/30",
-  "Medicina Legal": "bg-lime-500/20 text-lime-400 border-lime-500/30",
-};
+const COLOR_PALETTE = [
+  "#1D9E75", "#378ADD", "#D85A30", "#9B59B6", "#E67E22",
+  "#2ECC71", "#E74C3C", "#1ABC9C", "#3498DB", "#F39C12",
+  "#8E44AD", "#16A085",
+];
 
-function getMateriaColor(materia: string) {
-  return MATERIA_COLORS[materia] || "bg-muted/50 text-foreground/70 border-border/30";
+function hashString(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) - hash) + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash);
+}
+
+function getMateriaColor(topico: TopicoMatriz): string {
+  if (topico.cor) return topico.cor;
+  return COLOR_PALETTE[hashString(topico.materia) % COLOR_PALETTE.length];
 }
 
 function formatTime(seconds: number) {
@@ -81,8 +80,9 @@ export default function CronogramaCalendar({ cronogramaId, userId, events, topic
   const [viewYear, setViewYear] = useState(today.getFullYear());
   const [viewMonth, setViewMonth] = useState(today.getMonth());
   const [horasDia, setHorasDia] = useState(3);
-  const [popupDay, setPopupDay] = useState<string | null>(null);
+  const [detailDay, setDetailDay] = useState<string | null>(null);
   const [draggedEventId, setDraggedEventId] = useState<number | null>(null);
+  const [dropTarget, setDropTarget] = useState<string | null>(null);
 
   // Timer state
   const [running, setRunning] = useState(false);
@@ -93,12 +93,29 @@ export default function CronogramaCalendar({ cronogramaId, userId, events, topic
 
   const topicoMap = useMemo(() => new Map(topicos.map(t => [t.id, t])), [topicos]);
 
+  // Build color map from topicos
+  const colorMap = useMemo(() => {
+    const m = new Map<number, string>();
+    topicos.forEach(t => m.set(t.id, getMateriaColor(t)));
+    return m;
+  }, [topicos]);
+
+  // Auto-save generated colors to DB
+  useEffect(() => {
+    const toUpdate = topicos.filter(t => !t.cor);
+    if (toUpdate.length === 0) return;
+    toUpdate.forEach(t => {
+      const color = COLOR_PALETTE[hashString(t.materia) % COLOR_PALETTE.length];
+      supabase.from("cronograma_matriz").update({ cor: color }).eq("id", t.id).then(() => {});
+    });
+    queryClient.invalidateQueries({ queryKey: ["cronograma-matriz", cronogramaId] });
+  }, [topicos]);
+
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
   const dayLabel = `${WEEKDAYS[today.getDay()]}, ${today.getDate()} de ${MONTHS_LABEL[today.getMonth()]}`;
 
   const todayEvents = useMemo(() => events.filter(e => e.data === todayStr && !e.concluido), [events, todayStr]);
 
-  // Session data per event
   const [sessionData, setSessionData] = useState<Record<number, { tempo: string; questoes: number; acertos: number; concluir: boolean }>>({});
 
   const daysInMonth = getDaysInMonth(viewYear, viewMonth);
@@ -112,6 +129,36 @@ export default function CronogramaCalendar({ cronogramaId, userId, events, topic
     });
     return map;
   }, [events]);
+
+  // Legend: unique materias in current month + status pills
+  const legendItems = useMemo(() => {
+    const monthPrefix = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}`;
+    const monthEvents = events.filter(e => e.data.startsWith(monthPrefix));
+    const materiaSet = new Map<string, string>();
+    let hasRevisao = false;
+    let hasAtrasado1 = false;
+    let hasAtrasado4 = false;
+
+    monthEvents.forEach(e => {
+      const t = topicoMap.get(e.topico_id);
+      if (t) {
+        materiaSet.set(t.materia, colorMap.get(t.id) || "#888");
+      }
+      if (e.is_revisao && !e.concluido) hasRevisao = true;
+      if (!e.concluido) {
+        const diff = Math.floor((today.getTime() - new Date(e.data + "T23:59:59").getTime()) / 86400000);
+        if (diff >= 4) hasAtrasado4 = true;
+        else if (diff >= 1) hasAtrasado1 = true;
+      }
+    });
+
+    const items: { label: string; color: string }[] = [];
+    materiaSet.forEach((color, name) => items.push({ label: name, color }));
+    if (hasRevisao) items.push({ label: "Revisão", color: "#378ADD" });
+    if (hasAtrasado1) items.push({ label: "Atrasado +1 dia", color: "#EF9F27" });
+    if (hasAtrasado4) items.push({ label: "Atrasado +4 dias", color: "#E24B4A" });
+    return items;
+  }, [events, viewYear, viewMonth, topicoMap, colorMap]);
 
   const navMonth = (dir: number) => {
     let m = viewMonth + dir;
@@ -141,17 +188,14 @@ export default function CronogramaCalendar({ cronogramaId, userId, events, topic
 
   const recalculate = useMutation({
     mutationFn: async () => {
-      // Delete incomplete non-revision events
       const toDelete = events.filter(e => !e.concluido && !e.is_revisao);
       for (const e of toDelete) {
         await supabase.from("user_calendar_events").delete().eq("id", e.id);
       }
 
-      // Get pending topicos (not completed)
       const completedTopicoIds = new Set(events.filter(e => e.concluido).map(e => e.topico_id));
       const pendingTopicos = topicos.filter(t => !completedTopicoIds.has(t.id));
 
-      // Distribute starting from TODAY, skip sundays
       let currentDate = new Date();
       currentDate.setHours(12, 0, 0, 0);
       let hoursLeft = horasDia;
@@ -196,33 +240,17 @@ export default function CronogramaCalendar({ cronogramaId, userId, events, topic
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["calendar-events", cronogramaId] }),
   });
 
-  const handleDragStart = (eventId: number) => setDraggedEventId(eventId);
+  const handleDragStart = (eventId: number, ev: CalendarEvent) => {
+    if (ev.concluido) return;
+    setDraggedEventId(eventId);
+  };
   const handleDrop = (dayStr: string) => {
     if (draggedEventId !== null) {
       moveEvent.mutate({ eventId: draggedEventId, newDate: dayStr });
       setDraggedEventId(null);
+      setDropTarget(null);
     }
   };
-
-  const getCellColor = useCallback((dayStr: string, dayEvents: CalendarEvent[]) => {
-    const isToday = dayStr === todayStr;
-    const hasRevisao = dayEvents.some(e => e.is_revisao && !e.concluido);
-    const overdueDays = dayEvents.reduce((max, e) => {
-      if (e.concluido) return max;
-      const diff = Math.floor((today.getTime() - new Date(e.data + "T23:59:59").getTime()) / 86400000);
-      return Math.max(max, diff);
-    }, 0);
-
-    let bg = "bg-card/50";
-    let border = "border-border/30";
-
-    if (hasRevisao) { bg = "bg-blue-500/5"; border = "border-blue-500/40"; }
-    if (overdueDays >= 4) { bg = "bg-red-500/5"; border = "border-red-500/40"; }
-    else if (overdueDays >= 1) { bg = "bg-amber-500/5"; border = "border-amber-500/40"; }
-    if (isToday) border = "border-primary border-2";
-
-    return `${bg} ${border}`;
-  }, [todayStr]);
 
   // --- Timer functions ---
   const startTimer = () => {
@@ -230,17 +258,14 @@ export default function CronogramaCalendar({ cronogramaId, userId, events, topic
     setPaused(false);
     intervalRef.current = setInterval(() => setElapsed(p => p + 1), 1000);
   };
-
   const pauseTimer = () => {
     setPaused(true);
     if (intervalRef.current) clearInterval(intervalRef.current);
   };
-
   const resumeTimer = () => {
     setPaused(false);
     intervalRef.current = setInterval(() => setElapsed(p => p + 1), 1000);
   };
-
   const stopTimer = () => {
     setRunning(false);
     setPaused(false);
@@ -304,21 +329,34 @@ export default function CronogramaCalendar({ cronogramaId, userId, events, topic
     onError: () => toast.error("Erro ao salvar sessão"),
   });
 
-  // Popup status helper
   function getEventStatus(ev: CalendarEvent) {
-    if (ev.concluido) return { label: "✓ Concluído", color: "text-green-400" };
+    if (ev.concluido) return { label: "✓ Concluído", color: "#1D9E75" };
     const diff = Math.floor((today.getTime() - new Date(ev.data + "T23:59:59").getTime()) / 86400000);
-    if (diff >= 4) return { label: "Atrasado", color: "text-[#E24B4A]" };
-    if (diff >= 1) return { label: "Atrasado", color: "text-[#EF9F27]" };
-    return { label: "Pendente", color: "text-muted-foreground" };
+    if (diff >= 4) return { label: `Atrasado ${diff} dias`, color: "#E24B4A" };
+    if (diff >= 1) return { label: `Atrasado ${diff} dia${diff > 1 ? "s" : ""}`, color: "#EF9F27" };
+    return { label: "Pendente", color: "#9CA3AF" };
   }
 
   const dayNames = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
-
   const cells: (number | null)[] = [];
   for (let i = 0; i < firstDay; i++) cells.push(null);
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);
   while (cells.length % 7 !== 0) cells.push(null);
+
+  // Detail modal data
+  const detailEvents = detailDay ? (eventsByDay[detailDay] || []) : [];
+  const detailDate = detailDay ? new Date(detailDay + "T12:00:00") : null;
+  const detailDateLabel = detailDate
+    ? `${WEEKDAYS[detailDate.getDay()]}, ${detailDate.getDate()} de ${MONTHS_LABEL[detailDate.getMonth()]} de ${detailDate.getFullYear()}`
+    : "";
+
+  // Dragged event color for drop target highlight
+  const draggedColor = useMemo(() => {
+    if (!draggedEventId) return null;
+    const ev = events.find(e => e.id === draggedEventId);
+    if (!ev) return null;
+    return colorMap.get(ev.topico_id) || "#888";
+  }, [draggedEventId, events, colorMap]);
 
   return (
     <div className="space-y-4">
@@ -330,10 +368,15 @@ export default function CronogramaCalendar({ cronogramaId, userId, events, topic
             <div className="flex flex-wrap gap-1.5 mt-2">
               {todayEvents.map(ev => {
                 const t = topicoMap.get(ev.topico_id);
+                const color = colorMap.get(ev.topico_id) || "#888";
                 return (
-                  <Badge key={ev.id} variant="outline" className="text-[10px]">
+                  <span
+                    key={ev.id}
+                    className="text-[10px] font-medium text-white rounded-full px-2.5 py-0.5"
+                    style={{ backgroundColor: color }}
+                  >
                     {ev.is_revisao ? "Rev: " : ""}{t?.materia || "?"}
-                  </Badge>
+                  </span>
                 );
               })}
             </div>
@@ -348,7 +391,7 @@ export default function CronogramaCalendar({ cronogramaId, userId, events, topic
               </Button>
             ) : (
               <>
-                <div className={`text-3xl font-mono font-bold tabular-nums ${paused ? "text-amber-400" : "text-green-400"}`} style={{ fontVariantNumeric: "tabular-nums" }}>
+                <div className={`text-3xl font-mono font-bold ${paused ? "text-amber-400" : "text-green-400"}`} style={{ fontVariantNumeric: "tabular-nums" }}>
                   {formatTime(elapsed)}
                 </div>
                 {paused ? (
@@ -398,111 +441,175 @@ export default function CronogramaCalendar({ cronogramaId, userId, events, topic
         </CardContent>
       </Card>
 
-      {/* Calendar Grid */}
-      <div className="rounded-xl border border-border/50 bg-card/30 overflow-hidden">
+      {/* Legend */}
+      {legendItems.length > 0 && (
+        <div className="flex flex-wrap gap-3 px-1">
+          {legendItems.map(item => (
+            <div key={item.label} className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }} />
+              <span className="text-xs text-foreground/70">{item.label}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Calendar Grid - Clean layout */}
+      <div className="rounded-xl border border-[#e5e7eb] dark:border-border/50 overflow-hidden bg-white dark:bg-card/30">
         <div className="grid grid-cols-7">
           {dayNames.map(d => (
-            <div key={d} className="p-2 text-center text-[10px] font-semibold text-muted-foreground uppercase border-b border-border/30 bg-muted/20">
+            <div key={d} className="p-2 text-center text-[11px] font-semibold text-muted-foreground uppercase border-b border-[#e5e7eb] dark:border-border/30 bg-gray-50 dark:bg-muted/20">
               {d}
             </div>
           ))}
           {cells.map((day, i) => {
-            if (day === null) return <div key={i} className="min-h-[80px] border-b border-r border-border/20 bg-muted/5" />;
+            if (day === null) return <div key={i} className="min-h-[80px] border-b border-r border-[#e5e7eb] dark:border-border/20 bg-gray-50/50 dark:bg-muted/5" />;
 
             const dayStr = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
             const dayEvents = eventsByDay[dayStr] || [];
-            const cellColor = getCellColor(dayStr, dayEvents);
+            const isToday = dayStr === todayStr;
+            const isDropTarget = dropTarget === dayStr && draggedEventId !== null;
 
             return (
               <div
                 key={i}
-                className={`min-h-[80px] border-b border-r border-border/20 p-1 relative ${cellColor}`}
-                onDragOver={e => e.preventDefault()}
+                className={`min-h-[80px] border-b border-r border-[#e5e7eb] dark:border-border/20 p-1.5 transition-all duration-200 ${
+                  isToday ? "ring-2 ring-primary ring-inset bg-primary/5" : "bg-white dark:bg-card/30"
+                }`}
+                style={isDropTarget && draggedColor ? {
+                  borderColor: draggedColor,
+                  borderWidth: 2,
+                  backgroundColor: `${draggedColor}10`,
+                } : undefined}
+                onDragOver={e => { e.preventDefault(); setDropTarget(dayStr); }}
+                onDragLeave={() => setDropTarget(null)}
                 onDrop={() => handleDrop(dayStr)}
               >
-                <div className="flex items-center justify-between mb-0.5">
-                  <span className={`text-[11px] font-medium ${dayStr === todayStr ? "text-primary font-bold" : "text-foreground/70"}`}>{day}</span>
+                <div className="flex items-center justify-between mb-1">
+                  <span className={`text-[12px] font-medium ${isToday ? "text-primary font-bold" : "text-foreground/60"}`}>{day}</span>
                   {dayEvents.length > 0 && (
                     <button
-                      onClick={() => setPopupDay(popupDay === dayStr ? null : dayStr)}
-                      className="w-5 h-5 rounded-full bg-primary/20 text-primary flex items-center justify-center hover:bg-primary/30"
+                      onClick={() => setDetailDay(dayStr)}
+                      className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center hover:bg-primary/20 transition-colors"
                     >
                       <Info className="h-3 w-3" />
                     </button>
                   )}
                 </div>
-                {dayEvents.slice(0, 2).map(ev => {
+                {/* All events shown - no truncation */}
+                {dayEvents.map(ev => {
                   const t = topicoMap.get(ev.topico_id);
                   const materia = t?.materia || "—";
-                  const colorClass = ev.concluido
-                    ? "bg-green-500/15 text-green-400 border border-green-500/30 line-through"
-                    : ev.is_revisao
-                    ? "bg-blue-500/15 text-blue-400 border border-blue-500/30"
-                    : `border ${getMateriaColor(materia)}`;
+                  const color = colorMap.get(ev.topico_id) || "#888";
+
+                  let pillBg = color;
+                  let pillText = "white";
+                  let extraClass = "";
+
+                  if (ev.concluido) {
+                    pillBg = "#9CA3AF";
+                    extraClass = "line-through opacity-60";
+                  } else if (ev.is_revisao) {
+                    pillBg = "#378ADD";
+                  }
+
                   return (
                     <div
                       key={ev.id}
                       draggable={!ev.concluido}
-                      onDragStart={() => handleDragStart(ev.id)}
-                      className={`text-[9px] px-1.5 py-0.5 rounded-full mb-0.5 truncate cursor-move font-medium ${colorClass}`}
+                      onDragStart={() => handleDragStart(ev.id, ev)}
+                      className={`text-[11px] px-2 py-[2px] rounded-full mb-[3px] font-medium transition-all duration-200 ${
+                        ev.concluido ? "cursor-default" : "cursor-grab active:cursor-grabbing"
+                      } ${extraClass}`}
+                      style={{
+                        backgroundColor: pillBg,
+                        color: pillText,
+                        opacity: draggedEventId === ev.id ? 0.5 : undefined,
+                      }}
                     >
                       {ev.is_revisao ? "Rev: " : ""}{materia}
                     </div>
                   );
                 })}
-                {dayEvents.length > 2 && (
-                  <span className="text-[8px] text-muted-foreground">+{dayEvents.length - 2}</span>
-                )}
-
-                {/* Popup */}
-                {popupDay === dayStr && dayEvents.length > 0 && (
-                  <div className="absolute z-50 top-full left-0 mt-1 w-64 bg-popover border border-border rounded-lg shadow-lg p-3 space-y-2" style={{ maxHeight: 300, overflowY: "auto" }}>
-                    {dayEvents.map(ev => {
-                      const t = topicoMap.get(ev.topico_id);
-                      const status = getEventStatus(ev);
-                      return (
-                        <div key={ev.id} className="p-2 rounded-lg bg-muted/30 border border-border/30">
-                          <Badge variant="outline" className={`text-[9px] px-1 py-0 mb-1 ${getMateriaColor(t?.materia || "")}`}>{t?.materia || "?"}</Badge>
-                          <p className="text-[11px] text-foreground/80">{t?.assunto || "—"}</p>
-                          <p className="text-[9px] text-muted-foreground">{t?.fonte_legal || ""}</p>
-                          {(t?.link_questoes || t?.link_dod) && (
-                            <div className="flex gap-2 mt-1">
-                              {t?.link_questoes && <a href={t.link_questoes} target="_blank" rel="noopener noreferrer" className="text-[9px] text-primary">Questões</a>}
-                              {t?.link_dod && <a href={t.link_dod} target="_blank" rel="noopener noreferrer" className="text-[9px] text-primary">DOD</a>}
-                            </div>
-                          )}
-                          <p className={`text-[9px] mt-1 font-semibold ${status.color}`}>
-                            {status.label}
-                          </p>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
               </div>
             );
           })}
         </div>
       </div>
 
-      {/* Session Modal */}
-      <Dialog open={showModal} onOpenChange={setShowModal}>
-        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Registrar sessão de estudo</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            {todayEvents.map(ev => {
-              const t = topicoMap.get(ev.topico_id);
-              const d = sessionData[ev.id];
-              if (!d) return null;
-              const pct = d.questoes > 0 ? Math.round(Math.min(d.acertos, d.questoes) / d.questoes * 100) : null;
+      {/* Detail Modal - Centered */}
+      {detailDay && detailEvents.length > 0 && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => setDetailDay(null)}>
+          <div className="absolute inset-0 bg-black/50" />
+          <div
+            className="relative bg-white dark:bg-[#1a1a1a] rounded-xl shadow-2xl w-[420px] max-h-[80vh] overflow-y-auto p-6"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-foreground capitalize">{detailDateLabel}</h3>
+              <button onClick={() => setDetailDay(null)} className="w-7 h-7 rounded-full bg-muted/50 flex items-center justify-center hover:bg-muted transition-colors">
+                <X className="h-4 w-4 text-foreground/70" />
+              </button>
+            </div>
+            <div className="space-y-3">
+              {detailEvents.map(ev => {
+                const t = topicoMap.get(ev.topico_id);
+                const color = colorMap.get(ev.topico_id) || "#888";
+                const status = getEventStatus(ev);
+                return (
+                  <div key={ev.id} className="p-3 rounded-lg border border-[#e5e7eb] dark:border-border/30 bg-gray-50 dark:bg-muted/20">
+                    <span
+                      className="inline-block text-[10px] font-medium text-white rounded-full px-2.5 py-0.5 mb-1.5"
+                      style={{ backgroundColor: ev.concluido ? "#9CA3AF" : ev.is_revisao ? "#378ADD" : color }}
+                    >
+                      {ev.is_revisao ? "Rev: " : ""}{t?.materia || "?"}
+                    </span>
+                    <p className="text-[12px] text-foreground/80 font-medium">{t?.assunto || "—"}</p>
+                    {t?.fonte_legal && <p className="text-[11px] text-muted-foreground mt-0.5">{t.fonte_legal}</p>}
+                    {(t?.link_questoes || t?.link_dod) && (
+                      <div className="flex gap-3 mt-1.5">
+                        {t?.link_questoes && <a href={t.link_questoes} target="_blank" rel="noopener noreferrer" className="text-[11px] text-primary hover:underline">Questões ↗</a>}
+                        {t?.link_dod && <a href={t.link_dod} target="_blank" rel="noopener noreferrer" className="text-[11px] text-primary hover:underline">DOD ↗</a>}
+                      </div>
+                    )}
+                    <p className="text-[11px] mt-1.5 font-semibold" style={{ color: status.color }}>
+                      {status.label}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
-              return (
-                <Card key={ev.id} className="border-border/50">
-                  <CardContent className="p-4 space-y-3">
+      {/* Session Modal */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => { setShowModal(false); setElapsed(0); }}>
+          <div className="absolute inset-0 bg-black/50" />
+          <div
+            className="relative bg-white dark:bg-[#1a1a1a] rounded-xl shadow-2xl w-[480px] max-h-[80vh] overflow-y-auto p-6"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base font-semibold text-foreground">Registrar sessão de estudo</h3>
+              <button onClick={() => { setShowModal(false); setElapsed(0); }} className="w-7 h-7 rounded-full bg-muted/50 flex items-center justify-center hover:bg-muted transition-colors">
+                <X className="h-4 w-4 text-foreground/70" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              {todayEvents.map(ev => {
+                const t = topicoMap.get(ev.topico_id);
+                const color = colorMap.get(ev.topico_id) || "#888";
+                const d = sessionData[ev.id];
+                if (!d) return null;
+                const pct = d.questoes > 0 ? Math.round(Math.min(d.acertos, d.questoes) / d.questoes * 100) : null;
+
+                return (
+                  <div key={ev.id} className="p-4 rounded-lg border border-[#e5e7eb] dark:border-border/30 bg-gray-50 dark:bg-muted/20 space-y-3">
                     <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="text-[10px]">{t?.materia || "?"}</Badge>
+                      <span className="text-[10px] font-medium text-white rounded-full px-2.5 py-0.5" style={{ backgroundColor: color }}>
+                        {t?.materia || "?"}
+                      </span>
                       <span className="text-xs text-foreground/80">{t?.assunto || ""}</span>
                     </div>
                     {t?.fonte_legal && <p className="text-[10px] text-muted-foreground">{t.fonte_legal}</p>}
@@ -538,20 +645,20 @@ export default function CronogramaCalendar({ cronogramaId, userId, events, topic
                       <Switch checked={d.concluir} onCheckedChange={v => updateField(ev.id, "concluir", v)} />
                       <span className="text-xs text-foreground/80">Marcar como concluída</span>
                     </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
+                  </div>
+                );
+              })}
 
-            <div className="flex gap-2">
-              <Button variant="outline" className="flex-1" onClick={() => { setShowModal(false); setElapsed(0); }}>Descartar</Button>
-              <Button className="flex-1" onClick={() => saveSessions.mutate()} disabled={saveSessions.isPending}>
-                {saveSessions.isPending ? "Salvando..." : "Salvar sessão"}
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1" onClick={() => { setShowModal(false); setElapsed(0); }}>Descartar</Button>
+                <Button className="flex-1" onClick={() => saveSessions.mutate()} disabled={saveSessions.isPending}>
+                  {saveSessions.isPending ? "Salvando..." : "Salvar sessão"}
+                </Button>
+              </div>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+      )}
     </div>
   );
 }

@@ -83,6 +83,7 @@ export type Database = {
       cronograma_matriz: {
         Row: {
           assunto: string | null
+          cor: string | null
           created_at: string
           cronograma_id: string
           fonte_legal: string | null
@@ -95,6 +96,7 @@ export type Database = {
         }
         Insert: {
           assunto?: string | null
+          cor?: string | null
           created_at?: string
           cronograma_id: string
           fonte_legal?: string | null
@@ -107,6 +109,7 @@ export type Database = {
         }
         Update: {
           assunto?: string | null
+          cor?: string | null
           created_at?: string
           cronograma_id?: string
           fonte_legal?: string | null
