@@ -619,9 +619,9 @@ export default function CronogramaCalendar({ cronogramaId, userId, events, topic
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-semibold" style={{ color: "#111827" }}>Registrar sessão de estudo</h3>
-              <button onClick={() => { setShowModal(false); setElapsed(0); }} className="w-7 h-7 rounded-full flex items-center justify-center hover:opacity-70 transition-opacity" style={{ backgroundColor: "#f3f4f6" }}>
-                <X className="h-4 w-4" style={{ color: "#6b7280" }} />
+              <h3 style={{ fontSize: 16, fontWeight: 500, color: "#111827" }}>Registrar sessão de estudo</h3>
+              <button onClick={() => { setShowModal(false); setElapsed(0); }} className="w-7 h-7 rounded-full flex items-center justify-center hover:opacity-70 transition-opacity" style={{ backgroundColor: "#e5e7eb" }}>
+                <X className="h-4 w-4" style={{ color: "#9ca3af" }} />
               </button>
             </div>
             <div className="space-y-4">
@@ -635,7 +635,7 @@ export default function CronogramaCalendar({ cronogramaId, userId, events, topic
                 return (
                   <div key={ev.id} className="p-4 rounded-lg space-y-3 bg-[#f9fafb] dark:bg-[#2a2a3e] border border-[#e5e7eb] dark:border-[#3a3a4e]">
                     <div className="flex items-center gap-2">
-                      <span className="text-[11px] font-medium text-white rounded-full px-2.5 py-0.5" style={{ backgroundColor: color }}>
+                      <span className="text-[11px] font-medium rounded-full px-2.5 py-0.5" style={{ backgroundColor: "#f3f4f6", color: "#374151" }}>
                         {t?.materia || "?"}
                       </span>
                       <span style={{ color: "#374151", fontSize: "13px" }}>{t?.assunto || ""}</span>
@@ -689,7 +689,7 @@ export default function CronogramaCalendar({ cronogramaId, userId, events, topic
                               borderRadius: 999,
                               width: `${pct}%`,
                               transition: "width 0.3s",
-                              backgroundColor: pct < 50 ? "#E24B4A" : pct < 60 ? "#EF9F27" : pct < 80 ? "#22c55e" : "#15803d",
+                              backgroundColor: "#9ca3af",
                             }}
                           />
                         </div>
@@ -707,7 +707,7 @@ export default function CronogramaCalendar({ cronogramaId, userId, events, topic
               <div className="flex gap-2">
                 <button
                   className="flex-1 py-2 rounded-lg font-medium text-sm transition-colors hover:opacity-80"
-                  style={{ backgroundColor: "#f3f4f6", color: "#374151", border: "1px solid #d1d5db" }}
+                  style={{ backgroundColor: "#f3f4f6", color: "#374151", border: "1px solid #e5e7eb" }}
                   onClick={() => { setShowModal(false); setElapsed(0); }}
                 >
                   Descartar
