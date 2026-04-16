@@ -216,6 +216,10 @@ export default function MatrizTable({ cronogramaId, topicos, progress, isAdminOr
   const [newRow, setNewRow] = useState(false);
   const [newMateria, setNewMateria] = useState("");
   const [newAssunto, setNewAssunto] = useState("");
+  const [newFonteLegal, setNewFonteLegal] = useState("");
+  const [newLinkQ, setNewLinkQ] = useState("");
+  const [newLinkD, setNewLinkD] = useState("");
+  const [newHoras, setNewHoras] = useState(3);
 
   const progressMap = new Map(progress.map(p => [p.topico_id, p]));
   const pending = topicos.filter(t => !progressMap.get(t.id)?.concluido);
@@ -277,6 +281,10 @@ export default function MatrizTable({ cronogramaId, topicos, progress, isAdminOr
         ordem: maxOrdem + 1,
         materia: newMateria,
         assunto: newAssunto || null,
+        fonte_legal: newFonteLegal || null,
+        link_questoes: newLinkQ || null,
+        link_dod: newLinkD || null,
+        horas_estimadas: newHoras || 3,
       });
       if (error) throw error;
     },
@@ -285,6 +293,10 @@ export default function MatrizTable({ cronogramaId, topicos, progress, isAdminOr
       setNewRow(false);
       setNewMateria("");
       setNewAssunto("");
+      setNewFonteLegal("");
+      setNewLinkQ("");
+      setNewLinkD("");
+      setNewHoras(3);
       toast.success("Tópico adicionado!");
     },
   });
@@ -314,7 +326,7 @@ export default function MatrizTable({ cronogramaId, topicos, progress, isAdminOr
                 <th className="p-2 text-[10px] font-semibold text-muted-foreground uppercase">Matéria</th>
                 <th className="p-2 text-[10px] font-semibold text-muted-foreground uppercase">Assunto</th>
                 <th className="p-2 text-[10px] font-semibold text-muted-foreground uppercase">Fonte Legal</th>
-                <th className="p-2 text-[10px] font-semibold text-muted-foreground uppercase text-center">Questões TEC</th>
+                <th className="p-2 text-[10px] font-semibold text-muted-foreground uppercase text-center">Questões</th>
                 <th className="p-2 text-[10px] font-semibold text-muted-foreground uppercase text-center">DOD</th>
                 <th className="p-2 text-[10px] font-semibold text-muted-foreground uppercase text-center">Ações</th>
               </tr>
@@ -360,11 +372,19 @@ export default function MatrizTable({ cronogramaId, topicos, progress, isAdminOr
         {isAdminOrMod && (
           <div className="mt-3">
             {newRow ? (
-              <div className="flex gap-2 items-center">
-                <Input placeholder="Matéria" value={newMateria} onChange={e => setNewMateria(e.target.value)} className="h-8 text-xs" />
-                <Input placeholder="Assunto" value={newAssunto} onChange={e => setNewAssunto(e.target.value)} className="h-8 text-xs" />
-                <Button size="sm" className="h-8" disabled={!newMateria.trim()} onClick={() => addTopico.mutate()}>Adicionar</Button>
-                <Button size="sm" variant="ghost" className="h-8" onClick={() => setNewRow(false)}>✕</Button>
+              <div className="space-y-2 p-3 rounded-lg border border-border/50 bg-muted/20">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
+                  <Input placeholder="Matéria" value={newMateria} onChange={e => setNewMateria(e.target.value)} className="h-8 text-xs" />
+                  <Input placeholder="Assunto" value={newAssunto} onChange={e => setNewAssunto(e.target.value)} className="h-8 text-xs" />
+                  <Input placeholder="Fonte Legal" value={newFonteLegal} onChange={e => setNewFonteLegal(e.target.value)} className="h-8 text-xs" />
+                  <Input placeholder="Link Questões (URL)" value={newLinkQ} onChange={e => setNewLinkQ(e.target.value)} className="h-8 text-xs" />
+                  <Input placeholder="Link DOD (URL)" value={newLinkD} onChange={e => setNewLinkD(e.target.value)} className="h-8 text-xs" />
+                  <Input type="number" placeholder="Horas" value={newHoras} onChange={e => setNewHoras(Number(e.target.value))} className="h-8 text-xs" min={1} />
+                </div>
+                <div className="flex gap-2">
+                  <Button size="sm" className="h-8" disabled={!newMateria.trim()} onClick={() => addTopico.mutate()}>Adicionar</Button>
+                  <Button size="sm" variant="ghost" className="h-8" onClick={() => setNewRow(false)}>✕</Button>
+                </div>
               </div>
             ) : (
               <Button size="sm" variant="outline" className="gap-1" onClick={() => setNewRow(true)}>
