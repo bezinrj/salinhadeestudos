@@ -79,14 +79,24 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               ))}
               {(isAdmin || isModerator) && (
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={isActive("/admin")}>
-                    <NavLink to="/admin" className="hover:bg-secondary/50" activeClassName="bg-secondary text-primary font-medium">
-                      <Shield className="mr-2 h-4 w-4" />
-                      {!collapsed && <span>Admin</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
+                <>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={isActive("/cronograma")}>
+                      <NavLink to="/cronograma" className="hover:bg-secondary/50" activeClassName="bg-secondary text-primary font-medium">
+                        <CalendarRange className="mr-2 h-4 w-4" />
+                        {!collapsed && <span>Cronograma</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={isActive("/admin")}>
+                      <NavLink to="/admin" className="hover:bg-secondary/50" activeClassName="bg-secondary text-primary font-medium">
+                        <Shield className="mr-2 h-4 w-4" />
+                        {!collapsed && <span>Admin</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </>
               )}
             </SidebarMenu>
           </SidebarGroupContent>
