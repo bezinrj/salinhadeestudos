@@ -122,7 +122,7 @@ export type Database = {
             foreignKeyName: "cronograma_matriz_cronograma_id_fkey"
             columns: ["cronograma_id"]
             isOneToOne: false
-            referencedRelation: "cronogramas"
+            referencedRelation: "schedules"
             referencedColumns: ["id"]
           },
         ]
