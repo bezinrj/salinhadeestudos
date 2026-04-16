@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +19,12 @@ export type FonteItem = {
   descricao: string;
   link_questoes: string;
   link_dod: string;
+};
+
+export type FonteProgress = {
+  topico_id: number;
+  sigla: string;
+  concluido: boolean;
 };
 
 export type TopicoMatriz = {
@@ -65,7 +71,6 @@ function parseFontes(topico: TopicoMatriz): FonteItem[] {
   if (topico.fontes && Array.isArray(topico.fontes) && topico.fontes.length > 0) {
     return topico.fontes;
   }
-  // Fallback: migrate old single fields into array
   if (topico.fonte_legal || topico.link_questoes || topico.link_dod) {
     return [{
       sigla: "",
@@ -77,7 +82,7 @@ function parseFontes(topico: TopicoMatriz): FonteItem[] {
   return [];
 }
 
-// ─── Fontes editor (used in admin edit mode and add form) ───
+// ─── Fontes editor (admin edit/add) ───
 function FontesEditor({ fontes, onChange }: { fontes: FonteItem[]; onChange: (f: FonteItem[]) => void }) {
   const update = (idx: number, field: keyof FonteItem, value: string) => {
     const copy = [...fontes];
@@ -92,11 +97,7 @@ function FontesEditor({ fontes, onChange }: { fontes: FonteItem[]; onChange: (f:
       {fontes.map((f, i) => (
         <div key={i} className="flex flex-col gap-1.5 p-2 rounded-md border border-border/40 bg-muted/10 relative">
           {fontes.length > 1 && (
-            <button
-              type="button"
-              onClick={() => remove(i)}
-              className="absolute top-1 right-1 text-muted-foreground hover:text-destructive"
-            >
+            <button type="button" onClick={() => remove(i)} className="absolute top-1 right-1 text-muted-foreground hover:text-destructive">
               <X className="h-3.5 w-3.5" />
             </button>
           )}
@@ -117,17 +118,53 @@ function FontesEditor({ fontes, onChange }: { fontes: FonteItem[]; onChange: (f:
   );
 }
 
-// ─── Read-only fontes display ───
-function FontesDisplay({ fontes, done }: { fontes: FonteItem[]; done: boolean }) {
+// ─── Read-only fontes display with individual checkboxes ───
+function FontesDisplayWithCheckbox({
+  fontes, done, topicoId, fonteProgressMap, onToggleFonte,
+}: {
+  fontes: FonteItem[];
+  done: boolean;
+  topicoId: number;
+  fonteProgressMap: Map<string, boolean>;
+  onToggleFonte: (topicoId: number, sigla: string, current: boolean) => void;
+}) {
   if (fontes.length === 0) return <span style={{ color: done ? "#9ca3af" : undefined }}>—</span>;
   return (
-    <div className="space-y-0.5">
-      {fontes.map((f, i) => (
-        <div key={i} className="text-xs flex items-center gap-1.5 flex-wrap" style={{ color: done ? "#9ca3af" : undefined, transition: "all 0.25s ease" }}>
-          {f.sigla && <span className="font-semibold">{f.sigla}</span>}
-          {f.descricao && <span>{f.descricao}</span>}
-        </div>
-      ))}
+    <div>
+      {fontes.map((f, i) => {
+        const key = `${topicoId}:${f.sigla}`;
+        const checked = fonteProgressMap.get(key) ?? false;
+        const fonteDone = done || checked;
+        return (
+          <div key={i} style={{ marginBottom: i < fontes.length - 1 ? 8 : 0 }} className="flex items-start gap-2">
+            <Checkbox
+              checked={checked}
+              onCheckedChange={() => onToggleFonte(topicoId, f.sigla, checked)}
+              className={`h-4 w-4 rounded mt-0.5 shrink-0 ${checked ? "border-[#1D9E75] bg-[#1D9E75] text-white data-[state=checked]:bg-[#1D9E75] data-[state=checked]:border-[#1D9E75]" : ""}`}
+            />
+            <div className="flex items-baseline gap-1.5 flex-wrap">
+              {f.sigla && (
+                <span style={{
+                  fontWeight: 600, fontSize: 12, minWidth: 40, display: "inline-block",
+                  color: fonteDone ? "#9ca3af" : undefined,
+                  transition: "all 0.25s ease",
+                }}>
+                  {f.sigla}
+                </span>
+              )}
+              {f.descricao && (
+                <span style={{
+                  fontSize: 12, color: fonteDone ? "#9ca3af" : "#6b7280",
+                  textDecoration: checked ? "line-through" : "none",
+                  transition: "all 0.25s ease",
+                }}>
+                  {f.descricao}
+                </span>
+              )}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -136,7 +173,7 @@ function FontesLinks({ fontes, done, type }: { fontes: FonteItem[]; done: boolea
   const links = fontes.filter(f => f[type]);
   if (links.length === 0) return <span style={{ color: done ? "#9ca3af" : undefined }}>—</span>;
   return (
-    <div className="flex flex-col items-center gap-0.5">
+    <div className="flex flex-col items-center gap-1">
       {links.map((f, i) => (
         <a key={i} href={f[type]} target="_blank" rel="noopener noreferrer"
           style={{ color: done ? "#9ca3af" : undefined }}
@@ -159,9 +196,30 @@ interface Props {
   userId: string;
 }
 
+// Badge style for matéria column — fixed size, top-aligned
+const materiaBadgeStyle = (done: boolean, color: string): React.CSSProperties => ({
+  display: "inline-block",
+  fontSize: 10,
+  fontWeight: 500,
+  borderRadius: 9999,
+  paddingLeft: 10,
+  paddingRight: 10,
+  paddingTop: 2,
+  paddingBottom: 2,
+  width: "fit-content",
+  maxWidth: 140,
+  whiteSpace: "nowrap",
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  backgroundColor: done ? "#e5e7eb" : color,
+  color: done ? "#9ca3af" : "#ffffff",
+  transition: "all 0.25s ease",
+});
+
 // ─── Admin editable row ───
 function AdminEditableRow({
   topico, index, onSave, onDelete, dragHandleProps, progress, onToggleConcluido,
+  fonteProgressMap, onToggleFonte,
 }: {
   topico: TopicoMatriz;
   index: number;
@@ -170,6 +228,8 @@ function AdminEditableRow({
   dragHandleProps?: any;
   progress?: UserProgress;
   onToggleConcluido: (topicoId: number) => void;
+  fonteProgressMap: Map<string, boolean>;
+  onToggleFonte: (topicoId: number, sigla: string, current: boolean) => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [materia, setMateria] = useState(topico.materia);
@@ -184,10 +244,8 @@ function AdminEditableRow({
   const save = () => {
     const cleanFontes = fontes.filter(f => f.sigla || f.descricao || f.link_questoes || f.link_dod);
     onSave(topico.id, {
-      materia,
-      assunto,
+      materia, assunto,
       fontes: cleanFontes as any,
-      // keep legacy fields synced with first fonte
       fonte_legal: cleanFontes[0]?.descricao || null,
       link_questoes: cleanFontes[0]?.link_questoes || null,
       link_dod: cleanFontes[0]?.link_dod || null,
@@ -197,10 +255,10 @@ function AdminEditableRow({
 
   return (
     <tr
-      className="border-b border-border/30 hover:bg-muted/20 transition-colors"
+      className="border-b border-border/30 hover:bg-muted/20 transition-colors align-top"
       style={{ backgroundColor: done ? "rgba(0,0,0,0.04)" : undefined, transition: "all 0.25s ease" }}
     >
-      <td className="p-2 text-center text-xs w-12">
+      <td className="p-2 text-center text-xs w-12" style={{ paddingTop: 10 }}>
         <div className="flex items-center gap-1 justify-center">
           {dragHandleProps && (
             <button {...dragHandleProps} className="cursor-grab text-muted-foreground hover:text-foreground">
@@ -215,35 +273,30 @@ function AdminEditableRow({
           <span style={{ fontSize: 12, color: done ? "#9ca3af" : undefined }} className={done ? "" : "text-muted-foreground"}>{index + 1}</span>
         </div>
       </td>
-      <td className="p-2">
+      <td className="p-2" style={{ paddingTop: 10, verticalAlign: "top" }}>
         {editing ? (
           <Input value={materia} onChange={e => setMateria(e.target.value)} className="h-7 text-xs" />
         ) : (
-          <span
-            className="inline-block text-[10px] font-medium rounded-full px-2.5 py-0.5"
-            style={{ backgroundColor: done ? "#e5e7eb" : color, color: done ? "#9ca3af" : "#ffffff", transition: "all 0.25s ease" }}
-          >
-            {topico.materia}
-          </span>
+          <span style={materiaBadgeStyle(done, color)}>{topico.materia}</span>
         )}
       </td>
-      <td className="p-2 text-xs" style={{ textDecoration: done ? "line-through" : "none", color: done ? "#9ca3af" : undefined, transition: "all 0.25s ease" }}>
+      <td className="p-2 text-xs" style={{ textDecoration: done ? "line-through" : "none", color: done ? "#9ca3af" : undefined, transition: "all 0.25s ease", paddingTop: 10, verticalAlign: "top" }}>
         {editing ? <Input value={assunto} onChange={e => setAssunto(e.target.value)} className="h-7 text-xs" /> : topico.assunto || "—"}
       </td>
-      <td className="p-2 text-xs" style={{ color: done ? "#9ca3af" : undefined, transition: "all 0.25s ease" }}>
+      <td className="p-2" style={{ verticalAlign: "top", paddingTop: 8 }}>
         {editing ? (
           <FontesEditor fontes={fontes} onChange={setFontes} />
         ) : (
-          <FontesDisplay fontes={displayFontes} done={done} />
+          <FontesDisplayWithCheckbox fontes={displayFontes} done={done} topicoId={topico.id} fonteProgressMap={fonteProgressMap} onToggleFonte={onToggleFonte} />
         )}
       </td>
-      <td className="p-2 text-center">
+      <td className="p-2 text-center" style={{ verticalAlign: "top", paddingTop: 10 }}>
         {editing ? null : <FontesLinks fontes={displayFontes} done={done} type="link_questoes" />}
       </td>
-      <td className="p-2 text-center">
+      <td className="p-2 text-center" style={{ verticalAlign: "top", paddingTop: 10 }}>
         {editing ? null : <FontesLinks fontes={displayFontes} done={done} type="link_dod" />}
       </td>
-      <td className="p-2 text-center">
+      <td className="p-2 text-center" style={{ verticalAlign: "top", paddingTop: 10 }}>
         {editing ? (
           <div className="flex gap-1 justify-center">
             <Button size="sm" variant="ghost" className="h-6 text-[10px]" onClick={save}>Salvar</Button>
@@ -271,6 +324,8 @@ function SortableAdminRow(props: {
   onDelete: (id: number) => void;
   progress?: UserProgress;
   onToggleConcluido: (topicoId: number) => void;
+  fonteProgressMap: Map<string, boolean>;
+  onToggleFonte: (topicoId: number, sigla: string, current: boolean) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: props.topico.id });
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 };
@@ -284,12 +339,14 @@ function SortableAdminRow(props: {
 
 // ─── Student row ───
 function StudentRow({
-  topico, index, progress, onToggleConcluido,
+  topico, index, progress, onToggleConcluido, fonteProgressMap, onToggleFonte,
 }: {
   topico: TopicoMatriz;
   index: number;
   progress: UserProgress | undefined;
   onToggleConcluido: (topicoId: number) => void;
+  fonteProgressMap: Map<string, boolean>;
+  onToggleFonte: (topicoId: number, sigla: string, current: boolean) => void;
 }) {
   const done = progress?.concluido ?? false;
   const color = getMateriaColor(topico);
@@ -297,10 +354,10 @@ function StudentRow({
 
   return (
     <tr
-      className="border-b border-border/30"
+      className="border-b border-border/30 align-top"
       style={{ backgroundColor: done ? "rgba(0,0,0,0.04)" : undefined, transition: "all 0.25s ease" }}
     >
-      <td className="p-2 text-center w-12">
+      <td className="p-2 text-center w-12" style={{ paddingTop: 10 }}>
         <div className="flex items-center gap-1.5 justify-center">
           <Checkbox
             checked={done}
@@ -310,27 +367,22 @@ function StudentRow({
           <span style={{ fontSize: 12, color: done ? "#9ca3af" : undefined, transition: "all 0.25s ease" }} className={done ? "" : "text-muted-foreground"}>{index + 1}</span>
         </div>
       </td>
-      <td className="p-2">
-        <span
-          className="inline-block text-[10px] font-medium rounded-full px-2.5 py-0.5"
-          style={{ backgroundColor: done ? "#e5e7eb" : color, color: done ? "#9ca3af" : "#ffffff", transition: "all 0.25s ease" }}
-        >
-          {topico.materia}
-        </span>
+      <td className="p-2" style={{ paddingTop: 10, verticalAlign: "top" }}>
+        <span style={materiaBadgeStyle(done, color)}>{topico.materia}</span>
       </td>
-      <td className="p-2 text-xs" style={{ textDecoration: done ? "line-through" : "none", color: done ? "#9ca3af" : undefined, transition: "all 0.25s ease" }}>
+      <td className="p-2 text-xs" style={{ textDecoration: done ? "line-through" : "none", color: done ? "#9ca3af" : undefined, transition: "all 0.25s ease", paddingTop: 10, verticalAlign: "top" }}>
         {topico.assunto || "—"}
       </td>
-      <td className="p-2 text-xs" style={{ color: done ? "#9ca3af" : undefined, transition: "all 0.25s ease" }}>
-        <FontesDisplay fontes={displayFontes} done={done} />
+      <td className="p-2" style={{ verticalAlign: "top", paddingTop: 8 }}>
+        <FontesDisplayWithCheckbox fontes={displayFontes} done={done} topicoId={topico.id} fonteProgressMap={fonteProgressMap} onToggleFonte={onToggleFonte} />
       </td>
-      <td className="p-2 text-center" style={{ transition: "all 0.25s ease" }}>
+      <td className="p-2 text-center" style={{ verticalAlign: "top", paddingTop: 10 }}>
         <FontesLinks fontes={displayFontes} done={done} type="link_questoes" />
       </td>
-      <td className="p-2 text-center" style={{ transition: "all 0.25s ease" }}>
+      <td className="p-2 text-center" style={{ verticalAlign: "top", paddingTop: 10 }}>
         <FontesLinks fontes={displayFontes} done={done} type="link_dod" />
       </td>
-      <td className="p-2 text-center" style={{ color: done ? "#9ca3af" : undefined, transition: "all 0.25s ease" }}>
+      <td className="p-2 text-center" style={{ verticalAlign: "top", paddingTop: 10, color: done ? "#9ca3af" : undefined }}>
         —
       </td>
     </tr>
@@ -346,6 +398,53 @@ export default function MatrizTable({ cronogramaId, topicos, progress, isAdminOr
   const [newHoras, setNewHoras] = useState(3);
 
   const progressMap = new Map(progress.map(p => [p.topico_id, p]));
+
+  // Fetch fonte progress for this user across all topicos in this cronograma
+  const topicoIds = topicos.map(t => t.id);
+  const { data: fonteProgressData } = useQuery({
+    queryKey: ["fonte-progress", cronogramaId, userId],
+    queryFn: async () => {
+      if (topicoIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from("user_fonte_progress" as any)
+        .select("topico_id, sigla, concluido")
+        .eq("user_id", userId)
+        .in("topico_id", topicoIds);
+      if (error) throw error;
+      return (data || []) as FonteProgress[];
+    },
+    enabled: topicoIds.length > 0,
+  });
+
+  const fonteProgressMap = new Map<string, boolean>();
+  (fonteProgressData || []).forEach((fp: FonteProgress) => {
+    fonteProgressMap.set(`${fp.topico_id}:${fp.sigla}`, fp.concluido);
+  });
+
+  const upsertFonteProgress = useMutation({
+    mutationFn: async ({ topicoId, sigla, concluido }: { topicoId: number; sigla: string; concluido: boolean }) => {
+      const existing = fonteProgressMap.has(`${topicoId}:${sigla}`);
+      if (existing) {
+        const { error } = await (supabase as any).from("user_fonte_progress")
+          .update({ concluido })
+          .eq("user_id", userId)
+          .eq("topico_id", topicoId)
+          .eq("sigla", sigla);
+        if (error) throw error;
+      } else {
+        const { error } = await (supabase as any).from("user_fonte_progress")
+          .insert({ user_id: userId, topico_id: topicoId, sigla, concluido });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["fonte-progress", cronogramaId, userId] });
+    },
+  });
+
+  const handleToggleFonte = (topicoId: number, sigla: string, current: boolean) => {
+    upsertFonteProgress.mutate({ topicoId, sigla, concluido: !current });
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -474,6 +573,8 @@ export default function MatrizTable({ cronogramaId, topicos, progress, isAdminOr
                     topico={t}
                     index={i}
                     progress={progressMap.get(t.id)}
+                    fonteProgressMap={fonteProgressMap}
+                    onToggleFonte={handleToggleFonte}
                     onSave={(id, data) => updateTopico.mutate({ id, data })}
                     onDelete={(id) => { if (confirm("Excluir este tópico?")) deleteTopico.mutate(id); }}
                     onToggleConcluido={(id) => {
@@ -492,6 +593,8 @@ export default function MatrizTable({ cronogramaId, topicos, progress, isAdminOr
                   topico={t}
                   index={i}
                   progress={progressMap.get(t.id)}
+                  fonteProgressMap={fonteProgressMap}
+                  onToggleFonte={handleToggleFonte}
                   onToggleConcluido={(id) => {
                     const cur = progressMap.get(id);
                     upsertProgress.mutate({ topicoId: id, concluido: !(cur?.concluido) });
@@ -503,7 +606,6 @@ export default function MatrizTable({ cronogramaId, topicos, progress, isAdminOr
         </table>
       </div>
 
-      {/* Add row for admin */}
       {isAdminOrMod && (
         <div className="mt-3">
           {newRow ? (
