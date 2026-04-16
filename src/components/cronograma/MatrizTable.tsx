@@ -405,13 +405,13 @@ export default function MatrizTable({ cronogramaId, topicos, progress, isAdminOr
     queryKey: ["fonte-progress", cronogramaId, userId],
     queryFn: async () => {
       if (topicoIds.length === 0) return [];
-      const { data, error } = await supabase
-        .from("user_fonte_progress" as any)
+      const { data, error } = await (supabase as any)
+        .from("user_fonte_progress")
         .select("topico_id, sigla, concluido")
         .eq("user_id", userId)
         .in("topico_id", topicoIds);
       if (error) throw error;
-      return (data || []) as FonteProgress[];
+      return (data || []) as unknown as FonteProgress[];
     },
     enabled: topicoIds.length > 0,
   });
