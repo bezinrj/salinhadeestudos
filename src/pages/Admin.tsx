@@ -83,7 +83,7 @@ export default function Admin() {
 
       {isAdmin ? (
          <Tabs defaultValue="overview" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-8 bg-secondary">
+          <TabsList className="grid w-full grid-cols-9 bg-secondary">
             <TabsTrigger value="overview">Visão Geral</TabsTrigger>
             <TabsTrigger value="users">Usuários</TabsTrigger>
             <TabsTrigger value="weekly">Semanal</TabsTrigger>
@@ -106,6 +106,7 @@ export default function Admin() {
             <TabsTrigger value="announcements">Avisos</TabsTrigger>
             <TabsTrigger value="content">Conteúdo</TabsTrigger>
             <TabsTrigger value="subjects">Assuntos</TabsTrigger>
+            <TabsTrigger value="cronogramas">Cronogramas</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview"><OverviewTab /></TabsContent>
@@ -116,6 +117,7 @@ export default function Admin() {
           <TabsContent value="announcements"><AnnouncementsTab /></TabsContent>
           <TabsContent value="content"><ContentTab /></TabsContent>
           <TabsContent value="subjects"><SubjectsTab /></TabsContent>
+          <TabsContent value="cronogramas"><AdminCronogramasTab /></TabsContent>
         </Tabs>
       ) : (
         <Tabs defaultValue="weekly" className="space-y-4">
