@@ -89,6 +89,7 @@ export default function CronogramaCalendar({ cronogramaId, userId, events, topic
   const [paused, setPaused] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [showModal, setShowModal] = useState(false);
+  const [showClearModal, setShowClearModal] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const topicoMap = useMemo(() => new Map(topicos.map(t => [t.id, t])), [topicos]);
