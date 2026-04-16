@@ -410,10 +410,6 @@ export default function MatrizTable({ cronogramaId, topicos, progress, isAdminOr
                     const cur = progressMap.get(id);
                     upsertProgress.mutate({ topicoId: id, concluido: !(cur?.concluido) });
                   }}
-                  onToggleRevisao={(id) => {
-                    const cur = progressMap.get(id);
-                    upsertProgress.mutate({ topicoId: id, para_revisao: !(cur?.para_revisao) });
-                  }}
                 />
               ))}
             </tbody>
