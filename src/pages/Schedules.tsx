@@ -1,5 +1,5 @@
-import { useRef } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useRef, useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useIsModerator } from "@/hooks/useIsModerator";
@@ -7,8 +7,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, Lock, ChevronLeft, ChevronRight } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Calendar, Lock, ChevronLeft, ChevronRight, Plus, Pencil, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 type Schedule = {
   id: string;
@@ -25,6 +29,15 @@ export default function Schedules() {
   const { isModerator } = useIsModerator();
   const { subscribed } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const isAdminOrMod = isAdmin || isModerator;
+
+  const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [formTitle, setFormTitle] = useState("");
+  const [formCareer, setFormCareer] = useState("");
+  const [formCoverUrl, setFormCoverUrl] = useState("");
+  const [formAccessType, setFormAccessType] = useState(false); // false=free, true=premium
 
   const { data: schedules = [], isLoading } = useQuery({
     queryKey: ["schedules-listing"],
@@ -38,8 +51,7 @@ export default function Schedules() {
     },
   });
 
-  // Non-admin users only see published schedules
-  const visible = (isAdmin || isModerator) ? schedules : schedules.filter(s => s.status === "published");
+  const visible = isAdminOrMod ? schedules : schedules.filter(s => s.status === "published");
 
   const grouped = visible.reduce<Record<string, Schedule[]>>((acc, s) => {
     const key = s.career || "Outros";
@@ -60,18 +72,76 @@ export default function Schedules() {
 
   const handleClick = (s: Schedule) => {
     const isPremium = s.access_type === "premium";
-    if (isPremium && !subscribed && !isAdmin && !isModerator) {
+    if (isPremium && !subscribed && !isAdminOrMod) {
       navigate("/meu-plano");
       return;
     }
     navigate(`/cronograma/${s.id}`);
   };
 
+  const resetForm = () => {
+    setFormTitle(""); setFormCareer(""); setFormCoverUrl(""); setFormAccessType(false); setEditingId(null);
+  };
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      const payload = {
+        title: formTitle,
+        career: formCareer || null,
+        cover_image_url: formCoverUrl || null,
+        access_type: formAccessType ? "premium" : "free",
+        status: "published" as const,
+      };
+      if (editingId) {
+        const { error } = await supabase.from("schedules").update(payload).eq("id", editingId);
+        if (error) throw error;
+      } else {
+        const maxOrder = schedules.reduce((max, s) => Math.max(max, s.sort_order), -1);
+        const { error } = await supabase.from("schedules").insert({ ...payload, sort_order: maxOrder + 1 });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["schedules-listing"] });
+      setShowForm(false);
+      resetForm();
+      toast.success(editingId ? "Cronograma atualizado!" : "Cronograma criado!");
+    },
+    onError: () => toast.error("Erro ao salvar"),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("schedules").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["schedules-listing"] });
+      toast.success("Cronograma excluído!");
+    },
+  });
+
+  const openEdit = (s: Schedule) => {
+    setEditingId(s.id);
+    setFormTitle(s.title);
+    setFormCareer(s.career || "");
+    setFormCoverUrl(s.cover_image_url || "");
+    setFormAccessType(s.access_type === "premium");
+    setShowForm(true);
+  };
+
   return (
     <div className="p-4 md:p-6 space-y-8 pb-24 md:pb-6">
-      <div>
-        <h1 className="text-2xl font-display font-bold text-foreground">Cronogramas</h1>
-        <p className="text-sm text-muted-foreground">Sua biblioteca de planos de estudo</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-display font-bold text-foreground">Cronogramas</h1>
+          <p className="text-sm text-muted-foreground">Sua biblioteca de planos de estudo</p>
+        </div>
+        {isAdminOrMod && (
+          <Button size="sm" className="gap-1.5" onClick={() => { resetForm(); setShowForm(true); }}>
+            <Plus className="h-4 w-4" /> Novo Cronograma
+          </Button>
+        )}
       </div>
 
       {isLoading ? (
@@ -83,20 +153,63 @@ export default function Schedules() {
         </div>
       ) : (
         sortedKeys.map(cat => (
-          <CareerRow key={cat} category={cat} items={grouped[cat]} subscribed={subscribed} isAdmin={isAdmin} isModerator={isModerator} onClick={handleClick} />
+          <CareerRow
+            key={cat}
+            category={cat}
+            items={grouped[cat]}
+            subscribed={subscribed}
+            isAdminOrMod={isAdminOrMod}
+            onClick={handleClick}
+            onEdit={openEdit}
+            onDelete={(id) => { if (confirm("Excluir este cronograma?")) deleteMutation.mutate(id); }}
+          />
         ))
       )}
+
+      {/* Create/Edit Dialog */}
+      <Dialog open={showForm} onOpenChange={open => { if (!open) { setShowForm(false); resetForm(); } }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>{editingId ? "Editar Cronograma" : "Novo Cronograma"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Nome *</label>
+              <Input value={formTitle} onChange={e => setFormTitle(e.target.value)} placeholder="Ex: Delegado de Polícia Civil - DF" />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Carreira / Categoria</label>
+              <Input value={formCareer} onChange={e => setFormCareer(e.target.value)} placeholder="Ex: Delegado" />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">URL da imagem de capa</label>
+              <Input value={formCoverUrl} onChange={e => setFormCoverUrl(e.target.value)} placeholder="https://..." />
+              {formCoverUrl && (
+                <img src={formCoverUrl} alt="Preview" className="mt-2 w-full h-32 object-cover rounded-lg border border-border/50" />
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch checked={formAccessType} onCheckedChange={setFormAccessType} />
+              <span className="text-xs text-foreground/80">Premium</span>
+            </div>
+            <Button className="w-full" disabled={!formTitle.trim() || saveMutation.isPending} onClick={() => saveMutation.mutate()}>
+              {saveMutation.isPending ? "Salvando..." : editingId ? "Salvar" : "Criar"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
-function CareerRow({ category, items, subscribed, isAdmin, isModerator, onClick }: {
+function CareerRow({ category, items, subscribed, isAdminOrMod, onClick, onEdit, onDelete }: {
   category: string;
   items: Schedule[];
   subscribed: boolean;
-  isAdmin: boolean;
-  isModerator: boolean;
+  isAdminOrMod: boolean;
   onClick: (s: Schedule) => void;
+  onEdit: (s: Schedule) => void;
+  onDelete: (id: string) => void;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const scroll = (dir: number) => scrollRef.current?.scrollBy({ left: dir * 280, behavior: "smooth" });
@@ -113,7 +226,7 @@ function CareerRow({ category, items, subscribed, isAdmin, isModerator, onClick 
       <div ref={scrollRef} className="flex gap-4 overflow-x-auto scrollbar-hide pb-2 -mx-1 px-1" style={{ scrollSnapType: "x mandatory" }}>
         {items.map((s, i) => {
           const isPremium = s.access_type === "premium";
-          const locked = isPremium && !subscribed && !isAdmin && !isModerator;
+          const locked = isPremium && !subscribed && !isAdminOrMod;
           return (
             <motion.div
               key={s.id}
@@ -146,6 +259,23 @@ function CareerRow({ category, items, subscribed, isAdmin, isModerator, onClick 
                         <Lock className="h-6 w-6 text-accent" />
                         <span className="text-[10px] text-accent font-semibold">PREMIUM</span>
                       </div>
+                    </div>
+                  )}
+                  {/* Admin edit/delete overlay */}
+                  {isAdminOrMod && (
+                    <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        className="h-6 w-6 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center hover:bg-background"
+                        onClick={(e) => { e.stopPropagation(); onEdit(s); }}
+                      >
+                        <Pencil className="h-3 w-3 text-foreground" />
+                      </button>
+                      <button
+                        className="h-6 w-6 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center hover:bg-destructive/20"
+                        onClick={(e) => { e.stopPropagation(); onDelete(s.id); }}
+                      >
+                        <Trash2 className="h-3 w-3 text-destructive" />
+                      </button>
                     </div>
                   )}
                 </div>
