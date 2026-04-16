@@ -26,11 +26,11 @@ export default function ScheduleDetail() {
 
   const isAdminOrMod = isAdmin || isModerator;
 
-  // Fetch cronograma
+  // Fetch schedule info
   const { data: cronograma } = useQuery({
     queryKey: ["cronograma", id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("cronogramas").select("*").eq("id", id!).single();
+      const { data, error } = await supabase.from("schedules").select("*").eq("id", id!).single();
       if (error) throw error;
       return data;
     },
@@ -116,10 +116,10 @@ export default function ScheduleDetail() {
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="flex-1">
-          <h1 className="text-2xl font-display font-bold text-foreground">{cronograma?.nome || "Cronograma"}</h1>
-          {cronograma?.categoria && (
+          <h1 className="text-2xl font-display font-bold text-foreground">{cronograma?.title || "Cronograma"}</h1>
+          {cronograma?.career && (
             <Badge variant="outline" className="mt-1 text-[10px] bg-background/50 border-border/50">
-              {cronograma.categoria}
+              {cronograma.career}
             </Badge>
           )}
         </div>
