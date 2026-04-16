@@ -573,9 +573,9 @@ export default function CronogramaCalendar({ cronogramaId, userId, events, topic
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold text-foreground capitalize">{detailDateLabel}</h3>
-              <button onClick={() => setDetailDay(null)} className="w-7 h-7 rounded-full bg-muted/50 flex items-center justify-center hover:bg-muted transition-colors">
-                <X className="h-4 w-4 text-foreground/70" />
+              <h3 className="capitalize" style={{ color: "#111827", fontSize: 15, fontWeight: 500 }}>{detailDateLabel}</h3>
+              <button onClick={() => setDetailDay(null)} className="w-7 h-7 rounded-full flex items-center justify-center hover:opacity-70 transition-opacity" style={{ backgroundColor: "#e5e7eb" }}>
+                <X className="h-4 w-4" style={{ color: "#374151" }} />
               </button>
             </div>
             <div className="space-y-3">
@@ -584,22 +584,22 @@ export default function CronogramaCalendar({ cronogramaId, userId, events, topic
                 const color = colorMap.get(ev.topico_id) || "#888";
                 const status = getEventStatus(ev);
                 return (
-                  <div key={ev.id} className="p-3 rounded-lg border border-[#e5e7eb] dark:border-border/30 bg-gray-50 dark:bg-muted/20">
+                  <div key={ev.id} className="p-3 rounded-lg" style={{ backgroundColor: "#ffffff", border: "1px solid #e5e7eb" }}>
                     <span
                       className="inline-block text-[10px] font-medium text-white rounded-full px-2.5 py-0.5 mb-1.5"
                       style={{ backgroundColor: ev.concluido ? "#9CA3AF" : ev.is_revisao ? "#6B7280" : color }}
                     >
                       {ev.is_revisao ? "Rev: " : ""}{t?.materia || "?"}
                     </span>
-                    <p className="text-[12px] text-foreground/80 font-medium">{t?.assunto || "—"}</p>
-                    {t?.fonte_legal && <p className="text-[11px] text-muted-foreground mt-0.5">{t.fonte_legal}</p>}
+                    <p style={{ color: "#111827", fontSize: 13, fontWeight: 500 }}>{t?.assunto || "—"}</p>
+                    {t?.fonte_legal && <p style={{ color: "#6b7280", fontSize: 11, marginTop: 2 }}>{t.fonte_legal}</p>}
                     {(t?.link_questoes || t?.link_dod) && (
                       <div className="flex gap-3 mt-1.5">
-                        {t?.link_questoes && <a href={t.link_questoes} target="_blank" rel="noopener noreferrer" className="text-[11px] text-primary hover:underline">Questões ↗</a>}
-                        {t?.link_dod && <a href={t.link_dod} target="_blank" rel="noopener noreferrer" className="text-[11px] text-primary hover:underline">DOD ↗</a>}
+                        {t?.link_questoes && <a href={t.link_questoes} target="_blank" rel="noopener noreferrer" style={{ color: "#378ADD", fontSize: 11 }} className="hover:underline">Questões ↗</a>}
+                        {t?.link_dod && <a href={t.link_dod} target="_blank" rel="noopener noreferrer" style={{ color: "#378ADD", fontSize: 11 }} className="hover:underline">DOD ↗</a>}
                       </div>
                     )}
-                    <p className="text-[11px] mt-1.5 font-semibold" style={{ color: status.color }}>
+                    <p style={{ color: status.color, fontSize: 12, fontWeight: 500, marginTop: 6 }}>
                       {status.label}
                     </p>
                   </div>
