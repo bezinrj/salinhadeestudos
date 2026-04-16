@@ -26,11 +26,11 @@ export default function ScheduleDetail() {
 
   const isAdminOrMod = isAdmin || isModerator;
 
-  // Fetch cronograma
+  // Fetch schedule info
   const { data: cronograma } = useQuery({
     queryKey: ["cronograma", id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("cronogramas").select("*").eq("id", id!).single();
+      const { data, error } = await supabase.from("schedules").select("*").eq("id", id!).single();
       if (error) throw error;
       return data;
     },
