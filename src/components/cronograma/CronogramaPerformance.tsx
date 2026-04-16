@@ -1,10 +1,8 @@
 import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { BookmarkPlus } from "lucide-react";
+import { BookmarkPlus, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import type { TopicoMatriz } from "./MatrizTable";
 
@@ -26,10 +24,10 @@ interface Props {
 }
 
 function getBarColor(pct: number) {
-  if (pct < 50) return "bg-red-500";
-  if (pct < 60) return "bg-orange-500";
-  if (pct < 80) return "bg-green-500";
-  return "bg-green-700";
+  if (pct < 50) return "#dc2626";
+  if (pct < 60) return "#ea580c";
+  if (pct < 80) return "#16a34a";
+  return "#15803d";
 }
 
 function getNextBusinessDay() {
@@ -44,37 +42,27 @@ function formatDateBR(dateStr: string) {
   return `${d}/${m}/${y}`;
 }
 
-const COLOR_PALETTE = [
-  "#1D9E75", "#378ADD", "#D85A30", "#9B59B6", "#E67E22",
-  "#2ECC71", "#E74C3C", "#1ABC9C", "#3498DB", "#F39C12",
-  "#8E44AD", "#16A085",
-];
-
-function hashString(str: string): number {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = ((hash << 5) - hash) + str.charCodeAt(i);
-    hash |= 0;
-  }
-  return Math.abs(hash);
-}
-
-function getMateriaColor(t: TopicoMatriz): string {
-  if (t.cor) return t.cor;
-  return COLOR_PALETTE[hashString(t.materia) % COLOR_PALETTE.length];
-}
-
-function getPctPillStyle(pct: number) {
-  if (pct >= 80) return { backgroundColor: "rgba(21,128,61,0.15)", color: "#15803d" };
-  if (pct >= 60) return { backgroundColor: "rgba(34,197,94,0.15)", color: "#16a34a" };
-  if (pct >= 50) return { backgroundColor: "rgba(239,159,39,0.15)", color: "#d97706" };
-  return { backgroundColor: "rgba(226,75,74,0.15)", color: "#dc2626" };
-}
-
 export default function CronogramaPerformance({ cronogramaId, userId, sessions, topicos }: Props) {
   const queryClient = useQueryClient();
   const topicoMap = useMemo(() => new Map(topicos.map(t => [t.id, t])), [topicos]);
 
+  // Fetch revision calendar events for this user
+  const { data: revisionEvents = [] } = useQuery({
+    queryKey: ["revision-events", cronogramaId, userId],
+    queryFn: async () => {
+      const topicoIds = topicos.map(t => t.id);
+      if (topicoIds.length === 0) return [];
+      const { data } = await supabase
+        .from("user_calendar_events")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("is_revisao", true)
+        .in("topico_id", topicoIds);
+      return (data || []) as { id: number; topico_id: number; concluido: boolean; data: string }[];
+    },
+  });
+
+  // User averages per topic
   const userAvgs = useMemo(() => {
     const map: Record<number, number[]> = {};
     sessions.forEach(s => {
@@ -90,6 +78,7 @@ export default function CronogramaPerformance({ cronogramaId, userId, sessions, 
     return result;
   }, [sessions]);
 
+  // Global averages
   const { data: globalAvgs = {} } = useQuery({
     queryKey: ["global-avgs", cronogramaId],
     queryFn: async () => {
@@ -115,13 +104,52 @@ export default function CronogramaPerformance({ cronogramaId, userId, sessions, 
     },
   });
 
+  // Topics with pending revision (is_revisao=true, concluido=false)
+  const pendingRevisionTopicos = useMemo(() => {
+    const set = new Set<number>();
+    revisionEvents.forEach(ev => {
+      if (!ev.concluido) set.add(ev.topico_id);
+    });
+    return set;
+  }, [revisionEvents]);
+
+  // Topics with at least one completed revision
+  const completedRevisionTopicos = useMemo(() => {
+    const set = new Set<number>();
+    revisionEvents.forEach(ev => {
+      if (ev.concluido) set.add(ev.topico_id);
+    });
+    return set;
+  }, [revisionEvents]);
+
+  // Weak topics: avg < 60% AND no pending revision
   const weakTopicos = useMemo(() => {
     return Object.entries(userAvgs)
-      .filter(([_, avg]) => avg < 60)
+      .filter(([id, avg]) => avg < 60 && !pendingRevisionTopicos.has(Number(id)))
       .map(([id]) => Number(id))
       .filter(id => topicoMap.has(id));
-  }, [userAvgs, topicoMap]);
+  }, [userAvgs, pendingRevisionTopicos, topicoMap]);
 
+  // Revision history: topics with completed revision events
+  const revisionHistory = useMemo(() => {
+    const items: { topicoId: number; worst: number; best: number; lastDate: string; currentAvg: number }[] = [];
+    completedRevisionTopicos.forEach(topicoId => {
+      const topicSessions = sessions.filter(s => s.topico_id === topicoId && s.questoes > 0);
+      if (topicSessions.length === 0) return;
+      const pcts = topicSessions.map(s => s.percentual_acerto);
+      const worst = Math.min(...pcts);
+      const best = Math.max(...pcts);
+      const completedRevs = revisionEvents
+        .filter(ev => ev.topico_id === topicoId && ev.concluido)
+        .sort((a, b) => b.data.localeCompare(a.data));
+      const lastDate = completedRevs[0]?.data || topicSessions.sort((a, b) => b.data.localeCompare(a.data))[0]?.data || "";
+      const avg = userAvgs[topicoId] || 0;
+      items.push({ topicoId, worst, best, lastDate, currentAvg: avg });
+    });
+    return items.sort((a, b) => a.currentAvg - b.currentAvg);
+  }, [completedRevisionTopicos, sessions, revisionEvents, userAvgs]);
+
+  // Add revision mutation
   const addRevision = useMutation({
     mutationFn: async (topicoId: number) => {
       const { error } = await supabase.from("user_calendar_events").insert({
@@ -136,21 +164,20 @@ export default function CronogramaPerformance({ cronogramaId, userId, sessions, 
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["calendar-events", cronogramaId] });
-      toast.success("Revisão adicionada ao calendário!");
+      queryClient.invalidateQueries({ queryKey: ["revision-events", cronogramaId, userId] });
+      toast.success("Revisão agendada no calendário!");
     },
   });
 
-  const recentSessions = useMemo(() => {
-    return [...sessions].sort((a, b) => b.data.localeCompare(a.data)).slice(0, 20);
-  }, [sessions]);
-
   return (
     <div className="space-y-6">
-      {/* Weak subjects */}
+      {/* Weak subjects panel */}
       {weakTopicos.length > 0 && (
         <div>
-          <h3 className="text-sm font-semibold text-foreground mb-3">Matérias abaixo de 60%</h3>
-          <div className="grid gap-3 md:grid-cols-2">
+          <h3 style={{ fontSize: 14, fontWeight: 600, color: "#111827", marginBottom: 12 }}>
+            Matérias abaixo de 60%
+          </h3>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 10 }}>
             {weakTopicos.map(id => {
               const t = topicoMap.get(id)!;
               const myPct = userAvgs[id] || 0;
@@ -158,102 +185,129 @@ export default function CronogramaPerformance({ cronogramaId, userId, sessions, 
               const diff = myPct - globalPct;
 
               return (
-                <Card key={id} className="border-border/50 bg-card/50">
-                  <CardContent className="p-4 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <Badge variant="outline" className="text-[10px]">{t.materia}</Badge>
-                        <p className="text-xs text-foreground/80 mt-0.5">{t.assunto || "—"}</p>
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-7 text-[10px] gap-1"
-                        onClick={() => addRevision.mutate(id)}
-                      >
-                        <BookmarkPlus className="h-3 w-3" /> Revisão
-                      </Button>
-                    </div>
+                <div
+                  key={id}
+                  style={{
+                    backgroundColor: "var(--card-bg, #ffffff)",
+                    border: "1px solid #e5e7eb",
+                    borderRadius: 8,
+                    padding: 14,
+                  }}
+                  className="dark:!bg-[#1e1e2e] dark:!border-[#374151]"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span
+                      className="text-[11px] font-medium rounded-full px-2.5 py-0.5"
+                      style={{ backgroundColor: "#f3f4f6", color: "#374151" }}
+                    >
+                      {t.materia}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 text-[10px] gap-1 px-2"
+                      style={{ color: "#374151" }}
+                      onClick={() => addRevision.mutate(id)}
+                    >
+                      <BookmarkPlus className="h-3 w-3" /> Revisão
+                    </Button>
+                  </div>
 
-                    <div>
-                      <div className="flex justify-between text-[10px] mb-0.5">
-                        <span className="text-muted-foreground">Meu desempenho</span>
-                        <span className="font-semibold">{myPct}%</span>
-                      </div>
-                      <div className="h-2 rounded-full bg-secondary overflow-hidden">
-                        <div className={`h-full rounded-full ${getBarColor(myPct)}`} style={{ width: `${myPct}%`, transition: "width 0.4s" }} />
-                      </div>
-                    </div>
+                  <p style={{ fontSize: 13, fontWeight: 500, color: "#111827", marginBottom: 8 }} className="dark:!text-[#e5e7eb]">
+                    {t.assunto || "—"}
+                  </p>
 
-                    <div>
-                      <div className="flex justify-between text-[10px] mb-0.5">
-                        <span className="text-muted-foreground">Média dos alunos</span>
-                        <span className="font-semibold">{globalPct}%</span>
-                      </div>
-                      <div className="h-2 rounded-full bg-secondary overflow-hidden">
-                        <div className="h-full rounded-full bg-muted-foreground/40" style={{ width: `${globalPct}%`, transition: "width 0.4s" }} />
-                      </div>
+                  {/* My performance bar */}
+                  <div className="mb-1.5">
+                    <div className="flex justify-between" style={{ fontSize: 11, color: "#6b7280", marginBottom: 2 }}>
+                      <span>Meu desempenho</span>
+                      <span style={{ fontWeight: 600, color: getBarColor(myPct) }}>{myPct}%</span>
                     </div>
+                    <div style={{ height: 6, borderRadius: 3, backgroundColor: "#e5e7eb", overflow: "hidden" }}>
+                      <div style={{ height: "100%", borderRadius: 3, width: `${myPct}%`, backgroundColor: getBarColor(myPct), transition: "width 0.4s" }} />
+                    </div>
+                  </div>
 
-                    <p className={`text-[10px] font-semibold ${diff >= 0 ? "text-green-400" : "text-red-400"}`}>
-                      {diff >= 0 ? "+" : ""}{diff}% vs média
-                    </p>
-                  </CardContent>
-                </Card>
+                  {/* Global avg bar */}
+                  <div className="mb-1.5">
+                    <div className="flex justify-between" style={{ fontSize: 11, color: "#6b7280", marginBottom: 2 }}>
+                      <span>Média dos alunos</span>
+                      <span style={{ fontWeight: 600 }}>{globalPct}%</span>
+                    </div>
+                    <div style={{ height: 6, borderRadius: 3, backgroundColor: "#e5e7eb", overflow: "hidden" }}>
+                      <div style={{ height: "100%", borderRadius: 3, width: `${globalPct}%`, backgroundColor: "#d1d5db", transition: "width 0.4s" }} />
+                    </div>
+                  </div>
+
+                  <p style={{ fontSize: 11, fontWeight: 600, color: diff >= 0 ? "#16a34a" : "#dc2626" }}>
+                    {diff >= 0 ? "+" : ""}{diff}% vs média
+                  </p>
+                </div>
               );
             })}
           </div>
         </div>
       )}
 
-      {/* Session history - enhanced layout */}
-      <div>
-        <h3 className="text-sm font-semibold text-foreground mb-3">Histórico de sessões</h3>
-        {recentSessions.length === 0 ? (
-          <p className="text-xs text-muted-foreground">Nenhuma sessão registrada ainda.</p>
-        ) : (
-          <div className="space-y-2">
-            {recentSessions.map(s => {
-              const t = topicoMap.get(s.topico_id);
-              const color = t ? getMateriaColor(t) : "#888";
+      {/* Revision history */}
+      {revisionHistory.length > 0 && (
+        <div>
+          <h3 style={{ fontSize: 14, fontWeight: 600, color: "#111827", marginBottom: 12 }} className="dark:!text-[#e5e7eb]">
+            Histórico de Revisões
+          </h3>
+          <div className="space-y-1.5">
+            {revisionHistory.map(item => {
+              const t = topicoMap.get(item.topicoId);
+              if (!t) return null;
+              const needsReview = item.currentAvg < 60;
+
               return (
-                <div key={s.id} className="flex items-start justify-between p-3 rounded-lg bg-muted/20 border border-border/30">
-                  <div className="flex items-start gap-2.5 min-w-0">
-                    <span
-                      className="text-[10px] font-medium text-white rounded-full px-2.5 py-0.5 mt-0.5 whitespace-nowrap flex-shrink-0"
-                      style={{ backgroundColor: color }}
-                    >
-                      {t?.materia || "?"}
-                    </span>
-                    <div className="min-w-0">
-                      <p className="text-[13px] font-medium text-foreground truncate">{t?.assunto || "—"}</p>
-                      {t?.fonte_legal && (
-                        <p className="text-[11px] mt-0.5" style={{ color: "#6b7280" }}>{t.fonte_legal}</p>
-                      )}
-                    </div>
+                <div
+                  key={item.topicoId}
+                  className="flex items-center justify-between p-3 rounded-lg dark:!bg-[#1e1e2e] dark:!border-[#374151]"
+                  style={{ backgroundColor: "#f9fafb", border: "1px solid #e5e7eb" }}
+                >
+                  <div className="min-w-0 flex-1">
+                    <p style={{ fontSize: 13, fontWeight: 500, color: "#111827" }} className="dark:!text-[#e5e7eb]">
+                      {t.materia} — {t.assunto || "—"}
+                    </p>
                   </div>
-                  <div className="flex items-center gap-3 flex-shrink-0 ml-3">
-                    <span className="text-[11px] text-muted-foreground whitespace-nowrap">{formatDateBR(s.data)}</span>
-                    <span className="text-[11px] text-foreground/70 whitespace-nowrap">{s.tempo_estudado || "—"}</span>
-                    {s.questoes > 0 ? (
-                      <span
-                        className="text-[10px] font-semibold rounded-full px-2 py-0.5 whitespace-nowrap"
-                        style={getPctPillStyle(s.percentual_acerto)}
+
+                  <div className="flex items-center gap-4 flex-shrink-0 ml-4">
+                    <span style={{ fontSize: 11, color: "#6b7280" }}>
+                      Pior: <span style={{ fontWeight: 600, color: "#E24B4A" }}>{item.worst}%</span>
+                    </span>
+                    <span style={{ fontSize: 11, color: "#6b7280" }}>
+                      Melhor: <span style={{ fontWeight: 600, color: "#1D9E75" }}>{item.best}%</span>
+                    </span>
+                    <span style={{ fontSize: 11, color: "#6b7280" }}>
+                      {item.lastDate ? formatDateBR(item.lastDate) : "—"}
+                    </span>
+
+                    {needsReview && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 text-[10px] gap-1 px-2"
+                        style={{ color: "#374151" }}
+                        onClick={() => addRevision.mutate(item.topicoId)}
                       >
-                        {s.percentual_acerto}%
-                      </span>
-                    ) : (
-                      <span className="text-[10px] rounded-full px-2 py-0.5 whitespace-nowrap" style={{ backgroundColor: "rgba(107,114,128,0.15)", color: "#6b7280" }}>
-                        sem questões
-                      </span>
+                        <RotateCcw className="h-3 w-3" /> Revisar novamente
+                      </Button>
                     )}
                   </div>
                 </div>
               );
             })}
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {weakTopicos.length === 0 && revisionHistory.length === 0 && (
+        <p style={{ fontSize: 13, color: "#6b7280", textAlign: "center", padding: "32px 0" }}>
+          Nenhum dado de desempenho registrado ainda.
+        </p>
+      )}
     </div>
   );
 }
