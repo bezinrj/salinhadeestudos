@@ -412,8 +412,13 @@ export default function MatrizTable({ cronogramaId, topicos, progress, isAdminOr
                     key={t.id}
                     topico={t}
                     index={i}
+                    progress={progressMap.get(t.id)}
                     onSave={(id, data) => updateTopico.mutate({ id, data })}
                     onDelete={(id) => { if (confirm("Excluir este tópico?")) deleteTopico.mutate(id); }}
+                    onToggleConcluido={(id) => {
+                      const cur = progressMap.get(id);
+                      upsertProgress.mutate({ topicoId: id, concluido: !(cur?.concluido) });
+                    }}
                   />
                 ))}
               </SortableContext>
