@@ -63,13 +63,15 @@ interface Props {
 
 // Admin editable row
 function AdminEditableRow({
-  topico, index, onSave, onDelete, dragHandleProps,
+  topico, index, onSave, onDelete, dragHandleProps, progress, onToggleConcluido,
 }: {
   topico: TopicoMatriz;
   index: number;
   onSave: (id: number, data: Partial<TopicoMatriz>) => void;
   onDelete: (id: number) => void;
   dragHandleProps?: any;
+  progress?: UserProgress;
+  onToggleConcluido: (topicoId: number) => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [materia, setMateria] = useState(topico.materia);
@@ -78,6 +80,7 @@ function AdminEditableRow({
   const [linkQ, setLinkQ] = useState(topico.link_questoes || "");
   const [linkD, setLinkD] = useState(topico.link_dod || "");
 
+  const done = progress?.concluido ?? false;
   const color = getMateriaColor(topico);
 
   const save = () => {
@@ -86,15 +89,26 @@ function AdminEditableRow({
   };
 
   return (
-    <tr className="border-b border-border/30 hover:bg-muted/20 transition-colors">
-      <td className="p-2 text-center text-xs text-muted-foreground w-12">
+    <tr
+      className="border-b border-border/30 hover:bg-muted/20 transition-colors"
+      style={{
+        backgroundColor: done ? "rgba(0,0,0,0.04)" : undefined,
+        transition: "all 0.25s ease",
+      }}
+    >
+      <td className="p-2 text-center text-xs w-12">
         <div className="flex items-center gap-1 justify-center">
           {dragHandleProps && (
             <button {...dragHandleProps} className="cursor-grab text-muted-foreground hover:text-foreground">
               <GripVertical className="h-3.5 w-3.5" />
             </button>
           )}
-          {index + 1}
+          <Checkbox
+            checked={done}
+            onCheckedChange={() => onToggleConcluido(topico.id)}
+            className={`h-4 w-4 rounded ${done ? "border-[#1D9E75] bg-[#1D9E75] text-white data-[state=checked]:bg-[#1D9E75] data-[state=checked]:border-[#1D9E75]" : ""}`}
+          />
+          <span style={{ fontSize: 12, color: done ? "#9ca3af" : undefined }} className={done ? "" : "text-muted-foreground"}>{index + 1}</span>
         </div>
       </td>
       <td className="p-2">
@@ -102,24 +116,28 @@ function AdminEditableRow({
           <Input value={materia} onChange={e => setMateria(e.target.value)} className="h-7 text-xs" />
         ) : (
           <span
-            className="inline-block text-[10px] font-medium text-white rounded-full px-2.5 py-0.5"
-            style={{ backgroundColor: color }}
+            className="inline-block text-[10px] font-medium rounded-full px-2.5 py-0.5"
+            style={{
+              backgroundColor: done ? "#e5e7eb" : color,
+              color: done ? "#9ca3af" : "#ffffff",
+              transition: "all 0.25s ease",
+            }}
           >
             {topico.materia}
           </span>
         )}
       </td>
-      <td className="p-2 text-xs text-foreground/90">
+      <td className="p-2 text-xs" style={{ textDecoration: done ? "line-through" : "none", color: done ? "#9ca3af" : undefined, transition: "all 0.25s ease" }}>
         {editing ? <Input value={assunto} onChange={e => setAssunto(e.target.value)} className="h-7 text-xs" /> : topico.assunto || "—"}
       </td>
-      <td className="p-2 text-xs text-foreground/70">
+      <td className="p-2 text-xs" style={{ color: done ? "#9ca3af" : undefined, transition: "all 0.25s ease" }}>
         {editing ? <Input value={fonteLegal} onChange={e => setFonteLegal(e.target.value)} className="h-7 text-xs" /> : topico.fonte_legal || "—"}
       </td>
       <td className="p-2 text-center">
         {editing ? (
           <Input value={linkQ} onChange={e => setLinkQ(e.target.value)} className="h-7 text-xs" placeholder="URL" />
         ) : topico.link_questoes ? (
-          <a href={topico.link_questoes} target="_blank" rel="noopener noreferrer" className="text-primary hover:text-primary/80">
+          <a href={topico.link_questoes} target="_blank" rel="noopener noreferrer" style={{ color: done ? "#9ca3af" : undefined }} className={done ? "" : "text-primary hover:text-primary/80"}>
             <ExternalLink className="h-3.5 w-3.5 inline" />
           </a>
         ) : "—"}
@@ -128,7 +146,7 @@ function AdminEditableRow({
         {editing ? (
           <Input value={linkD} onChange={e => setLinkD(e.target.value)} className="h-7 text-xs" placeholder="URL" />
         ) : topico.link_dod ? (
-          <a href={topico.link_dod} target="_blank" rel="noopener noreferrer" className="text-primary hover:text-primary/80">
+          <a href={topico.link_dod} target="_blank" rel="noopener noreferrer" style={{ color: done ? "#9ca3af" : undefined }} className={done ? "" : "text-primary hover:text-primary/80"}>
             <ExternalLink className="h-3.5 w-3.5 inline" />
           </a>
         ) : "—"}
@@ -140,7 +158,7 @@ function AdminEditableRow({
             <Button size="sm" variant="ghost" className="h-6 text-[10px]" onClick={() => setEditing(false)}>✕</Button>
           </div>
         ) : (
-          <div className="flex gap-1 justify-center">
+          <div className="flex gap-1 justify-center" style={{ opacity: done ? 0.3 : 1, transition: "all 0.25s ease" }}>
             <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setEditing(true)}>
               <Pencil className="h-3 w-3" />
             </Button>
@@ -159,6 +177,8 @@ function SortableAdminRow(props: {
   index: number;
   onSave: (id: number, data: Partial<TopicoMatriz>) => void;
   onDelete: (id: number) => void;
+  progress?: UserProgress;
+  onToggleConcluido: (topicoId: number) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: props.topico.id });
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 };
