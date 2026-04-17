@@ -115,6 +115,42 @@ export default function Login() {
                 {successMsg}
               </div>
             )}
+            {showForgot ? (
+              <form onSubmit={handleForgotPassword} className="space-y-4">
+                <div className="space-y-1">
+                  <h3 className="font-display text-base font-semibold">Recuperar senha</h3>
+                  <p className="text-xs text-muted-foreground">
+                    Enviaremos um link para redefinir sua senha no e-mail informado.
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="forgot-email">E-mail</Label>
+                  <Input
+                    id="forgot-email"
+                    type="email"
+                    placeholder="seu@email.com"
+                    value={forgotEmail}
+                    onChange={e => setForgotEmail(e.target.value)}
+                    className="bg-secondary border-border"
+                    required
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => { setShowForgot(false); setError(""); }}
+                    disabled={forgotLoading}
+                  >
+                    Voltar
+                  </Button>
+                  <Button type="submit" className="flex-1 gradient-electric text-white font-semibold" disabled={forgotLoading}>
+                    {forgotLoading ? "Enviando..." : "Enviar link"}
+                  </Button>
+                </div>
+              </form>
+            ) : (
             <Tabs defaultValue="login" className="w-full">
               <TabsList className="grid w-full grid-cols-2 bg-secondary">
                 <TabsTrigger value="login">Entrar</TabsTrigger>
@@ -166,6 +202,7 @@ export default function Login() {
                 </form>
               </TabsContent>
             </Tabs>
+            )}
           </CardContent>
         </Card>
       </div>
