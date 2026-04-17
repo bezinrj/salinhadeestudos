@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Scale } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import loginBg from "@/assets/login-bg.png";
 
 export default function Login() {
@@ -16,8 +17,33 @@ export default function Login() {
   const [error, setError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showForgot, setShowForgot] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotLoading, setForgotLoading] = useState(false);
   const { login, register } = useAuth();
   const navigate = useNavigate();
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setSuccessMsg("");
+    if (!forgotEmail.trim()) {
+      setError("Informe seu e-mail.");
+      return;
+    }
+    setForgotLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail.trim(), {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setForgotLoading(false);
+    if (error) {
+      setError(error.message);
+    } else {
+      setSuccessMsg("Enviamos um link de redefinição para o seu e-mail.");
+      setShowForgot(false);
+      setForgotEmail("");
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -108,6 +134,15 @@ export default function Login() {
                   <Button type="submit" className="w-full gradient-electric text-white font-semibold" disabled={isLoading}>
                     {isLoading ? "Entrando..." : "Entrar"}
                   </Button>
+                  <div className="text-right">
+                    <button
+                      type="button"
+                      onClick={() => { setShowForgot(true); setError(""); setSuccessMsg(""); setForgotEmail(email); }}
+                      className="text-xs text-muted-foreground hover:text-primary transition-colors underline-offset-4 hover:underline"
+                    >
+                      Esqueci minha senha
+                    </button>
+                  </div>
                 </form>
               </TabsContent>
 
