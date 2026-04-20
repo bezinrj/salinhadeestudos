@@ -966,6 +966,9 @@ function WeeklyQuestionsTab() {
           
           is_weekly: editIsWeekly,
           is_premium: editIsPremium,
+          // Se a questão deixou de ser semanal, limpa o deadline para que ela
+          // saia da "Questão da Semana ativa" e apareça nas Discursivas.
+          ...(editIsWeekly ? {} : { deadline: null }),
           mirror_text: editMirrorText.trim() || null,
           ideal_answer: editIdealAnswer.trim() || null,
           banca: editBanca,
@@ -977,6 +980,8 @@ function WeeklyQuestionsTab() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-weekly-questions"] });
       queryClient.invalidateQueries({ queryKey: ["discursivas-questions"] });
+      queryClient.invalidateQueries({ queryKey: ["weekly-question-active"] });
+      queryClient.invalidateQueries({ queryKey: ["weekly-challenge-ranking"] });
       setEditingQuestion(null);
       toast({ title: "Questão atualizada!" });
     },
