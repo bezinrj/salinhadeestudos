@@ -32,6 +32,7 @@ export default function WeeklyChallenge() {
         .from("weekly_questions")
         .select("*")
         .eq("is_active", true)
+        .eq("is_weekly", true)
         .gt("deadline", new Date().toISOString())
         .order("created_at", { ascending: false })
         .limit(1)
