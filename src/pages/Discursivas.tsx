@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { disciplines } from "@/data/mockData";
+import { useDisciplines } from "@/hooks/useDisciplines";
 import { QuestionCard } from "@/components/QuestionCard";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
