@@ -1,0 +1,1 @@
+UPDATE public.weekly_questions SET deadline = NULL WHERE is_weekly = false AND deadline IS NOT NULL;
