@@ -160,6 +160,53 @@ export type Database = {
         }
         Relationships: []
       }
+      discipline_change_requests: {
+        Row: {
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          discipline_id: string
+          id: string
+          justification: string
+          proposed_data: Json | null
+          request_type: Database["public"]["Enums"]["discipline_request_type"]
+          requester_id: string
+          status: Database["public"]["Enums"]["discipline_request_status"]
+        }
+        Insert: {
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          discipline_id: string
+          id?: string
+          justification: string
+          proposed_data?: Json | null
+          request_type: Database["public"]["Enums"]["discipline_request_type"]
+          requester_id: string
+          status?: Database["public"]["Enums"]["discipline_request_status"]
+        }
+        Update: {
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          discipline_id?: string
+          id?: string
+          justification?: string
+          proposed_data?: Json | null
+          request_type?: Database["public"]["Enums"]["discipline_request_type"]
+          requester_id?: string
+          status?: Database["public"]["Enums"]["discipline_request_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "discipline_change_requests_discipline_id_fkey"
+            columns: ["discipline_id"]
+            isOneToOne: false
+            referencedRelation: "disciplines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       discipline_subjects: {
         Row: {
           category: string | null
@@ -184,6 +231,36 @@ export type Database = {
           id?: string
           sort_order?: number
           subject?: string
+        }
+        Relationships: []
+      }
+      disciplines: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          sort_order?: number
+          updated_at?: string
         }
         Relationships: []
       }
@@ -1202,6 +1279,8 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
+      discipline_request_status: "pending" | "approved" | "rejected"
+      discipline_request_type: "edit" | "delete"
       moderation_request_status: "pending" | "approved" | "rejected"
       moderation_request_type: "edit" | "delete"
       report_problem_type:
@@ -1346,6 +1425,8 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user"],
+      discipline_request_status: ["pending", "approved", "rejected"],
+      discipline_request_type: ["edit", "delete"],
       moderation_request_status: ["pending", "approved", "rejected"],
       moderation_request_type: ["edit", "delete"],
       report_problem_type: [
