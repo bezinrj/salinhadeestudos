@@ -2,7 +2,8 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { disciplines, studySessions, addStudySession, getUserStudyStats, getWeeklyChartData } from "@/data/mockData";
+import { studySessions, addStudySession, getUserStudyStats, getWeeklyChartData } from "@/data/mockData";
+import { useDisciplines } from "@/hooks/useDisciplines";
 import { useAuth } from "@/contexts/AuthContext";
 import { Play, Pause, Square, Flame, Clock, Calendar, TrendingUp } from "lucide-react";
 import { StatCard } from "@/components/StatCard";
@@ -11,6 +12,7 @@ import { motion } from "framer-motion";
 
 export default function StudyTimerPage() {
   const { user, profile } = useAuth();
+  const { disciplines } = useDisciplines();
   const [isRunning, setIsRunning] = useState(false);
   const [seconds, setSeconds] = useState(0);
   const [selectedDiscipline, setSelectedDiscipline] = useState("");

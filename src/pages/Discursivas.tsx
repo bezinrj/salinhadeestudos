@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { disciplines } from "@/data/mockData";
+import { useDisciplines } from "@/hooks/useDisciplines";
 import { QuestionCard } from "@/components/QuestionCard";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +23,7 @@ const statusOptions = ["Todas", "Resolvidas", "Não resolvidas"] as const;
 const years = ["Todos", "2021", "2022", "2023", "2024", "2025", "2026"] as const;
 
 export default function Discursivas() {
+  const { disciplines } = useDisciplines();
   const [career, setCareer] = useState<string>("Todas");
   const [type, setType] = useState<string>("Todas");
   const [selectedBanca, setSelectedBanca] = useState<string>("Todas");

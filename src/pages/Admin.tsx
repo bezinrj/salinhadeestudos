@@ -22,7 +22,8 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, Dr
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { disciplines, evaluateAnswer } from "@/data/mockData";
+import { evaluateAnswer } from "@/data/mockData";
+import { useDisciplines } from "@/hooks/useDisciplines";
 import { cn } from "@/lib/utils";
 import { SubjectTreeSelect } from "@/components/SubjectTreeSelect";
 import ModerationRequestsTab from "@/components/ModerationRequestsTab";
@@ -832,6 +833,7 @@ function AnnouncementsTab() {
 function WeeklyQuestionsTab() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { disciplines } = useDisciplines();
   const { isAdmin } = useIsAdmin();
   const [modJustification, setModJustification] = useState("");
   const [modAction, setModAction] = useState<{ type: "edit" | "delete"; question: any } | null>(null);
@@ -1500,7 +1502,8 @@ function ContentTab() {
 /* ─── Subjects Tab ─── */
 function SubjectsTab() {
   const queryClient = useQueryClient();
-  const [selectedDiscipline, setSelectedDiscipline] = useState(disciplines[0]);
+  const { disciplines } = useDisciplines();
+  const [selectedDiscipline, setSelectedDiscipline] = useState(disciplines[0] || "");
   const [newSubject, setNewSubject] = useState("");
   const [newCategory, setNewCategory] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
