@@ -956,6 +956,23 @@ function WeeklyQuestionsTab() {
   const updateMutation = useMutation({
     mutationFn: async () => {
       if (!editingQuestion) return;
+
+      // Se voltou a ser Semanal mas não tem deadline futuro, define para o próximo domingo 00:00 BRT.
+      let nextDeadline: string | null | undefined = undefined; // undefined = não alterar
+      if (editIsWeekly) {
+        const currentDeadline = editingQuestion.deadline ? new Date(editingQuestion.deadline) : null;
+        if (!currentDeadline || currentDeadline.getTime() <= Date.now()) {
+          // Próximo domingo 00:00 horário de Brasília (UTC-3) → 03:00 UTC
+          const now = new Date();
+          const utcDay = now.getUTCDay();
+          const daysUntilSunday = (7 - utcDay) % 7 || 7;
+          const sunday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + daysUntilSunday, 3, 0, 0));
+          nextDeadline = sunday.toISOString();
+        }
+      } else {
+        nextDeadline = null; // limpa quando deixa de ser semanal
+      }
+
       const { error } = await (supabase.from("weekly_questions") as any)
         .update({
           title: editTitle,
@@ -963,12 +980,9 @@ function WeeklyQuestionsTab() {
           discipline: editDiscipline,
           subject: editSubject.trim() || null,
           statement: editStatement,
-          
           is_weekly: editIsWeekly,
           is_premium: editIsPremium,
-          // Se a questão deixou de ser semanal, limpa o deadline para que ela
-          // saia da "Questão da Semana ativa" e apareça nas Discursivas.
-          ...(editIsWeekly ? {} : { deadline: null }),
+          ...(nextDeadline !== undefined ? { deadline: nextDeadline } : {}),
           mirror_text: editMirrorText.trim() || null,
           ideal_answer: editIdealAnswer.trim() || null,
           banca: editBanca,
