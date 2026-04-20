@@ -980,6 +980,8 @@ function WeeklyQuestionsTab() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-weekly-questions"] });
       queryClient.invalidateQueries({ queryKey: ["discursivas-questions"] });
+      queryClient.invalidateQueries({ queryKey: ["weekly-question-active"] });
+      queryClient.invalidateQueries({ queryKey: ["weekly-challenge-ranking"] });
       setEditingQuestion(null);
       toast({ title: "Questão atualizada!" });
     },
