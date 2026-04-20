@@ -84,7 +84,7 @@ export default function Admin() {
 
       {isAdmin ? (
          <Tabs defaultValue="overview" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-9 bg-secondary">
+          <TabsList className="grid w-full grid-cols-10 bg-secondary">
             <TabsTrigger value="overview">Visão Geral</TabsTrigger>
             <TabsTrigger value="users">Usuários</TabsTrigger>
             <TabsTrigger value="weekly">Semanal</TabsTrigger>
@@ -107,6 +107,7 @@ export default function Admin() {
             <TabsTrigger value="announcements">Avisos</TabsTrigger>
             <TabsTrigger value="content">Conteúdo</TabsTrigger>
             <TabsTrigger value="subjects">Assuntos</TabsTrigger>
+            <TabsTrigger value="materias">Matérias</TabsTrigger>
             
           </TabsList>
 
@@ -118,17 +119,20 @@ export default function Admin() {
           <TabsContent value="announcements"><AnnouncementsTab /></TabsContent>
           <TabsContent value="content"><ContentTab /></TabsContent>
           <TabsContent value="subjects"><SubjectsTab /></TabsContent>
+          <TabsContent value="materias"><MateriasTab /></TabsContent>
           
         </Tabs>
       ) : (
         <Tabs defaultValue="weekly" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-2 bg-secondary">
+          <TabsList className="grid w-full grid-cols-3 bg-secondary">
             <TabsTrigger value="weekly">Semanal</TabsTrigger>
             <TabsTrigger value="subjects">Assuntos</TabsTrigger>
+            <TabsTrigger value="materias">Matérias</TabsTrigger>
           </TabsList>
 
           <TabsContent value="weekly"><WeeklyQuestionsTab /></TabsContent>
           <TabsContent value="subjects"><SubjectsTab /></TabsContent>
+          <TabsContent value="materias"><MateriasTab /></TabsContent>
         </Tabs>
       )}
     </div>
