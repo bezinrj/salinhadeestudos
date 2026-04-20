@@ -12,6 +12,7 @@ import { motion } from "framer-motion";
 
 export default function StudyTimerPage() {
   const { user, profile } = useAuth();
+  const { disciplines } = useDisciplines();
   const [isRunning, setIsRunning] = useState(false);
   const [seconds, setSeconds] = useState(0);
   const [selectedDiscipline, setSelectedDiscipline] = useState("");

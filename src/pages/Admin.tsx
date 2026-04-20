@@ -833,6 +833,7 @@ function AnnouncementsTab() {
 function WeeklyQuestionsTab() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { disciplines } = useDisciplines();
   const { isAdmin } = useIsAdmin();
   const [modJustification, setModJustification] = useState("");
   const [modAction, setModAction] = useState<{ type: "edit" | "delete"; question: any } | null>(null);
@@ -1501,7 +1502,8 @@ function ContentTab() {
 /* ─── Subjects Tab ─── */
 function SubjectsTab() {
   const queryClient = useQueryClient();
-  const [selectedDiscipline, setSelectedDiscipline] = useState(disciplines[0]);
+  const { disciplines } = useDisciplines();
+  const [selectedDiscipline, setSelectedDiscipline] = useState(disciplines[0] || "");
   const [newSubject, setNewSubject] = useState("");
   const [newCategory, setNewCategory] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
