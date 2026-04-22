@@ -567,6 +567,34 @@ function UsersTab() {
           onClose={() => setSelectedUser(null)}
         />
       )}
+
+      <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Mail className="h-5 w-5 text-primary" />Convidar usuário</DialogTitle>
+            <DialogDescription>
+              Será enviado um e-mail de convite usando o template "Convidar" da Salinha de Estudos. O usuário poderá aceitar e criar sua conta.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <label className="text-sm font-medium">E-mail</label>
+            <Input
+              type="email"
+              placeholder="usuario@exemplo.com"
+              value={inviteEmail}
+              onChange={(e) => setInviteEmail(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter" && !inviting) handleInvite(); }}
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setInviteOpen(false)} disabled={inviting}>Cancelar</Button>
+            <Button onClick={handleInvite} disabled={inviting} className="gap-1.5">
+              <Mail className="h-4 w-4" />{inviting ? "Enviando..." : "Enviar convite"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
