@@ -49,7 +49,15 @@ Deno.serve(async (req) => {
     });
 
     if (error) {
-      return new Response(JSON.stringify({ error: error.message }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      const msg = error.message || "";
+      const alreadyExists = /already been registered|already registered|already exists/i.test(msg);
+      return new Response(
+        JSON.stringify({
+          error: alreadyExists ? "Este e-mail já está cadastrado na plataforma." : msg,
+          code: alreadyExists ? "email_exists" : "invite_error",
+        }),
+        { status: alreadyExists ? 409 : 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     return new Response(JSON.stringify({ success: true, user: { id: data.user?.id, email: data.user?.email } }), {
