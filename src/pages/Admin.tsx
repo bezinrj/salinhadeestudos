@@ -501,6 +501,7 @@ function UsersTab() {
                       {roleBadges(userRolesList)}
                     </div>
                     <p className="text-xs text-muted-foreground">@{u.username}</p>
+                    <p className="text-xs text-muted-foreground truncate">{userEmails?.get(u.id) || "—"}</p>
                     <div className="flex items-center gap-2 mt-1">
                       {isOnline ? (
                         <span className="text-[10px] text-green-400 font-medium">● Ativo</span>
