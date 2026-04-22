@@ -1,27 +1,37 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Scale } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import loginBg from "@/assets/login-bg.png";
 
 export default function Login() {
-  const [email, setEmail] = useState("");
+  const [searchParams] = useSearchParams();
+  const invitedEmail = useMemo(() => (searchParams.get("invite") || "").trim().toLowerCase(), [searchParams]);
+  const [email, setEmail] = useState(invitedEmail);
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
   const [error, setError] = useState("");
-  const [successMsg, setSuccessMsg] = useState("");
+  const [successMsg, setSuccessMsg] = useState(invitedEmail ? "Você foi convidado(a)! Complete seu cadastro abaixo." : "");
   const [isLoading, setIsLoading] = useState(false);
   const [showForgot, setShowForgot] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
   const [forgotLoading, setForgotLoading] = useState(false);
+  const [defaultTab, setDefaultTab] = useState<"login" | "register">(invitedEmail ? "register" : "login");
   const { login, register } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (invitedEmail) {
+      setEmail(invitedEmail);
+      setDefaultTab("register");
+    }
+  }, [invitedEmail]);
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
