@@ -372,12 +372,20 @@ function UsersTab() {
       const { data, error } = await supabase.functions.invoke("admin-invite-user", {
         body: { email, redirectTo: `${window.location.origin}/login` },
       });
-      if (error || (data as any)?.error) throw new Error((data as any)?.error || error?.message);
+      const errMsg = (data as any)?.error;
+      if (errMsg) throw new Error(errMsg);
+      if (error) {
+        // Try to read the response body returned by the function (FunctionsHttpError)
+        const ctx: any = (error as any).context;
+        let bodyMsg: string | undefined;
+        try { bodyMsg = (await ctx?.json?.())?.error; } catch { /* ignore */ }
+        throw new Error(bodyMsg || error.message);
+      }
       toast({ title: "Convite enviado!", description: `E-mail enviado para ${email}.` });
       setInviteEmail("");
       setInviteOpen(false);
     } catch (e: any) {
-      toast({ title: "Erro ao convidar", description: e.message, variant: "destructive" });
+      toast({ title: "Não foi possível convidar", description: e.message, variant: "destructive" });
     } finally {
       setInviting(false);
     }
