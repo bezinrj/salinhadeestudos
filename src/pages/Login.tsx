@@ -161,7 +161,7 @@ export default function Login() {
                 </div>
               </form>
             ) : (
-            <Tabs defaultValue="login" className="w-full">
+            <Tabs value={defaultTab} onValueChange={(v) => setDefaultTab(v as "login" | "register")} className="w-full">
               <TabsList className="grid w-full grid-cols-2 bg-secondary">
                 <TabsTrigger value="login">Entrar</TabsTrigger>
                 <TabsTrigger value="register">Cadastrar</TabsTrigger>
