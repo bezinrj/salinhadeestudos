@@ -356,6 +356,31 @@ function UsersTab() {
   const [search, setSearch] = useState("");
   const [subTab, setSubTab] = useState<"all" | "new" | "active">("all");
   const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviting, setInviting] = useState(false);
+
+  const handleInvite = async () => {
+    const email = inviteEmail.trim().toLowerCase();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast({ title: "E-mail inválido", description: "Informe um e-mail válido.", variant: "destructive" });
+      return;
+    }
+    setInviting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-invite-user", {
+        body: { email, redirectTo: `${window.location.origin}/login` },
+      });
+      if (error || (data as any)?.error) throw new Error((data as any)?.error || error?.message);
+      toast({ title: "Convite enviado!", description: `E-mail enviado para ${email}.` });
+      setInviteEmail("");
+      setInviteOpen(false);
+    } catch (e: any) {
+      toast({ title: "Erro ao convidar", description: e.message, variant: "destructive" });
+    } finally {
+      setInviting(false);
+    }
+  };
 
   const { data: sessions } = useQuery({
     queryKey: ["admin-all-sessions"],
