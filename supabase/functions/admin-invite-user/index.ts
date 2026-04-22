@@ -43,7 +43,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: corsHeaders });
     }
 
-    const { email, redirectTo } = await req.json();
+    const { email } = await req.json();
     const cleanEmail = typeof email === "string" ? email.trim().toLowerCase() : "";
     if (!cleanEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
       return new Response(JSON.stringify({ error: "E-mail inválido" }), {
@@ -83,11 +83,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Monta o link de cadastro no PRÓPRIO site, com e-mail pré-preenchido.
-    const baseUrl = (typeof redirectTo === "string" && redirectTo.startsWith("http"))
-      ? redirectTo.replace(/\/$/, "")
-      : `${SITE_URL}/login`;
-    const confirmationUrl = `${baseUrl}?invite=${encodeURIComponent(cleanEmail)}`;
+    // Sempre direciona para o site oficial — nunca para o preview do Lovable
+    // ou qualquer outro domínio que o cliente possa enviar.
+    const confirmationUrl = `${SITE_URL}/login?invite=${encodeURIComponent(cleanEmail)}`;
 
     // Renderiza o template de convite (HTML + texto)
     const html = await renderAsync(
