@@ -492,15 +492,20 @@ function UsersTab() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row gap-3">
-        <Input placeholder="Buscar por nome ou username..." value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-sm" />
-        <div className="flex gap-1">
-          {(["all", "new", "active"] as const).map((t) => (
-            <Button key={t} variant={subTab === t ? "default" : "outline"} size="sm" onClick={() => setSubTab(t)}>
-              {t === "all" ? `Todos (${users?.length || 0})` : t === "new" ? `Novos (${(users || []).filter((u: any) => u.created_at > sevenDaysAgo).length})` : `Ativos (${onlineIds.size})`}
-            </Button>
-          ))}
+      <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+        <div className="flex flex-col sm:flex-row gap-3 flex-1">
+          <Input placeholder="Buscar por nome ou username..." value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-sm" />
+          <div className="flex gap-1">
+            {(["all", "new", "active"] as const).map((t) => (
+              <Button key={t} variant={subTab === t ? "default" : "outline"} size="sm" onClick={() => setSubTab(t)}>
+                {t === "all" ? `Todos (${users?.length || 0})` : t === "new" ? `Novos (${(users || []).filter((u: any) => u.created_at > sevenDaysAgo).length})` : `Ativos (${onlineIds.size})`}
+              </Button>
+            ))}
+          </div>
         </div>
+        <Button size="sm" onClick={() => setInviteOpen(true)} className="gap-1.5">
+          <UserPlus className="h-4 w-4" />Convidar usuário
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
