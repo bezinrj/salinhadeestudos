@@ -56,7 +56,7 @@ Deno.serve(async (req) => {
           error: alreadyExists ? "Este e-mail já está cadastrado na plataforma." : msg,
           code: alreadyExists ? "email_exists" : "invite_error",
         }),
-        { status: alreadyExists ? 409 : 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
