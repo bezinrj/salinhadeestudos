@@ -3,6 +3,8 @@ project_id = "lwadfvkaywbdebvwdfgb"
 [functions]
   [functions.admin-delete-user]
     verify_jwt = false
+  [functions.admin-invite-user]
+    verify_jwt = false
   [functions.admin-reset-password]
     verify_jwt = false
   [functions.auth-email-hook]
