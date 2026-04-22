@@ -104,6 +104,25 @@ Deno.serve(async (req) => {
 
     // Enfileira no pgmq (mesma infra do auth-email-hook)
     const messageId = crypto.randomUUID();
+    const unsubscribeToken = crypto.randomUUID();
+
+    const { error: unsubscribeTokenError } = await adminClient
+      .from("email_unsubscribe_tokens")
+      .upsert(
+        {
+          email: cleanEmail,
+          token: unsubscribeToken,
+          used_at: null,
+        },
+        { onConflict: "email" }
+      );
+
+    if (unsubscribeTokenError) {
+      return new Response(
+        JSON.stringify({ error: "Falha ao preparar o envio do convite." }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     await adminClient.from("email_send_log").insert({
       message_id: messageId,
@@ -125,6 +144,7 @@ Deno.serve(async (req) => {
         purpose: "transactional",
         label: "admin_invite",
         idempotency_key: `admin-invite-${messageId}`,
+        unsubscribe_token: unsubscribeToken,
         queued_at: new Date().toISOString(),
       },
     });
