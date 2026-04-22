@@ -15,33 +15,24 @@ export default function Ranking() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  // Fetch general ranking: sum of weekly_answers scores per user
+  // Fetch general ranking via RPC (security definer aggregates scores for all users)
   const { data: ranking = [] } = useQuery({
     queryKey: ["ranking-general"],
     queryFn: async () => {
-      // Get all weekly answers
-      const { data: answers } = await (supabase.from("weekly_answers" as any) as any)
-        .select("user_id, score");
-      
-      // Get profiles
+      const { data: scores } = await (supabase as any).rpc("get_general_ranking");
       const { data: profiles } = await supabase.from("profiles").select("id, name, username, avatar_url, active_badge_id");
-      
-      if (!answers || !profiles) return [];
 
-      // Sum scores per user
-      const scoreMap = new Map<string, number>();
-      for (const a of answers) {
-        scoreMap.set(a.user_id, (scoreMap.get(a.user_id) || 0) + Number(a.score));
-      }
+      if (!scores || !profiles) return [];
 
       const entries: RankingEntry[] = [];
-      for (const [userId, score] of scoreMap) {
+      for (const row of scores as { user_id: string; total_score: number }[]) {
+        const score = Number(row.total_score);
         if (score <= 0) continue;
-        const profile = profiles.find((p: any) => p.id === userId);
+        const profile = profiles.find((p: any) => p.id === row.user_id);
         const name = profile?.name || profile?.username || "Usuário";
         const initials = name.split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2);
         entries.push({
-          userId,
+          userId: row.user_id,
           name,
           avatar: initials,
           avatarUrl: profile?.avatar_url || undefined,
@@ -165,15 +156,13 @@ function WeeklyRankingTab({ currentUserId }: { currentUserId?: string }) {
 
       if (!activeQ) return [];
 
-      const { data: answers } = await (supabase.from("weekly_answers" as any) as any)
-        .select("user_id, score")
-        .eq("question_id", activeQ.id);
+      const { data: answers } = await (supabase as any).rpc("get_weekly_ranking", { _question_id: activeQ.id });
 
       const { data: profiles } = await supabase.from("profiles").select("id, name, username, avatar_url");
 
       if (!answers || !profiles) return [];
 
-      const entries: RankingEntry[] = answers.map((a: any) => {
+      const entries: RankingEntry[] = (answers as { user_id: string; score: number }[]).map((a) => {
         const profile = profiles.find((p: any) => p.id === a.user_id);
         const name = profile?.name || profile?.username || "Usuário";
         const initials = name.split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2);

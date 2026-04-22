@@ -1251,6 +1251,20 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      get_general_ranking: {
+        Args: never
+        Returns: {
+          total_score: number
+          user_id: string
+        }[]
+      }
+      get_weekly_ranking: {
+        Args: { _question_id: string }
+        Returns: {
+          score: number
+          user_id: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
