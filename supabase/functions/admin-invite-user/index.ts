@@ -124,6 +124,7 @@ Deno.serve(async (req) => {
         text,
         purpose: "transactional",
         label: "admin_invite",
+        idempotency_key: `admin-invite-${messageId}`,
         queued_at: new Date().toISOString(),
       },
     });
