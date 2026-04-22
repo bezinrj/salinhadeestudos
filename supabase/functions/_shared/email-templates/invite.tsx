@@ -79,9 +79,14 @@ export const InviteEmail = ({
 
           <!-- Brand header -->
           <tr>
-            <td align="center" style="padding:0 0 20px 0; font-family:Arial, Helvetica, sans-serif;">
+            <td align="center" style="padding:0 0 14px 0; font-family:Arial, Helvetica, sans-serif;">
+              <img src="https://lwadfvkaywbdebvwdfgb.supabase.co/storage/v1/object/public/comment-images/brand%2Fsalinha-logo.png" width="92" alt="${siteName}" style="display:block; width:92px; height:auto; margin:0 auto;" />
+            </td>
+          </tr>
+          <tr>
+            <td align="center" style="padding:0 0 22px 0; font-family:Arial, Helvetica, sans-serif;">
               <span style="font-family:Arial, Helvetica, sans-serif; font-size:20px; font-weight:bold; color:${COLOR_BRAND};">
-                ⚖️ ${siteName}
+                ${siteName}
               </span>
             </td>
           </tr>
