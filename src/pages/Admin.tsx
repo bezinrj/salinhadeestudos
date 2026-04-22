@@ -374,6 +374,24 @@ function UsersTab() {
     },
   });
 
+  const { data: userEmails } = useQuery({
+    queryKey: ["admin-user-emails"],
+    queryFn: async () => {
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      const res = await fetch(`https://${projectId}.supabase.co/functions/v1/admin-list-users`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Erro ao buscar emails");
+      const emailMap = new Map(result.users.map((u: any) => [u.id, u.email]));
+      return emailMap;
+    },
+    enabled: true,
+  });
+
   const { data: manualSubs } = useQuery({
     queryKey: ["admin-all-manual-subs"],
     queryFn: async () => {
