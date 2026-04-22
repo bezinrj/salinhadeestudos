@@ -156,15 +156,13 @@ function WeeklyRankingTab({ currentUserId }: { currentUserId?: string }) {
 
       if (!activeQ) return [];
 
-      const { data: answers } = await (supabase.from("weekly_answers" as any) as any)
-        .select("user_id, score")
-        .eq("question_id", activeQ.id);
+      const { data: answers } = await (supabase as any).rpc("get_weekly_ranking", { _question_id: activeQ.id });
 
       const { data: profiles } = await supabase.from("profiles").select("id, name, username, avatar_url");
 
       if (!answers || !profiles) return [];
 
-      const entries: RankingEntry[] = answers.map((a: any) => {
+      const entries: RankingEntry[] = (answers as { user_id: string; score: number }[]).map((a) => {
         const profile = profiles.find((p: any) => p.id === a.user_id);
         const name = profile?.name || profile?.username || "Usuário";
         const initials = name.split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2);
