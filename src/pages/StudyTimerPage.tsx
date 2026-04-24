@@ -305,7 +305,14 @@ export default function StudyTimerPage() {
     return studySessions.filter(s => s.userId === userId && s.date === todayStr);
   }, [userId, refreshKey]);
 
-  const fmtHours = (h: number) => (h < 10 ? `${h.toFixed(1)}h` : `${Math.round(h)}h`);
+  const fmtHours = (h: number) => {
+    const totalMinutes = Math.round((h || 0) * 60);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    if (hours === 0) return `${minutes}min`;
+    if (minutes === 0) return `${hours}h`;
+    return `${hours}h ${minutes.toString().padStart(2, "0")}min`;
+  };
 
   const isRunning = session?.status === "running";
   const isPaused = session?.status === "paused";
