@@ -299,7 +299,33 @@ export default function StudyTimerPage() {
     });
   };
 
-  // ── Estatísticas (mantidas como antes) ──────────────────────────────────
+  // ── Zerar / Cancelar sessão (não salva tempo) ───────────────────────────
+  const handleResetConfirm = async () => {
+    if (!session) {
+      setShowResetModal(false);
+      return;
+    }
+    setSubmitting(true);
+    const nowIso = new Date().toISOString();
+    const { error } = await (supabase as any)
+      .from(TABLE)
+      .update({
+        status: "cancelled",
+        end_time: nowIso,
+        total_seconds: 0,
+      })
+      .eq("id", session.id);
+    setSubmitting(false);
+    if (error) {
+      toast.error("Erro ao zerar cronômetro.");
+      return;
+    }
+    toast.success("Cronômetro zerado.");
+    setSession(null);
+    setSeconds(0);
+    setShowResetModal(false);
+    setShowStopModal(false);
+  };
   const stats = useMemo(() => getUserStudyStats(userId), [userId, refreshKey]);
   const chartData = useMemo(() => getWeeklyChartData(userId), [userId, refreshKey]);
   const todaySessions = useMemo(() => {
