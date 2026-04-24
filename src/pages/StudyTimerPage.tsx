@@ -517,6 +517,21 @@ export default function StudyTimerPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
+            <div>
+              <label className="text-xs text-muted-foreground block mb-1">Matéria</label>
+              <Select value={selectedDiscipline} onValueChange={setSelectedDiscipline}>
+                <SelectTrigger className="bg-secondary border-border">
+                  <SelectValue placeholder="Selecione a matéria" />
+                </SelectTrigger>
+                <SelectContent>
+                  {disciplines.map(d => (
+                    <SelectItem key={d} value={d}>
+                      {d}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-xs text-muted-foreground block mb-1">Horas</label>
