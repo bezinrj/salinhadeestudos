@@ -606,6 +606,36 @@ export default function StudyTimerPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Modal de confirmação para zerar */}
+      <Dialog open={showResetModal} onOpenChange={setShowResetModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Zerar cronômetro?</DialogTitle>
+            <DialogDescription>
+              Esta ação descarta a sessão atual sem salvar o tempo. Não é possível desfazer.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="rounded-lg bg-secondary/40 px-3 py-2 text-center">
+            <p className="text-xs text-muted-foreground">Tempo que será descartado</p>
+            <p className="font-mono text-2xl font-bold text-destructive tabular-nums">
+              {formatTime(session ? computeElapsed(session) : 0)}
+            </p>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button variant="outline" onClick={() => setShowResetModal(false)} disabled={submitting}>
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleResetConfirm}
+              disabled={submitting}
+            >
+              <RotateCcw className="h-4 w-4 mr-2" /> Zerar agora
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
