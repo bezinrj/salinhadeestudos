@@ -9,7 +9,7 @@ import { studySessions, addStudySession, getUserStudyStats, getWeeklyChartData }
 import { useDisciplines } from "@/hooks/useDisciplines";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Play, Pause, Square, Flame, Clock, Calendar, TrendingUp, AlertCircle } from "lucide-react";
+import { Play, Pause, Square, Flame, Clock, Calendar, TrendingUp, AlertCircle, RotateCcw } from "lucide-react";
 import { StatCard } from "@/components/StatCard";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 import { motion } from "framer-motion";
@@ -68,6 +68,7 @@ export default function StudyTimerPage() {
   // Modals
   const [showStopModal, setShowStopModal] = useState(false);
   const [showRectifyModal, setShowRectifyModal] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
   const [rectifyHours, setRectifyHours] = useState(0);
   const [rectifyMinutes, setRectifyMinutes] = useState(0);
   const [rectifyReason, setRectifyReason] = useState("");
@@ -298,7 +299,33 @@ export default function StudyTimerPage() {
     });
   };
 
-  // ── Estatísticas (mantidas como antes) ──────────────────────────────────
+  // ── Zerar / Cancelar sessão (não salva tempo) ───────────────────────────
+  const handleResetConfirm = async () => {
+    if (!session) {
+      setShowResetModal(false);
+      return;
+    }
+    setSubmitting(true);
+    const nowIso = new Date().toISOString();
+    const { error } = await (supabase as any)
+      .from(TABLE)
+      .update({
+        status: "cancelled",
+        end_time: nowIso,
+        total_seconds: 0,
+      })
+      .eq("id", session.id);
+    setSubmitting(false);
+    if (error) {
+      toast.error("Erro ao zerar cronômetro.");
+      return;
+    }
+    toast.success("Cronômetro zerado.");
+    setSession(null);
+    setSeconds(0);
+    setShowResetModal(false);
+    setShowStopModal(false);
+  };
   const stats = useMemo(() => getUserStudyStats(userId), [userId, refreshKey]);
   const chartData = useMemo(() => getWeeklyChartData(userId), [userId, refreshKey]);
   const todaySessions = useMemo(() => {
@@ -404,6 +431,16 @@ export default function StudyTimerPage() {
                   className="border-border text-muted-foreground"
                 >
                   <Square className="h-5 w-5 mr-2" /> Finalizar
+                </Button>
+              )}
+              {hasActive && (
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={() => setShowResetModal(true)}
+                  className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                >
+                  <RotateCcw className="h-5 w-5 mr-2" /> Zerar
                 </Button>
               )}
             </div>
@@ -565,6 +602,36 @@ export default function StudyTimerPage() {
               className="gradient-electric text-white"
             >
               Salvar tempo ajustado
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de confirmação para zerar */}
+      <Dialog open={showResetModal} onOpenChange={setShowResetModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Zerar cronômetro?</DialogTitle>
+            <DialogDescription>
+              Esta ação descarta a sessão atual sem salvar o tempo. Não é possível desfazer.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="rounded-lg bg-secondary/40 px-3 py-2 text-center">
+            <p className="text-xs text-muted-foreground">Tempo que será descartado</p>
+            <p className="font-mono text-2xl font-bold text-destructive tabular-nums">
+              {formatTime(session ? computeElapsed(session) : 0)}
+            </p>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button variant="outline" onClick={() => setShowResetModal(false)} disabled={submitting}>
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleResetConfirm}
+              disabled={submitting}
+            >
+              <RotateCcw className="h-4 w-4 mr-2" /> Zerar agora
             </Button>
           </DialogFooter>
         </DialogContent>
