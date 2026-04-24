@@ -9,7 +9,7 @@ import { studySessions, addStudySession, getUserStudyStats, getWeeklyChartData }
 import { useDisciplines } from "@/hooks/useDisciplines";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Play, Pause, Square, Flame, Clock, Calendar, TrendingUp, AlertCircle } from "lucide-react";
+import { Play, Pause, Square, Flame, Clock, Calendar, TrendingUp, AlertCircle, RotateCcw } from "lucide-react";
 import { StatCard } from "@/components/StatCard";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 import { motion } from "framer-motion";
@@ -431,6 +431,16 @@ export default function StudyTimerPage() {
                   className="border-border text-muted-foreground"
                 >
                   <Square className="h-5 w-5 mr-2" /> Finalizar
+                </Button>
+              )}
+              {hasActive && (
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={() => setShowResetModal(true)}
+                  className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                >
+                  <RotateCcw className="h-5 w-5 mr-2" /> Zerar
                 </Button>
               )}
             </div>
