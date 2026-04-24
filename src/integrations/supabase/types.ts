@@ -875,6 +875,63 @@ export type Database = {
           },
         ]
       }
+      study_timer_sessions: {
+        Row: {
+          accumulated_seconds: number
+          adjusted_at: string | null
+          adjusted_total_seconds: number | null
+          adjustment_reason: string | null
+          created_at: string
+          discipline: string | null
+          end_time: string | null
+          id: string
+          original_calculated_seconds: number | null
+          paused_at: string | null
+          resumed_at: string | null
+          start_time: string
+          status: Database["public"]["Enums"]["timer_session_status"]
+          total_seconds: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          accumulated_seconds?: number
+          adjusted_at?: string | null
+          adjusted_total_seconds?: number | null
+          adjustment_reason?: string | null
+          created_at?: string
+          discipline?: string | null
+          end_time?: string | null
+          id?: string
+          original_calculated_seconds?: number | null
+          paused_at?: string | null
+          resumed_at?: string | null
+          start_time?: string
+          status?: Database["public"]["Enums"]["timer_session_status"]
+          total_seconds?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          accumulated_seconds?: number
+          adjusted_at?: string | null
+          adjusted_total_seconds?: number | null
+          adjustment_reason?: string | null
+          created_at?: string
+          discipline?: string | null
+          end_time?: string | null
+          id?: string
+          original_calculated_seconds?: number | null
+          paused_at?: string | null
+          resumed_at?: string | null
+          start_time?: string
+          status?: Database["public"]["Enums"]["timer_session_status"]
+          total_seconds?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       suppressed_emails: {
         Row: {
           created_at: string
@@ -1311,6 +1368,7 @@ export type Database = {
         | "procedente"
         | "improcedente"
         | "corrigido"
+      timer_session_status: "running" | "paused" | "completed" | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1459,6 +1517,7 @@ export const Constants = {
         "improcedente",
         "corrigido",
       ],
+      timer_session_status: ["running", "paused", "completed", "cancelled"],
     },
   },
 } as const
