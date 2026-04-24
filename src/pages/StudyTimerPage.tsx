@@ -538,17 +538,6 @@ export default function StudyTimerPage() {
                 />
               </div>
             </div>
-            <div>
-              <label className="text-xs text-muted-foreground block mb-1">
-                Motivo do ajuste (opcional)
-              </label>
-              <Textarea
-                rows={2}
-                value={rectifyReason}
-                onChange={e => setRectifyReason(e.target.value)}
-                placeholder="Ex.: esqueci de pausar durante o intervalo"
-              />
-            </div>
           </div>
           <DialogFooter className="gap-2 sm:gap-2">
             <Button variant="outline" onClick={() => setShowRectifyModal(false)} disabled={submitting}>
