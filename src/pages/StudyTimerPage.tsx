@@ -225,6 +225,7 @@ export default function StudyTimerPage() {
       end_time: nowIso,
       total_seconds: opts.totalSeconds,
       accumulated_seconds: opts.totalSeconds,
+      discipline: selectedDiscipline || session.discipline || null,
     };
     if (opts.rectified) {
       update.original_calculated_seconds = opts.originalSeconds ?? null;
