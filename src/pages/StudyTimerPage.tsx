@@ -68,6 +68,7 @@ export default function StudyTimerPage() {
   // Modals
   const [showStopModal, setShowStopModal] = useState(false);
   const [showRectifyModal, setShowRectifyModal] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
   const [rectifyHours, setRectifyHours] = useState(0);
   const [rectifyMinutes, setRectifyMinutes] = useState(0);
   const [rectifyReason, setRectifyReason] = useState("");
