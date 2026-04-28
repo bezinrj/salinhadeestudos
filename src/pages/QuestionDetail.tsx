@@ -276,6 +276,16 @@ export default function QuestionDetail() {
           >
             <Copy className="h-3.5 w-3.5" /> Copiar link
           </Button>
+          {canDownloadAnswerKey && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-xs gap-1.5 border-gold/30 text-gold hover:bg-gold/10"
+              onClick={handleDownloadAnswerKey}
+            >
+              <Download className="h-3.5 w-3.5" /> Gabarito
+            </Button>
+          )}
         </div>
       </div>
 
