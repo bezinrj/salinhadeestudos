@@ -99,6 +99,32 @@ export default function QuestionDetail() {
   const isPremium = question.isPremium || question.isWeekly;
   const canAnswer = !isPremium || subscribed;
   const isLocked = question.isWeekly && lockedScore !== null;
+  const isWeeklyActive = !!question.isWeekly && !!question.deadline && new Date(question.deadline) > new Date();
+  const canDownloadAnswerKey = !isWeeklyActive && (!!question.idealAnswer || !!question.mirrorText || !!question.barema);
+
+  const handleDownloadAnswerKey = () => {
+    if (isWeeklyActive) {
+      toast({
+        title: "Gabarito indisponível",
+        description: "O gabarito desta questão ainda não está disponível, pois ela está ativa em Questões da Semana.",
+        variant: "destructive",
+      });
+      return;
+    }
+    generateAnswerKeyReport({
+      publicId: question.publicId,
+      title: question.title,
+      career: question.career,
+      discipline: question.discipline,
+      subject: question.subject,
+      banca: (question as any).banca,
+      year: (question as any).year,
+      statement: question.statement,
+      barema: question.barema,
+      mirrorText: question.mirrorText,
+      idealAnswer: question.idealAnswer,
+    });
+  };
 
   const handleSubmit = async (directImageBase64?: string, directMimeType?: string) => {
     const isDirect = !!directImageBase64;
