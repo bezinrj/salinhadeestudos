@@ -104,11 +104,103 @@ function renderBaremaTable(barema: any): string {
     `;
   }
 
-  // Fallback: plain text barema
-  const text = typeof barema === "string" ? barema : barema ? JSON.stringify(barema, null, 2) : "";
+  // Fallback: parse plain text barema (format used in cadastro:
+  //   "1. Título do critério (2,0 pontos)
+  //    Subitem A
+  //    Subitem B")
+  const text =
+    typeof barema === "string"
+      ? barema
+      : barema
+      ? JSON.stringify(barema, null, 2)
+      : "";
+
   if (!text.trim()) {
     return `<p style="color:#94a3b8;font-style:italic;font-size:13px;">Barema não cadastrado.</p>`;
   }
+
+  // Try structured parsing
+  const lines = text.split(/\r?\n/).map((l) => l.trim());
+  const items: { num: string; title: string; score: number; subitems: { text: string; score?: number }[] }[] = [];
+  let current: (typeof items)[number] | null = null;
+  // Matches "1." / "1)" / "I -" optionally and ends with "(X,X ponto[s])"
+  const headerRe = /^(\d+)[\.\)]\s*(.+?)\s*\(\s*([\d.,]+)\s*pontos?\s*\)\s*$/i;
+  // Subitem line possibly with its own "(X,X)" score at the end
+  const subScoreRe = /^(.+?)\s*\(\s*([\d.,]+)\s*\)\s*$/;
+
+  for (const line of lines) {
+    if (!line) continue;
+    const m = line.match(headerRe);
+    if (m) {
+      current = {
+        num: m[1],
+        title: m[2],
+        score: parseFloat(m[3].replace(",", ".")),
+        subitems: [],
+      };
+      items.push(current);
+    } else if (current) {
+      const sm = line.match(subScoreRe);
+      if (sm) {
+        current.subitems.push({
+          text: sm[1],
+          score: parseFloat(sm[2].replace(",", ".")),
+        });
+      } else {
+        current.subitems.push({ text: line });
+      }
+    }
+  }
+
+  if (items.length > 0) {
+    let totalMax = 0;
+    const rows = items
+      .map((it) => {
+        totalMax += isNaN(it.score) ? 0 : it.score;
+        const subRows = it.subitems
+          .map(
+            (s) => `
+              <tr style="background:#f8fafc;">
+                <td style="padding:8px 12px;border:0.5px solid #e2e8f0;font-size:11px;color:#64748b;text-align:center;">↳</td>
+                <td style="padding:8px 12px;border:0.5px solid #e2e8f0;font-size:12px;color:#475569;line-height:1.6;">${esc(s.text)}</td>
+                <td style="padding:8px 12px;border:0.5px solid #e2e8f0;font-size:12px;color:#475569;text-align:right;font-weight:600;">${
+                  s.score !== undefined && !isNaN(s.score) ? s.score.toFixed(2).replace(".", ",") : "—"
+                }</td>
+              </tr>`
+          )
+          .join("");
+        return `
+          <tr>
+            <td style="padding:10px 12px;border:0.5px solid #e2e8f0;font-size:13px;color:#1e2a4a;font-weight:700;text-align:center;width:50px;background:#eef2ff;">${esc(it.num)}</td>
+            <td style="padding:10px 12px;border:0.5px solid #e2e8f0;font-size:13px;color:#1e2a4a;font-weight:600;background:#eef2ff;">${esc(it.title)}</td>
+            <td style="padding:10px 12px;border:0.5px solid #e2e8f0;font-size:13px;color:#1e2a4a;text-align:right;font-weight:700;width:110px;background:#eef2ff;">${it.score.toFixed(2).replace(".", ",")}</td>
+          </tr>
+          ${subRows}
+        `;
+      })
+      .join("");
+
+    return `
+      <table style="width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;border:0.5px solid #e2e8f0;">
+        <thead>
+          <tr style="background:#1e2a4a;">
+            <th style="padding:12px;font-size:11px;color:#fff;text-transform:uppercase;letter-spacing:0.05em;text-align:center;border:0.5px solid #1e2a4a;">Item</th>
+            <th style="padding:12px;font-size:11px;color:#fff;text-transform:uppercase;letter-spacing:0.05em;text-align:left;border:0.5px solid #1e2a4a;">Critério avaliado</th>
+            <th style="padding:12px;font-size:11px;color:#fff;text-transform:uppercase;letter-spacing:0.05em;text-align:right;border:0.5px solid #1e2a4a;">Pontuação</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+        <tfoot>
+          <tr style="background:#f1f5f9;">
+            <td colspan="2" style="padding:10px 12px;border:0.5px solid #e2e8f0;font-size:12px;color:#1e2a4a;font-weight:700;text-align:right;text-transform:uppercase;">Total</td>
+            <td style="padding:10px 12px;border:0.5px solid #e2e8f0;font-size:13px;color:#1e2a4a;font-weight:700;text-align:right;">${totalMax.toFixed(2).replace(".", ",")}</td>
+          </tr>
+        </tfoot>
+      </table>
+    `;
+  }
+
+  // Last resort: render as preformatted text
   return `<div style="background:#f8fafc;border:0.5px solid #e2e8f0;border-radius:8px;padding:14px;font-size:13px;color:#374151;line-height:1.7;white-space:pre-wrap;">${esc(text)}</div>`;
 }
 
@@ -122,8 +214,11 @@ export async function generateAnswerKeyReport(data: AnswerKeyData) {
     ? `<img src="${logoBase64}" style="height:48px;width:auto;object-fit:contain;" />`
     : `<svg viewBox="0 0 48 48" width="48" height="48"><circle cx="24" cy="24" r="22" fill="#2d3f6a"/><text x="24" y="30" text-anchor="middle" fill="#c8d6f0" font-size="20" font-weight="bold">⚖</text></svg>`;
 
-  const baremaHTML = renderBaremaTable(data.barema);
-  const gabaritoText = data.idealAnswer || data.mirrorText || "";
+  // O "Barema / Critérios de Correção (texto livre)" é salvo em mirror_text.
+  // Usamos ele como fonte primária; se não houver, caímos no JSON estruturado.
+  const baremaSource = data.mirrorText && data.mirrorText.trim() ? data.mirrorText : data.barema;
+  const baremaHTML = renderBaremaTable(baremaSource);
+  const gabaritoText = data.idealAnswer || "";
 
   const html = `<!DOCTYPE html>
 <html lang="pt-BR">
