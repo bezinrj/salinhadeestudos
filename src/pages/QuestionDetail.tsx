@@ -64,6 +64,8 @@ export default function QuestionDetail() {
         mirrorText: (data as any).mirror_text as string | null,
         idealAnswer: (data as any).ideal_answer as string | null,
         subject: (data as any).subject as string | null,
+        banca: (data as any).banca as string | null,
+        year: (data as any).year as number | null,
       };
     },
     enabled: !!id,
