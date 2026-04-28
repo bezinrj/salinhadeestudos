@@ -18,6 +18,7 @@ import { useBadges } from "@/hooks/useBadges";
 import { ReportQuestionDialog } from "@/components/ReportQuestionDialog";
 import { AnswerFileUpload } from "@/components/AnswerFileUpload";
 import { generateCorrectionReport } from "@/lib/generateCorrectionReport";
+import { generateAnswerKeyReport } from "@/lib/generateAnswerKeyReport";
 
 export default function QuestionDetail() {
   const { id } = useParams();
