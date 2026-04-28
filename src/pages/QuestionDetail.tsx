@@ -18,6 +18,7 @@ import { useBadges } from "@/hooks/useBadges";
 import { ReportQuestionDialog } from "@/components/ReportQuestionDialog";
 import { AnswerFileUpload } from "@/components/AnswerFileUpload";
 import { generateCorrectionReport } from "@/lib/generateCorrectionReport";
+import { generateAnswerKeyReport } from "@/lib/generateAnswerKeyReport";
 
 export default function QuestionDetail() {
   const { id } = useParams();
@@ -64,6 +65,8 @@ export default function QuestionDetail() {
         mirrorText: (data as any).mirror_text as string | null,
         idealAnswer: (data as any).ideal_answer as string | null,
         subject: (data as any).subject as string | null,
+        banca: (data as any).banca as string | null,
+        year: (data as any).year as number | null,
       };
     },
     enabled: !!id,
@@ -96,6 +99,32 @@ export default function QuestionDetail() {
   const isPremium = question.isPremium || question.isWeekly;
   const canAnswer = !isPremium || subscribed;
   const isLocked = question.isWeekly && lockedScore !== null;
+  const isWeeklyActive = !!question.isWeekly && !!question.deadline && new Date(question.deadline) > new Date();
+  const canDownloadAnswerKey = !isWeeklyActive && (!!question.idealAnswer || !!question.mirrorText || !!question.barema);
+
+  const handleDownloadAnswerKey = () => {
+    if (isWeeklyActive) {
+      toast({
+        title: "Gabarito indisponível",
+        description: "O gabarito desta questão ainda não está disponível, pois ela está ativa em Questões da Semana.",
+        variant: "destructive",
+      });
+      return;
+    }
+    generateAnswerKeyReport({
+      publicId: question.publicId,
+      title: question.title,
+      career: question.career,
+      discipline: question.discipline,
+      subject: question.subject,
+      banca: (question as any).banca,
+      year: (question as any).year,
+      statement: question.statement,
+      barema: question.barema,
+      mirrorText: question.mirrorText,
+      idealAnswer: question.idealAnswer,
+    });
+  };
 
   const handleSubmit = async (directImageBase64?: string, directMimeType?: string) => {
     const isDirect = !!directImageBase64;
@@ -247,6 +276,16 @@ export default function QuestionDetail() {
           >
             <Copy className="h-3.5 w-3.5" /> Copiar link
           </Button>
+          {canDownloadAnswerKey && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-xs gap-1.5 border-gold/30 text-gold hover:bg-gold/10"
+              onClick={handleDownloadAnswerKey}
+            >
+              <Download className="h-3.5 w-3.5" /> Gabarito
+            </Button>
+          )}
         </div>
       </div>
 
