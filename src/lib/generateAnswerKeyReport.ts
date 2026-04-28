@@ -214,8 +214,11 @@ export async function generateAnswerKeyReport(data: AnswerKeyData) {
     ? `<img src="${logoBase64}" style="height:48px;width:auto;object-fit:contain;" />`
     : `<svg viewBox="0 0 48 48" width="48" height="48"><circle cx="24" cy="24" r="22" fill="#2d3f6a"/><text x="24" y="30" text-anchor="middle" fill="#c8d6f0" font-size="20" font-weight="bold">⚖</text></svg>`;
 
-  const baremaHTML = renderBaremaTable(data.barema);
-  const gabaritoText = data.idealAnswer || data.mirrorText || "";
+  // O "Barema / Critérios de Correção (texto livre)" é salvo em mirror_text.
+  // Usamos ele como fonte primária; se não houver, caímos no JSON estruturado.
+  const baremaSource = data.mirrorText && data.mirrorText.trim() ? data.mirrorText : data.barema;
+  const baremaHTML = renderBaremaTable(baremaSource);
+  const gabaritoText = data.idealAnswer || "";
 
   const html = `<!DOCTYPE html>
 <html lang="pt-BR">
