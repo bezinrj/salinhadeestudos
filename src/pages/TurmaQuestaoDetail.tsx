@@ -543,6 +543,7 @@ export default function TurmaQuestaoDetail() {
       {questionId && (
         <ReportQuestionDialog
           questionId={questionId}
+          questionTitle={question.title}
           open={reportOpen}
           onOpenChange={setReportOpen}
         />
