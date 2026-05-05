@@ -19,6 +19,8 @@ import Admin from "./pages/Admin";
 import CheckoutSuccess from "./pages/CheckoutSuccess";
 import Schedules from "./pages/Schedules";
 import ScheduleDetail from "./pages/ScheduleDetail";
+import Turmas from "./pages/Turmas";
+import TurmaDetail from "./pages/TurmaDetail";
 import NotFound from "./pages/NotFound";
 import ResetPassword from "./pages/ResetPassword";
 
@@ -56,6 +58,8 @@ const App = () => (
               <Route path="/meu-plano" element={<MyPlan />} />
               <Route path="/cronograma" element={<Schedules />} />
               <Route path="/cronograma/:id" element={<ScheduleDetail />} />
+              <Route path="/turmas" element={<Turmas />} />
+              <Route path="/turmas/:id" element={<TurmaDetail />} />
               <Route path="/admin" element={<Admin />} />
             </Route>
             <Route path="*" element={<NotFound />} />
