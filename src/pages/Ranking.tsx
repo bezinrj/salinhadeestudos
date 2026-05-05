@@ -15,12 +15,18 @@ export default function Ranking() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  // Fetch general ranking via RPC (security definer aggregates scores for all users)
+  // Ranking atualiza 1x por dia — a chave inclui a data atual (fuso de Brasília).
+  // Quando o dia virar, o React Query automaticamente busca dados frescos.
+  const todayKey = new Date().toLocaleDateString("pt-BR");
+
   const { data: ranking = [] } = useQuery({
-    queryKey: ["ranking-general"],
+    queryKey: ["ranking-general", todayKey],
     queryFn: async () => {
       const { data: scores } = await (supabase as any).rpc("get_general_ranking");
-      const { data: profiles } = await supabase.from("profiles").select("id, name, username, avatar_url, active_badge_id");
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, name, username, avatar_url, active_badge_id")
+        .limit(200);
 
       if (!scores || !profiles) return [];
 
@@ -46,7 +52,8 @@ export default function Ranking() {
       entries.forEach((e, i) => { e.position = i + 1; });
       return entries;
     },
-    refetchInterval: 30_000,
+    staleTime: Infinity,
+    gcTime: 24 * 60 * 60 * 1000,
   });
 
   const top3 = ranking.slice(0, 3);
@@ -158,7 +165,10 @@ function WeeklyRankingTab({ currentUserId }: { currentUserId?: string }) {
 
       const { data: answers } = await (supabase as any).rpc("get_weekly_ranking", { _question_id: activeQ.id });
 
-      const { data: profiles } = await supabase.from("profiles").select("id, name, username, avatar_url");
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, name, username, avatar_url")
+        .limit(200);
 
       if (!answers || !profiles) return [];
 
@@ -180,7 +190,8 @@ function WeeklyRankingTab({ currentUserId }: { currentUserId?: string }) {
       entries.forEach((e: RankingEntry, i: number) => { e.position = i + 1; });
       return entries;
     },
-    refetchInterval: 30_000,
+    staleTime: Infinity,
+    gcTime: 24 * 60 * 60 * 1000,
   });
 
   return (
