@@ -1,4 +1,4 @@
-import { Scale, FileText, Timer, Trophy, User, Calendar, LayoutDashboard, LogOut, CreditCard, Shield, CalendarRange } from "lucide-react";
+import { Scale, FileText, Timer, Trophy, User, Calendar, LayoutDashboard, LogOut, CreditCard, Shield, CalendarRange, BookOpen } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -21,6 +21,7 @@ const mainItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Discursivas", url: "/discursivas", icon: FileText },
   { title: "Questões da Semana", url: "/semanal", icon: Calendar },
+  { title: "Minhas Turmas", url: "/turmas", icon: BookOpen },
   { title: "Ranking", url: "/ranking", icon: Trophy },
   { title: "Cronômetro", url: "/cronometro", icon: Timer },
   { title: "Perfil", url: "/perfil", icon: User },

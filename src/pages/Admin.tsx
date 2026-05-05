@@ -30,6 +30,7 @@ import { SubjectTreeSelect } from "@/components/SubjectTreeSelect";
 import ModerationRequestsTab from "@/components/ModerationRequestsTab";
 import AdminAlertsTab from "@/components/AdminAlertsTab";
 import MateriasTab from "@/components/MateriasTab";
+import TurmasAdminTab from "@/components/TurmasAdminTab";
 
 
 const ABSOLUTE_ADMIN_ID = "ffdb2f38-0e5b-4f29-8cb8-712fcfde53f6";
@@ -86,10 +87,11 @@ export default function Admin() {
 
       {isAdmin ? (
          <Tabs defaultValue="overview" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-10 bg-secondary">
+          <TabsList className="grid w-full grid-cols-11 bg-secondary">
             <TabsTrigger value="overview">Visão Geral</TabsTrigger>
             <TabsTrigger value="users">Usuários</TabsTrigger>
             <TabsTrigger value="weekly">Semanal</TabsTrigger>
+            <TabsTrigger value="turmas">Turmas</TabsTrigger>
             <TabsTrigger value="alerts" className="relative">
               Alertas
               {pendingAlerts > 0 && (
@@ -116,6 +118,7 @@ export default function Admin() {
           <TabsContent value="overview"><OverviewTab /></TabsContent>
           <TabsContent value="users"><UsersTab /></TabsContent>
           <TabsContent value="weekly"><WeeklyQuestionsTab /></TabsContent>
+          <TabsContent value="turmas"><TurmasAdminTab /></TabsContent>
           <TabsContent value="alerts"><AdminAlertsTab /></TabsContent>
           <TabsContent value="requests"><ModerationRequestsTab /></TabsContent>
           <TabsContent value="announcements"><AnnouncementsTab /></TabsContent>
@@ -126,13 +129,15 @@ export default function Admin() {
         </Tabs>
       ) : (
         <Tabs defaultValue="weekly" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-3 bg-secondary">
+          <TabsList className="grid w-full grid-cols-4 bg-secondary">
             <TabsTrigger value="weekly">Semanal</TabsTrigger>
+            <TabsTrigger value="turmas">Turmas</TabsTrigger>
             <TabsTrigger value="subjects">Assuntos</TabsTrigger>
             <TabsTrigger value="materias">Matérias</TabsTrigger>
           </TabsList>
 
           <TabsContent value="weekly"><WeeklyQuestionsTab /></TabsContent>
+          <TabsContent value="turmas"><TurmasAdminTab /></TabsContent>
           <TabsContent value="subjects"><SubjectsTab /></TabsContent>
           <TabsContent value="materias"><MateriasTab /></TabsContent>
         </Tabs>
