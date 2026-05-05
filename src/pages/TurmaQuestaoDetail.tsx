@@ -22,6 +22,7 @@ import { AnswerFileUpload } from "@/components/AnswerFileUpload";
 import { generateCorrectionReport } from "@/lib/generateCorrectionReport";
 import { generateAnswerKeyReport } from "@/lib/generateAnswerKeyReport";
 import { TurmaRanking } from "@/components/TurmaRanking";
+import { QuestionComments } from "@/components/QuestionComments";
 
 export default function TurmaQuestaoDetail() {
   const { albumId, questionId } = useParams();
@@ -566,6 +567,8 @@ export default function TurmaQuestaoDetail() {
           onOpenChange={setReportOpen}
         />
       )}
+
+      {questionId && <QuestionComments questionId={questionId} />}
 
       <TurmaRanking
         albumId={albumId!}
