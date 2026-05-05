@@ -135,7 +135,7 @@ export default function TurmaDetail() {
           variant="outline"
           size="sm"
           onClick={() => setRankingOpen(true)}
-          style={{ borderColor: `${cor}60`, color: cor }}
+          className="text-white border-white/20 hover:bg-white/10"
         >
           <Trophy className="h-4 w-4 mr-2" /> Ranking
         </Button>
