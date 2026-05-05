@@ -956,6 +956,132 @@ export type Database = {
         }
         Relationships: []
       }
+      turmas_albuns: {
+        Row: {
+          capa_url: string | null
+          categoria_id: string | null
+          created_at: string | null
+          created_by: string | null
+          data_inicio: string
+          descricao: string | null
+          id: string
+          intervalo_dias: number
+          is_active: boolean
+          questoes_por_liberacao: number
+          titulo: string
+          updated_at: string | null
+        }
+        Insert: {
+          capa_url?: string | null
+          categoria_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          data_inicio?: string
+          descricao?: string | null
+          id?: string
+          intervalo_dias?: number
+          is_active?: boolean
+          questoes_por_liberacao?: number
+          titulo: string
+          updated_at?: string | null
+        }
+        Update: {
+          capa_url?: string | null
+          categoria_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          data_inicio?: string
+          descricao?: string | null
+          id?: string
+          intervalo_dias?: number
+          is_active?: boolean
+          questoes_por_liberacao?: number
+          titulo?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "turmas_albuns_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "turmas_categorias"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "turmas_albuns_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      turmas_categorias: {
+        Row: {
+          cor: string
+          created_at: string | null
+          icone: string
+          id: string
+          nome: string
+        }
+        Insert: {
+          cor?: string
+          created_at?: string | null
+          icone?: string
+          id?: string
+          nome: string
+        }
+        Update: {
+          cor?: string
+          created_at?: string | null
+          icone?: string
+          id?: string
+          nome?: string
+        }
+        Relationships: []
+      }
+      turmas_questoes: {
+        Row: {
+          album_id: string
+          created_at: string | null
+          id: string
+          liberado_em: string
+          ordem: number
+          question_id: string
+        }
+        Insert: {
+          album_id: string
+          created_at?: string | null
+          id?: string
+          liberado_em?: string
+          ordem?: number
+          question_id: string
+        }
+        Update: {
+          album_id?: string
+          created_at?: string | null
+          id?: string
+          liberado_em?: string
+          ordem?: number
+          question_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "turmas_questoes_album_id_fkey"
+            columns: ["album_id"]
+            isOneToOne: false
+            referencedRelation: "turmas_albuns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "turmas_questoes_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "weekly_questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_badges: {
         Row: {
           badge_id: string
@@ -1207,6 +1333,7 @@ export type Database = {
       }
       weekly_questions: {
         Row: {
+          album_id: string | null
           banca: string | null
           barema: Json | null
           career: string
@@ -1229,6 +1356,7 @@ export type Database = {
           year: number | null
         }
         Insert: {
+          album_id?: string | null
           banca?: string | null
           barema?: Json | null
           career: string
@@ -1251,6 +1379,7 @@ export type Database = {
           year?: number | null
         }
         Update: {
+          album_id?: string | null
           banca?: string | null
           barema?: Json | null
           career?: string
@@ -1272,7 +1401,15 @@ export type Database = {
           title?: string
           year?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "weekly_questions_album_id_fkey"
+            columns: ["album_id"]
+            isOneToOne: false
+            referencedRelation: "turmas_albuns"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       weekly_waitlist: {
         Row: {
