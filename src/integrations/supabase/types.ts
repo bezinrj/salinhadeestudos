@@ -1089,6 +1089,7 @@ export type Database = {
         Row: {
           album_id: string
           created_at: string | null
+          gabarito_baixado_antes: boolean
           id: string
           is_study_attempt: boolean
           question_id: string
@@ -1099,6 +1100,7 @@ export type Database = {
         Insert: {
           album_id: string
           created_at?: string | null
+          gabarito_baixado_antes?: boolean
           id?: string
           is_study_attempt?: boolean
           question_id: string
@@ -1109,6 +1111,7 @@ export type Database = {
         Update: {
           album_id?: string
           created_at?: string | null
+          gabarito_baixado_antes?: boolean
           id?: string
           is_study_attempt?: boolean
           question_id?: string
