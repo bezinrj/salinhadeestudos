@@ -1514,7 +1514,16 @@ export type Database = {
         Args: { p_album_id: string }
         Returns: {
           questoes_respondidas: number
+          respondeu_sem_gabarito: boolean
           total_score: number
+          user_id: string
+        }[]
+      }
+      get_turma_ranking_por_questao: {
+        Args: { p_album_id: string; p_question_id: string }
+        Returns: {
+          respondeu_sem_gabarito: boolean
+          score: number
           user_id: string
         }[]
       }
@@ -1522,6 +1531,7 @@ export type Database = {
         Args: { p_album_id: string }
         Returns: {
           questoes_respondidas: number
+          respondeu_sem_gabarito: boolean
           total_score: number
           user_id: string
         }[]
