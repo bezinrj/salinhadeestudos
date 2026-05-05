@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import { type CorrectionResult, type BaremaItem } from "@/data/mockData";
+import { evaluateAnswer, type CorrectionResult, type BaremaItem } from "@/data/mockData";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -11,11 +11,10 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
   ArrowLeft, CheckCircle2, XCircle, AlertTriangle, Lightbulb,
-  Send, Lock, Loader2, Download, Eye, Flag, Trophy
+  FileText, Send, Lock, Loader2, Download, Eye, Flag, Trophy
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
-import { QuestionComments } from "@/components/QuestionComments";
 import { toast } from "@/hooks/use-toast";
 import { useBadges } from "@/hooks/useBadges";
 import { ReportQuestionDialog } from "@/components/ReportQuestionDialog";
@@ -212,7 +211,7 @@ export default function TurmaQuestaoDetail() {
           lastScore: result.grade,
           answeredWeekly: false,
           rankPosition: profile?.rank_position ?? 0,
-          weeklyHours: Number(profile?.weekly_hours ?? 0),
+          weeklyHours: profile?.weekly_hours ?? 0,
           streak: profile?.streak ?? 0,
           subscriptionTier: profile?.subscription_tier,
         });
@@ -256,78 +255,91 @@ export default function TurmaQuestaoDetail() {
     return "bg-destructive/5 border-destructive/20";
   };
 
-  if (isLoading) return <div className="container mx-auto px-4 py-8 text-muted-foreground">Carregando...</div>;
-  if (!question) return <div className="container mx-auto px-4 py-8 text-muted-foreground">Questão não encontrada.</div>;
+  if (isLoading) return <div className="p-8 text-center text-muted-foreground">Carregando...</div>;
+  if (!question) return <div className="p-8 text-center text-muted-foreground">Questão não encontrada.</div>;
 
   const canDownloadAnswerKey = !!(question.idealAnswer || question.mirrorText || question.barema);
 
   return (
-    <div className="container mx-auto px-4 py-6 max-w-4xl space-y-6">
+    <div className="container max-w-4xl mx-auto px-4 py-6 space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="h-4 w-4 mr-2" /> Voltar
+          <ArrowLeft className="h-4 w-4 mr-1" /> Voltar
         </Button>
         <div className="flex items-center gap-2 flex-wrap">
           {isStudyMode && (
-            <Badge variant="outline" className="text-amber-400 border-amber-400/40">
+            <Badge variant="outline" className="border-amber-500/40 text-amber-400">
               📚 Modo Estudo — sem pontuação
             </Badge>
           )}
           <Button
             variant="outline"
             size="sm"
+            className="gap-2"
             onClick={() => setRankingOpen(true)}
-            style={{ borderColor: `${albumCor}60`, color: albumCor }}
           >
-            <Trophy className="h-4 w-4 mr-2" /> Ranking
+            <Trophy className="h-4 w-4" /> Ranking
           </Button>
           {canDownloadAnswerKey && (
-            <Button variant="outline" size="sm" onClick={handleDownloadAnswerKey}>
-              <Download className="h-4 w-4 mr-2" /> Gabarito
+            <Button variant="outline" size="sm" className="gap-2" onClick={handleDownloadAnswerKey}>
+              <Download className="h-4 w-4" /> Gabarito
             </Button>
           )}
         </div>
       </div>
 
+      {/* Card da questão com glow colorido da turma */}
       <div
-        className="rounded-lg bg-card p-6 space-y-3 transition-shadow"
+        className="rounded-lg border bg-card p-6 space-y-4"
         style={{
-          border: `1px solid ${albumCor}40`,
-          boxShadow: `0 0 24px ${albumCor}33, 0 0 48px ${albumCor}1a`,
+          borderColor: `${albumCor}66`,
+          boxShadow: `0 0 30px ${albumCor}40, 0 0 60px ${albumCor}20`,
         }}
       >
-        <div className="flex flex-wrap gap-2">
-          <Badge variant="secondary">{question.career}</Badge>
-          <Badge variant="outline">{question.discipline}</Badge>
-          {question.subject && <Badge variant="outline">{question.subject}</Badge>}
-          <Badge style={{ backgroundColor: `${albumCor}20`, color: albumCor, border: `1px solid ${albumCor}40` }}>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Badge variant="outline" className="text-xs">
+            {question.career}
+          </Badge>
+          <Badge variant="secondary" className="text-xs">
+            {question.discipline}
+          </Badge>
+          {question.subject && (
+            <Badge variant="outline" className="text-xs">
+              {question.subject}
+            </Badge>
+          )}
+          <Badge
+            variant="outline"
+            className="text-xs"
+            style={{ borderColor: `${albumCor}80`, color: albumCor }}
+          >
             🎓 {albumTitulo}
           </Badge>
         </div>
 
-        <h1 className="text-2xl font-bold font-display">{question.title}</h1>
-        <p className="text-foreground/85 whitespace-pre-line leading-relaxed">{question.statement}</p>
+        <h1 className="text-2xl font-display font-bold">{question.title}</h1>
+        <p className="text-sm text-foreground/85 leading-relaxed whitespace-pre-line">{question.statement}</p>
 
         <Button
           variant="ghost"
           size="sm"
-          className="text-muted-foreground hover:text-destructive"
+          className="text-muted-foreground hover:text-destructive gap-2"
           onClick={() => setReportOpen(true)}
         >
-          <Flag className="h-4 w-4 mr-2" /> Reportar problema
+          <Flag className="h-4 w-4" /> Reportar problema
         </Button>
       </div>
 
+      {/* Já respondeu */}
       {jaRespondeu && !isStudyMode && !correction && (
         <Card className="gradient-card border-primary/20">
-          <CardContent className="p-6 text-center space-y-3">
-            <Lock className="h-10 w-10 mx-auto text-primary" />
-            <h3 className="text-lg font-semibold">Você já respondeu esta questão</h3>
-            <p>
-              <span className={cn("text-4xl font-bold font-display", getGradeColor(Number(respostaOficial.score)))}>
-                {Number(respostaOficial.score).toFixed(1)}
-              </span>
-              <span className="text-muted-foreground"> / 10</span>
+          <CardContent className="p-6 text-center space-y-4">
+            <CheckCircle2 className="h-12 w-12 text-green-400 mx-auto" />
+            <h2 className="text-xl font-display font-bold">Você já respondeu esta questão</h2>
+            <p className={cn("text-4xl font-display font-bold", getGradeColor(Number(respostaOficial.score)))}>
+              {Number(respostaOficial.score).toFixed(1)}
+              <span className="text-lg text-muted-foreground"> / 10</span>
             </p>
             {respostaOficial.gabarito_baixado_antes === false && (
               <p className="text-sm text-amber-400">
@@ -344,16 +356,18 @@ export default function TurmaQuestaoDetail() {
         </Card>
       )}
 
+      {/* Formulário de resposta */}
       {(!jaRespondeu || isStudyMode) && !correction && (
         <Card className="gradient-card border-border">
           <CardHeader>
             <CardTitle className="text-base font-display flex items-center gap-2">
+              <FileText className="h-4 w-4 text-primary" />
               {isStudyMode ? "📚 Modo Estudo — nova tentativa" : "Sua Resposta"}
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-4">
             <Textarea
-              placeholder="Digite sua resposta aqui..."
+              placeholder="Digite ou cole sua resposta aqui (mínimo 50 caracteres)..."
               value={answer}
               onChange={(e) => { setAnswer(e.target.value); setSubmissionType("texto_manual"); }}
               className="min-h-[250px] bg-secondary border-border resize-y text-sm"
@@ -387,6 +401,7 @@ export default function TurmaQuestaoDetail() {
         </Card>
       )}
 
+      {/* Resultado da correção */}
       {correction && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
           <Card className="gradient-card border-primary/20 glow-electric">
@@ -543,12 +558,9 @@ export default function TurmaQuestaoDetail() {
         </motion.div>
       )}
 
-      {questionId && <QuestionComments questionId={questionId} />}
-
       {questionId && (
         <ReportQuestionDialog
           questionId={questionId}
-          questionTitle={question.title}
           open={reportOpen}
           onOpenChange={setReportOpen}
         />
