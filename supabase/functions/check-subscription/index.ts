@@ -83,42 +83,78 @@ serve(async (req) => {
       logStep("Admin lookup for user", { targetUserId: body.user_id, targetEmail });
     }
 
-    // 1) Check Stripe
-    const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
-    const customers = await stripe.customers.list({ email: targetEmail, limit: 1 });
+    // 1) Check manual_subscriptions FIRST (fast DB lookup, avoids Stripe timeout)
+    const { data: manualSubs } = await supabaseClient
+      .from("manual_subscriptions")
+      .select("*")
+      .eq("user_id", targetUserId)
+      .eq("is_active", true)
+      .gte("expires_at", new Date().toISOString())
+      .order("expires_at", { ascending: false })
+      .limit(1);
+
+    if (manualSubs && manualSubs.length > 0) {
+      const ms = manualSubs[0];
+      logStep("Active manual subscription found", { plan_type: ms.plan_type, expires_at: ms.expires_at });
+      await supabaseClient.from("profiles").update({ subscription_tier: ms.plan_type || "premium" }).eq("id", targetUserId);
+      return new Response(
+        JSON.stringify({
+          subscribed: true,
+          manual: true,
+          plan_type: ms.plan_type,
+          subscription_end: ms.expires_at,
+          subscription_tier: ms.plan_type || "premium",
+          price_id: null,
+          product_id: null,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+      );
+    }
+
+    // 2) Check Stripe (with timeout protection)
+    const stripe = new Stripe(stripeKey, {
+      apiVersion: "2025-08-27.basil",
+      timeout: 10000, // 10s timeout per Stripe call
+      maxNetworkRetries: 1,
+    });
 
     let hasStripeSub = false;
     let priceId: string | null = null;
     let productId: string | null = null;
     let subscriptionEnd: string | null = null;
 
-    if (customers.data.length > 0) {
-      const customerId = customers.data[0].id;
-      logStep("Found Stripe customer", { customerId });
-      const subscriptions = await stripe.subscriptions.list({
-        customer: customerId,
-        status: "active",
-        limit: 1,
-      });
-      if (subscriptions.data.length > 0) {
-        hasStripeSub = true;
-        const subscription = subscriptions.data[0];
-        subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
-        priceId = subscription.items.data[0].price.id;
-        productId = subscription.items.data[0].price.product as string;
-        logStep("Active Stripe subscription found", { priceId, productId, subscriptionEnd });
+    try {
+      const customers = await stripe.customers.list({ email: targetEmail, limit: 1 });
+
+      if (customers.data.length > 0) {
+        const customerId = customers.data[0].id;
+        logStep("Found Stripe customer", { customerId });
+        const subscriptions = await stripe.subscriptions.list({
+          customer: customerId,
+          status: "active",
+          limit: 1,
+        });
+        if (subscriptions.data.length > 0) {
+          hasStripeSub = true;
+          const subscription = subscriptions.data[0];
+          subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
+          priceId = subscription.items.data[0].price.id;
+          productId = subscription.items.data[0].price.product as string;
+          logStep("Active Stripe subscription found", { priceId, productId, subscriptionEnd });
+        }
       }
+    } catch (stripeErr) {
+      const msg = stripeErr instanceof Error ? stripeErr.message : String(stripeErr);
+      logStep("Stripe lookup failed, treating as no Stripe sub", { message: msg });
     }
 
     if (hasStripeSub) {
-      // Determine tier from price ID
       const annualPriceId = "price_1TBMUHLy0axdgWvJInHob9Il";
       const quarterlyPriceId = "price_1TBMTpLy0axdgWvJjbmiZ92u";
       let tier = "monthly";
       if (priceId === annualPriceId) tier = "annual";
       else if (priceId === quarterlyPriceId) tier = "quarterly";
 
-      // Update profile subscription_tier
       await supabaseClient.from("profiles").update({ subscription_tier: tier }).eq("id", targetUserId);
 
       return new Response(
@@ -134,34 +170,6 @@ serve(async (req) => {
       );
     }
 
-    // 2) Check manual_subscriptions
-    const { data: manualSubs } = await supabaseClient
-      .from("manual_subscriptions")
-      .select("*")
-      .eq("user_id", targetUserId)
-      .eq("is_active", true)
-      .gte("expires_at", new Date().toISOString())
-      .order("expires_at", { ascending: false })
-      .limit(1);
-
-    if (manualSubs && manualSubs.length > 0) {
-      const ms = manualSubs[0];
-      logStep("Active manual subscription found", { plan_type: ms.plan_type, expires_at: ms.expires_at });
-      // Update profile subscription_tier for manual subs
-      await supabaseClient.from("profiles").update({ subscription_tier: ms.plan_type || "premium" }).eq("id", targetUserId);
-      return new Response(
-        JSON.stringify({
-          subscribed: true,
-          manual: true,
-          plan_type: ms.plan_type,
-          subscription_end: ms.expires_at,
-          subscription_tier: ms.plan_type || "premium",
-          price_id: null,
-          product_id: null,
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
-      );
-    }
 
     // Clear subscription_tier if no active sub
     await supabaseClient.from("profiles").update({ subscription_tier: null }).eq("id", targetUserId);
