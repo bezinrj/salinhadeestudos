@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
   ArrowLeft, CheckCircle2, XCircle, AlertTriangle, Lightbulb,
-  Send, Loader2, Download, Eye, Flag, Trophy
+  Send, Lock, Loader2, Download, Eye, Flag, Trophy
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
@@ -138,6 +138,7 @@ export default function TurmaQuestaoDetail() {
     if (!question?.mirrorText && !question?.idealAnswer) return;
 
     setIsEvaluating(true);
+    const currentSubmissionType = isDirect ? "correcao_direta" : submissionType;
 
     try {
       const body: any = {
@@ -161,7 +162,7 @@ export default function TurmaQuestaoDetail() {
       }
 
       const result = data as CorrectionResult;
-      const reportText = isDirect ? ((result as any).answer || "[Correção direta por imagem/PDF]") : answer;
+      const reportText = isDirect ? (result.answer || "[Correção direta por imagem/PDF]") : answer;
       setAnswerForReport(reportText);
       setCorrection(result);
       setIsEvaluating(false);
@@ -211,7 +212,7 @@ export default function TurmaQuestaoDetail() {
           lastScore: result.grade,
           answeredWeekly: false,
           rankPosition: profile?.rank_position ?? 0,
-          weeklyHours: profile?.weekly_hours ?? 0,
+          weeklyHours: Number(profile?.weekly_hours ?? 0),
           streak: profile?.streak ?? 0,
           subscriptionTier: profile?.subscription_tier,
         });
@@ -255,68 +256,71 @@ export default function TurmaQuestaoDetail() {
     return "bg-destructive/5 border-destructive/20";
   };
 
-  if (isLoading) return <div className="p-6 text-muted-foreground">Carregando...</div>;
-  if (!question) return <div className="p-6 text-muted-foreground">Questão não encontrada.</div>;
+  if (isLoading) return <div className="container mx-auto px-4 py-8 text-muted-foreground">Carregando...</div>;
+  if (!question) return <div className="container mx-auto px-4 py-8 text-muted-foreground">Questão não encontrada.</div>;
 
   const canDownloadAnswerKey = !!(question.idealAnswer || question.mirrorText || question.barema);
 
   return (
-    <div className="container max-w-4xl mx-auto p-4 md:p-6 space-y-6">
-      {/* Header */}
+    <div className="container mx-auto px-4 py-6 max-w-4xl space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="text-muted-foreground hover:text-foreground gap-2">
-          <ArrowLeft className="h-4 w-4" /> Voltar
+        <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="text-muted-foreground hover:text-foreground">
+          <ArrowLeft className="h-4 w-4 mr-2" /> Voltar
         </Button>
         <div className="flex items-center gap-2 flex-wrap">
           {isStudyMode && (
-            <Badge variant="outline" className="border-amber-500/40 text-amber-400">
+            <Badge variant="outline" className="text-amber-400 border-amber-400/40">
               📚 Modo Estudo — sem pontuação
             </Badge>
           )}
-          <Button variant="outline" size="sm" onClick={() => setRankingOpen(true)} className="gap-2">
-            <Trophy className="h-4 w-4" /> Ranking
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setRankingOpen(true)}
+            style={{ borderColor: `${albumCor}60`, color: albumCor }}
+          >
+            <Trophy className="h-4 w-4 mr-2" /> Ranking
           </Button>
           {canDownloadAnswerKey && (
-            <Button variant="outline" size="sm" onClick={handleDownloadAnswerKey} className="gap-2">
-              <Download className="h-4 w-4" /> Gabarito
+            <Button variant="outline" size="sm" onClick={handleDownloadAnswerKey}>
+              <Download className="h-4 w-4 mr-2" /> Gabarito
             </Button>
           )}
         </div>
       </div>
 
-      {/* Card da questão com led colorido */}
-      <Card className="gradient-card border-border overflow-hidden relative">
-        <div className="h-1 w-full" style={{ backgroundColor: albumCor }} />
-        <CardContent className="p-6 space-y-4">
-          <div className="flex items-center gap-2 flex-wrap">
+      <Card className="gradient-card border-l-4" style={{ borderLeftColor: albumCor }}>
+        <CardContent className="p-6 space-y-3">
+          <div className="flex flex-wrap gap-2">
             <Badge variant="secondary">{question.career}</Badge>
             <Badge variant="outline">{question.discipline}</Badge>
             {question.subject && <Badge variant="outline">{question.subject}</Badge>}
-            <Badge
-              variant="outline"
-              style={{ borderColor: albumCor, color: albumCor }}
-            >
+            <Badge style={{ backgroundColor: `${albumCor}20`, color: albumCor, border: `1px solid ${albumCor}40` }}>
               🎓 {albumTitulo}
             </Badge>
           </div>
 
-          <h1 className="text-2xl font-display font-bold">{question.title}</h1>
-          <p className="text-sm text-foreground/85 leading-relaxed whitespace-pre-line">{question.statement}</p>
+          <h1 className="text-2xl font-bold font-display">{question.title}</h1>
+          <p className="text-foreground/85 whitespace-pre-line leading-relaxed">{question.statement}</p>
 
-          <Button variant="ghost" size="sm" onClick={() => setReportOpen(true)} className="text-muted-foreground gap-2">
-            <Flag className="h-4 w-4" /> Reportar problema
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground hover:text-destructive"
+            onClick={() => setReportOpen(true)}
+          >
+            <Flag className="h-4 w-4 mr-2" /> Reportar problema
           </Button>
         </CardContent>
       </Card>
 
-      {/* Já respondeu oficialmente */}
       {jaRespondeu && !isStudyMode && !correction && (
         <Card className="gradient-card border-primary/20">
           <CardContent className="p-6 text-center space-y-3">
-            <Lock className="h-8 w-8 text-primary mx-auto" />
-            <h3 className="font-display font-semibold text-lg">Você já respondeu esta questão</h3>
+            <Lock className="h-10 w-10 mx-auto text-primary" />
+            <h3 className="text-lg font-semibold">Você já respondeu esta questão</h3>
             <p>
-              <span className={cn("text-4xl font-display font-bold", getGradeColor(Number(respostaOficial.score)))}>
+              <span className={cn("text-4xl font-bold font-display", getGradeColor(Number(respostaOficial.score)))}>
                 {Number(respostaOficial.score).toFixed(1)}
               </span>
               <span className="text-muted-foreground"> / 10</span>
@@ -336,20 +340,18 @@ export default function TurmaQuestaoDetail() {
         </Card>
       )}
 
-      {/* Formulário de resposta */}
       {(!jaRespondeu || isStudyMode) && !correction && (
         <Card className="gradient-card border-border">
           <CardHeader>
             <CardTitle className="text-base font-display flex items-center gap-2">
-              <Send className="h-4 w-4" />
               {isStudyMode ? "📚 Modo Estudo — nova tentativa" : "Sua Resposta"}
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-3">
             <Textarea
+              placeholder="Digite sua resposta aqui..."
               value={answer}
               onChange={(e) => { setAnswer(e.target.value); setSubmissionType("texto_manual"); }}
-              placeholder="Escreva sua resposta aqui..."
               className="min-h-[250px] bg-secondary border-border resize-y text-sm"
             />
             <div className="flex items-center justify-between">
@@ -381,7 +383,6 @@ export default function TurmaQuestaoDetail() {
         </Card>
       )}
 
-      {/* Resultado da correção */}
       {correction && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
           <Card className="gradient-card border-primary/20 glow-electric">
@@ -528,7 +529,7 @@ export default function TurmaQuestaoDetail() {
                 },
                 correction,
                 submissionType,
-                answerText: answerForReport || answer || (correction as any).answer || "[Sem resposta disponível]",
+                answerText: answerForReport || answer || correction.answer || "[Sem resposta disponível]",
                 uploadedFileName: uploadedFileName || (uploadedFileUrl ? "Arquivo enviado" : null),
               })}
             >
@@ -562,6 +563,3 @@ export default function TurmaQuestaoDetail() {
     </div>
   );
 }
-
-// Lock icon import fallback
-import { Lock } from "lucide-react";
