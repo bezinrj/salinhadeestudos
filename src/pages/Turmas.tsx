@@ -218,7 +218,7 @@ function AlbumCard({
 
   if (locked) {
     return (
-      <Link to="/planos" className="block">
+      <Link to="/meu-plano" className="block">
         {cardInner}
       </Link>
     );
