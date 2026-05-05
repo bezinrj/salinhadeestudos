@@ -192,7 +192,11 @@ export default function TurmaDetail() {
                   initial={{ opacity: 0, x: -8 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.2, delay: i * 0.03 }}
-                  className="flex items-center gap-4 p-4 rounded-lg border border-border bg-card hover:bg-accent/40 transition-colors"
+                  className="flex items-center gap-4 p-4 rounded-lg border bg-card hover:bg-accent/40 transition-all"
+                  style={{
+                    borderColor: `${cor}33`,
+                    boxShadow: `0 0 16px ${cor}1f, 0 0 32px ${cor}10`,
+                  }}
                 >
                   <div
                     className="h-10 w-10 rounded-full flex items-center justify-center font-bold flex-shrink-0"
