@@ -289,30 +289,34 @@ export default function TurmaQuestaoDetail() {
         </div>
       </div>
 
-      <Card className="gradient-card border-l-4" style={{ borderLeftColor: albumCor }}>
-        <CardContent className="p-6 space-y-3">
-          <div className="flex flex-wrap gap-2">
-            <Badge variant="secondary">{question.career}</Badge>
-            <Badge variant="outline">{question.discipline}</Badge>
-            {question.subject && <Badge variant="outline">{question.subject}</Badge>}
-            <Badge style={{ backgroundColor: `${albumCor}20`, color: albumCor, border: `1px solid ${albumCor}40` }}>
-              🎓 {albumTitulo}
-            </Badge>
-          </div>
+      <div
+        className="rounded-lg bg-card p-6 space-y-3 transition-shadow"
+        style={{
+          border: `1px solid ${albumCor}40`,
+          boxShadow: `0 0 24px ${albumCor}33, 0 0 48px ${albumCor}1a`,
+        }}
+      >
+        <div className="flex flex-wrap gap-2">
+          <Badge variant="secondary">{question.career}</Badge>
+          <Badge variant="outline">{question.discipline}</Badge>
+          {question.subject && <Badge variant="outline">{question.subject}</Badge>}
+          <Badge style={{ backgroundColor: `${albumCor}20`, color: albumCor, border: `1px solid ${albumCor}40` }}>
+            🎓 {albumTitulo}
+          </Badge>
+        </div>
 
-          <h1 className="text-2xl font-bold font-display">{question.title}</h1>
-          <p className="text-foreground/85 whitespace-pre-line leading-relaxed">{question.statement}</p>
+        <h1 className="text-2xl font-bold font-display">{question.title}</h1>
+        <p className="text-foreground/85 whitespace-pre-line leading-relaxed">{question.statement}</p>
 
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-muted-foreground hover:text-destructive"
-            onClick={() => setReportOpen(true)}
-          >
-            <Flag className="h-4 w-4 mr-2" /> Reportar problema
-          </Button>
-        </CardContent>
-      </Card>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-muted-foreground hover:text-destructive"
+          onClick={() => setReportOpen(true)}
+        >
+          <Flag className="h-4 w-4 mr-2" /> Reportar problema
+        </Button>
+      </div>
 
       {jaRespondeu && !isStudyMode && !correction && (
         <Card className="gradient-card border-primary/20">
