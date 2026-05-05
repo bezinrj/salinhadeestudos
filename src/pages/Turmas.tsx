@@ -50,24 +50,25 @@ export default function Turmas() {
 
   const visibleAlbuns = isStaff ? albuns : albuns.filter((a) => a.is_active);
   const semCategoria = visibleAlbuns.filter((a) => !a.categoria_id);
+  const categoriaSemCat: Categoria = { id: "sem-categoria", nome: "Outros", cor: "#6366f1", icone: "BookOpen" };
 
   return (
-    <div className="p-4 md:p-6 space-y-10 pb-24 md:pb-6">
-      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+    <div className="container mx-auto px-4 py-8 space-y-10">
+      <div className="space-y-2">
         <div className="flex items-center gap-3">
-          <BookOpen className="h-7 w-7 text-primary" />
-          <h1 className="text-2xl md:text-3xl font-display font-bold">Minhas Turmas</h1>
+          <BookOpen className="h-8 w-8 text-primary" />
+          <h1 className="text-3xl md:text-4xl font-bold">Minhas Turmas</h1>
         </div>
-        <p className="text-sm text-muted-foreground mt-1">
+        <p className="text-muted-foreground">
           Álbuns de questões liberadas progressivamente. Acesso exclusivo Premium.
         </p>
-      </motion.div>
+      </div>
 
       {isLoading ? (
-        <p className="text-muted-foreground text-center py-12">Carregando turmas...</p>
+        <p className="text-muted-foreground">Carregando turmas...</p>
       ) : visibleAlbuns.length === 0 ? (
-        <div className="text-center py-16">
-          <BookOpen className="mx-auto h-14 w-14 text-muted-foreground/30 mb-4" />
+        <div className="text-center py-16 space-y-3">
+          <BookOpen className="h-12 w-12 mx-auto text-muted-foreground" />
           <p className="text-muted-foreground">Nenhuma turma disponível ainda.</p>
         </div>
       ) : (
@@ -87,7 +88,7 @@ export default function Turmas() {
           })}
           {semCategoria.length > 0 && (
             <CategoriaSection
-              categoria={{ id: "none", nome: "Sem categoria", cor: "#64748b", icone: "BookOpen" }}
+              categoria={categoriaSemCat}
               albuns={semCategoria}
               subscribed={subscribed}
               isStaff={isStaff}
@@ -112,17 +113,18 @@ function CategoriaSection({
 }) {
   const Icon = getTurmaIcon(categoria.icone);
   return (
-    <section>
-      <div className="flex items-center gap-2 mb-4">
-        <span
-          className="h-8 w-8 rounded-lg flex items-center justify-center"
+    <section className="space-y-4">
+      <div className="flex items-center gap-3">
+        <div
+          className="h-10 w-10 rounded-lg flex items-center justify-center"
           style={{ backgroundColor: `${categoria.cor}20`, color: categoria.cor }}
         >
-          <Icon className="h-4 w-4" />
-        </span>
-        <h2 className="text-lg font-display font-semibold text-foreground">{categoria.nome}</h2>
+          <Icon className="h-5 w-5" />
+        </div>
+        <h2 className="text-2xl font-semibold">{categoria.nome}</h2>
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {albuns.map((album, i) => (
           <AlbumCard
             key={album.id}
@@ -158,49 +160,65 @@ function AlbumCard({
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.04, duration: 0.3 }}
-      className="group relative cursor-pointer rounded-xl overflow-hidden border border-border/50 bg-card hover:border-primary/40 transition-all duration-300 hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-1"
+      transition={{ duration: 0.3, delay: index * 0.05 }}
+      whileHover={{ y: -4 }}
+      className="group relative aspect-[3/4] rounded-xl overflow-hidden border border-border bg-card shadow-md hover:shadow-xl transition-all"
     >
-      <div className="relative aspect-[3/4] bg-muted/40 overflow-hidden">
-        {album.capa_url ? (
-          <img
-            src={album.capa_url}
-            alt={album.titulo}
-            loading="lazy"
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-          />
-        ) : (
-          <div
-            className="w-full h-full flex items-center justify-center"
-            style={{ background: `linear-gradient(135deg, ${categoria.cor}30, ${categoria.cor}10)` }}
-          >
-            <Icon className="h-12 w-12" style={{ color: categoria.cor }} />
-          </div>
-        )}
-        {!album.is_active && (
-          <Badge variant="outline" className="absolute top-2 left-2 bg-background/80 backdrop-blur-sm text-[10px]">
-            Inativo
+      {album.capa_url ? (
+        <img
+          src={album.capa_url}
+          alt={album.titulo}
+          className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          loading="lazy"
+        />
+      ) : (
+        <div
+          className="absolute inset-0 flex items-center justify-center"
+          style={{ background: `linear-gradient(135deg, ${categoria.cor}40, ${categoria.cor}10)` }}
+        >
+          <Icon className="h-16 w-16" style={{ color: categoria.cor }} />
+        </div>
+      )}
+
+      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+
+      {!isStaff && (
+        <div className="absolute top-3 left-3 z-10">
+          <Badge className="bg-yellow-500/90 text-black border-0 font-semibold">
+            Premium
           </Badge>
+        </div>
+      )}
+
+      {!album.is_active && (
+        <div className="absolute top-3 right-3 z-10">
+          <Badge variant="destructive">Inativo</Badge>
+        </div>
+      )}
+
+      {locked && (
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center gap-2 z-20">
+          <Lock className="h-8 w-8 text-yellow-400" />
+          <span className="text-yellow-400 font-bold tracking-wider text-sm">PREMIUM</span>
+        </div>
+      )}
+
+      <div className="absolute bottom-0 left-0 right-0 p-4 z-10">
+        <h3 className="text-white font-bold text-lg leading-tight line-clamp-2 drop-shadow">
+          {album.titulo}
+        </h3>
+        {album.descricao && (
+          <p className="text-white/80 text-sm mt-1 line-clamp-2">
+            {album.descricao}
+          </p>
         )}
-        {locked && (
-          <div className="absolute inset-0 bg-background/60 backdrop-blur-[2px] flex flex-col items-center justify-center gap-1">
-            <Lock className="h-6 w-6 text-accent" />
-            <span className="text-[10px] text-accent font-semibold">PREMIUM</span>
-          </div>
-        )}
-      </div>
-      <div className="p-3">
-        <p className="text-sm font-medium text-foreground line-clamp-2 leading-snug">{album.titulo}</p>
-        <p className="text-[10px] text-muted-foreground mt-1">
-          {album.questoes_por_liberacao} q / {album.intervalo_dias}d
-        </p>
       </div>
     </motion.div>
   );
 
   if (locked) {
     return (
-      <Link to="/meu-plano" className="block">
+      <Link to="/planos" className="block">
         {cardInner}
       </Link>
     );
