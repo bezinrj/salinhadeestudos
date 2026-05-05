@@ -1,40 +1,12 @@
-import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { PricingCards } from "@/components/PricingCards";
 import { getPlanByPriceId } from "@/lib/stripe";
-import { supabase } from "@/integrations/supabase/client";
 import { CalendarDays, CreditCard, Clock, Loader2 } from "lucide-react";
-
-interface SubStatus {
-  subscribed: boolean;
-  price_id: string | null;
-  product_id: string | null;
-  subscription_end: string | null;
-}
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function MyPlan() {
-  const [sub, setSub] = useState<SubStatus | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  const checkSubscription = useCallback(async () => {
-    try {
-      const { data, error } = await supabase.functions.invoke("check-subscription");
-      if (error) throw error;
-      setSub(data as SubStatus);
-    } catch {
-      setSub({ subscribed: false, price_id: null, product_id: null, subscription_end: null });
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    checkSubscription();
-    const interval = setInterval(checkSubscription, 60_000);
-    return () => clearInterval(interval);
-  }, [checkSubscription]);
+  const { profile, subscribed, loading } = useAuth();
 
   if (loading) {
     return (
@@ -44,19 +16,27 @@ export default function MyPlan() {
     );
   }
 
-  const plan = sub?.price_id ? getPlanByPriceId(sub.price_id) : null;
+  const priceId = (profile as unknown as { price_id?: string | null })?.price_id ?? null;
+  const plan = priceId ? getPlanByPriceId(priceId) : null;
 
-  const daysRemaining = sub?.subscription_end
-    ? Math.max(0, Math.ceil((new Date(sub.subscription_end).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+  const subscriptionEnd =
+    (profile as unknown as { subscription_end?: string | null })?.subscription_end ?? null;
+
+  const daysRemaining = subscriptionEnd
+    ? Math.max(
+        0,
+        Math.ceil((new Date(subscriptionEnd).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+      )
     : 0;
 
-  const cycleLabel = plan?.billingCycle === "monthly"
-    ? "Mensal"
-    : plan?.billingCycle === "quarterly"
-    ? "Trimestral"
-    : "Anual";
+  const cycleLabel =
+    plan?.billingCycle === "monthly"
+      ? "Mensal"
+      : plan?.billingCycle === "quarterly"
+      ? "Trimestral"
+      : "Anual";
 
-  if (!sub?.subscribed || !plan) {
+  if (!subscribed || !plan) {
     return (
       <div className="space-y-8">
         <div>
@@ -75,7 +55,6 @@ export default function MyPlan() {
         <p className="text-muted-foreground">Gerencie sua assinatura</p>
       </div>
 
-      {/* Current plan overview */}
       <Card className="border-primary/30 glow-electric">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
@@ -99,7 +78,9 @@ export default function MyPlan() {
               <div>
                 <p className="text-xs text-muted-foreground">Vencimento</p>
                 <p className="text-sm font-medium">
-                  {new Date(sub.subscription_end!).toLocaleDateString("pt-BR")}
+                  {subscriptionEnd
+                    ? new Date(subscriptionEnd).toLocaleDateString("pt-BR")
+                    : "—"}
                 </p>
               </div>
             </div>
@@ -124,11 +105,12 @@ export default function MyPlan() {
         </CardContent>
       </Card>
 
-      {/* Change plan */}
       <div>
         <h2 className="text-xl font-display font-bold mb-1">Trocar de plano</h2>
-        <p className="text-sm text-muted-foreground mb-6">Escolha o plano ideal para seus estudos</p>
-        <PricingCards currentPriceId={sub.price_id} isAuthenticated />
+        <p className="text-sm text-muted-foreground mb-6">
+          Escolha o plano ideal para seus estudos
+        </p>
+        <PricingCards currentPriceId={priceId} isAuthenticated />
       </div>
     </div>
   );
