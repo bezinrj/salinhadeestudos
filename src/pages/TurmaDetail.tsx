@@ -187,7 +187,7 @@ export default function TurmaDetail() {
             {questoes.map((tq, i) => {
               const liberadoEm = new Date(tq.liberado_em);
               const liberado = liberadoEm.getTime() <= Date.now() || isStaff;
-              const respondida = respondidas.includes(tq.question_id);
+              const respondida = respondidasSet?.has(tq.question_id) ?? false;
               const q = tq.question;
 
               return (
