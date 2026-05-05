@@ -21,6 +21,7 @@ import Schedules from "./pages/Schedules";
 import ScheduleDetail from "./pages/ScheduleDetail";
 import Turmas from "./pages/Turmas";
 import TurmaDetail from "./pages/TurmaDetail";
+import TurmaQuestaoDetail from "./pages/TurmaQuestaoDetail";
 import NotFound from "./pages/NotFound";
 import ResetPassword from "./pages/ResetPassword";
 
@@ -60,6 +61,7 @@ const App = () => (
               <Route path="/cronograma/:id" element={<ScheduleDetail />} />
               <Route path="/turmas" element={<Turmas />} />
               <Route path="/turmas/:id" element={<TurmaDetail />} />
+              <Route path="/turmas/:albumId/questao/:questionId" element={<TurmaQuestaoDetail />} />
               <Route path="/admin" element={<Admin />} />
             </Route>
             <Route path="*" element={<NotFound />} />
