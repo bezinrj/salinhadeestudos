@@ -152,7 +152,7 @@ function OverviewTab() {
     queryFn: async () => {
       const [profiles, sessions, manualSubs] = await Promise.all([
         supabase.from("profiles").select("id, created_at", { count: "exact" }),
-        supabase.from("user_sessions").select("*"),
+        supabase.from("user_sessions").select("user_id, last_seen_at").limit(500),
         supabase.from("manual_subscriptions").select("id", { count: "exact", head: true }).eq("is_active", true).gte("expires_at", new Date().toISOString()),
       ]);
       const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
@@ -168,7 +168,7 @@ function OverviewTab() {
         onlineList: onlineUsers,
       };
     },
-    refetchInterval: 30_000,
+    refetchInterval: 300_000,
   });
 
   const { data: allCortesias } = useQuery({
@@ -211,7 +211,7 @@ function OverviewTab() {
     queryFn: async () => {
       if (!stats?.onlineList?.length) return [];
       const ids = stats.onlineList.map((s: any) => s.user_id);
-      const { data } = await supabase.from("profiles").select("*").in("id", ids);
+      const { data } = await supabase.from("profiles").select("id, name, username, avatar_url, subscription_tier").in("id", ids);
       return (data || []).map((p: any) => {
         const session = stats.onlineList.find((s: any) => s.user_id === p.id);
         return { ...p, last_seen_at: session?.last_seen_at };
@@ -394,16 +394,16 @@ function UsersTab() {
   const { data: sessions } = useQuery({
     queryKey: ["admin-all-sessions"],
     queryFn: async () => {
-      const { data } = await supabase.from("user_sessions").select("*");
+      const { data } = await supabase.from("user_sessions").select("user_id, last_seen_at").limit(500);
       return data || [];
     },
-    refetchInterval: 30_000,
+    refetchInterval: 300_000,
   });
 
   const { data: roles } = useQuery({
     queryKey: ["admin-all-roles"],
     queryFn: async () => {
-      const { data } = await supabase.from("user_roles").select("*");
+      const { data } = await supabase.from("user_roles").select("user_id, role");
       return data || [];
     },
   });
@@ -429,7 +429,7 @@ function UsersTab() {
   const { data: manualSubs } = useQuery({
     queryKey: ["admin-all-manual-subs"],
     queryFn: async () => {
-      const { data } = await supabase.from("manual_subscriptions").select("*").eq("is_active", true).gte("expires_at", new Date().toISOString());
+      const { data } = await supabase.from("manual_subscriptions").select("id, user_id, expires_at, is_active, created_at").eq("is_active", true).gte("expires_at", new Date().toISOString());
       return data || [];
     },
   });
@@ -437,7 +437,7 @@ function UsersTab() {
   const { data: users } = useQuery({
     queryKey: ["admin-users", search],
     queryFn: async () => {
-      let query = supabase.from("profiles").select("*").order("created_at", { ascending: false }).limit(200);
+      let query = supabase.from("profiles").select("id, name, username, avatar_url, subscription_tier, active_badge_id, total_score, created_at, streak").order("created_at", { ascending: false }).limit(200);
       if (search) query = query.or(`username.ilike.%${search}%,name.ilike.%${search}%`);
       const { data } = await query;
       return data || [];
@@ -614,7 +614,7 @@ function UserDetailDrawer({ user, role, isOnline, onClose }: { user: any; role: 
   const { data: userComments } = useQuery({
     queryKey: ["admin-user-comments", user.id],
     queryFn: async () => {
-      const { data } = await supabase.from("question_comments").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10);
+      const { data } = await supabase.from("question_comments").select("id, question_id, content, created_at, score").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10);
       return data || [];
     },
   });
@@ -829,7 +829,7 @@ function AnnouncementsTab() {
   const { data: announcements } = useQuery({
     queryKey: ["admin-announcements"],
     queryFn: async () => {
-      const { data } = await supabase.from("admin_announcements").select("*").order("created_at", { ascending: false });
+      const { data } = await supabase.from("admin_announcements").select("id, title, message, is_active, created_at, created_by").order("created_at", { ascending: false });
       return data || [];
     },
   });
@@ -956,7 +956,7 @@ function WeeklyQuestionsTab() {
   const { data: questions } = useQuery({
     queryKey: ["admin-weekly-questions"],
     queryFn: async () => {
-      const { data } = await supabase.from("weekly_questions").select("*").order("created_at", { ascending: false });
+      const { data } = await supabase.from("weekly_questions").select("id, public_id, title, career, discipline, subject, banca, year, is_active, is_weekly, is_premium, created_at, deadline").order("created_at", { ascending: false });
       return data || [];
     },
   });
