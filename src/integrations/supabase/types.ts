@@ -960,6 +960,7 @@ export type Database = {
         Row: {
           capa_url: string | null
           categoria_id: string | null
+          cor: string
           created_at: string | null
           created_by: string | null
           data_inicio: string
@@ -974,6 +975,7 @@ export type Database = {
         Insert: {
           capa_url?: string | null
           categoria_id?: string | null
+          cor?: string
           created_at?: string | null
           created_by?: string | null
           data_inicio?: string
@@ -988,6 +990,7 @@ export type Database = {
         Update: {
           capa_url?: string | null
           categoria_id?: string | null
+          cor?: string
           created_at?: string | null
           created_by?: string | null
           data_inicio?: string
@@ -1078,6 +1081,61 @@ export type Database = {
             columns: ["question_id"]
             isOneToOne: false
             referencedRelation: "weekly_questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      turmas_respostas: {
+        Row: {
+          album_id: string
+          created_at: string | null
+          id: string
+          is_study_attempt: boolean
+          question_id: string
+          resposta: string
+          score: number | null
+          user_id: string
+        }
+        Insert: {
+          album_id: string
+          created_at?: string | null
+          id?: string
+          is_study_attempt?: boolean
+          question_id: string
+          resposta: string
+          score?: number | null
+          user_id: string
+        }
+        Update: {
+          album_id?: string
+          created_at?: string | null
+          id?: string
+          is_study_attempt?: boolean
+          question_id?: string
+          resposta?: string
+          score?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "turmas_respostas_album_id_fkey"
+            columns: ["album_id"]
+            isOneToOne: false
+            referencedRelation: "turmas_albuns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "turmas_respostas_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "weekly_questions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "turmas_respostas_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1448,6 +1506,22 @@ export type Database = {
       get_general_ranking: {
         Args: never
         Returns: {
+          total_score: number
+          user_id: string
+        }[]
+      }
+      get_turma_ranking_geral: {
+        Args: { p_album_id: string }
+        Returns: {
+          questoes_respondidas: number
+          total_score: number
+          user_id: string
+        }[]
+      }
+      get_turma_ranking_semanal: {
+        Args: { p_album_id: string }
+        Returns: {
+          questoes_respondidas: number
           total_score: number
           user_id: string
         }[]
