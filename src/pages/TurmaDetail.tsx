@@ -50,9 +50,11 @@ export default function TurmaDetail() {
   const isStaff = isAdmin || isModerator;
   const [rankingOpen, setRankingOpen] = useState(false);
 
+  // Busca álbum e questões em paralelo — sem cascata
   const { data: album, isLoading: loadingAlbum } = useQuery({
     queryKey: ["turma-album", id],
     enabled: !!id,
+    staleTime: 5 * 60_000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("turmas_albuns")
@@ -67,6 +69,7 @@ export default function TurmaDetail() {
   const { data: questoes = [] } = useQuery({
     queryKey: ["turma-questoes", id],
     enabled: !!id,
+    staleTime: 5 * 60_000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("turmas_questoes")
@@ -78,22 +81,23 @@ export default function TurmaDetail() {
     },
   });
 
-  const { data: respondidas = [] } = useQuery({
+  // Busca todas as respostas do álbum de uma vez — independente de questoes
+  const { data: respondidasSet } = useQuery({
     queryKey: ["turma-respondidas-oficiais", id, user?.id],
-    enabled: !!id && !!user?.id && questoes.length > 0,
+    enabled: !!id && !!user?.id,
+    staleTime: 2 * 60_000,
     queryFn: async () => {
-      const ids = questoes.map((q) => q.question_id);
       const { data, error } = await (supabase as any)
         .from("turmas_respostas")
         .select("question_id")
         .eq("user_id", user!.id)
         .eq("album_id", id!)
-        .eq("is_study_attempt", false)
-        .in("question_id", ids);
+        .eq("is_study_attempt", false);
       if (error) throw error;
-      return (data || []).map((d: any) => d.question_id) as string[];
+      return new Set((data || []).map((d: any) => d.question_id as string));
     },
   });
+
 
   if (loadingAlbum) {
     return <div className="container mx-auto px-4 py-8 text-muted-foreground">Carregando...</div>;
@@ -183,7 +187,7 @@ export default function TurmaDetail() {
             {questoes.map((tq, i) => {
               const liberadoEm = new Date(tq.liberado_em);
               const liberado = liberadoEm.getTime() <= Date.now() || isStaff;
-              const respondida = respondidas.includes(tq.question_id);
+              const respondida = respondidasSet?.has(tq.question_id) ?? false;
               const q = tq.question;
 
               return (
