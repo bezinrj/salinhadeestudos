@@ -457,6 +457,7 @@ export type Database = {
           active_badge_id: string | null
           avatar_url: string | null
           average_grade: number | null
+          banco_geral_expires_at: string | null
           bio: string | null
           comment_score: number | null
           created_at: string | null
@@ -476,6 +477,7 @@ export type Database = {
           active_badge_id?: string | null
           avatar_url?: string | null
           average_grade?: number | null
+          banco_geral_expires_at?: string | null
           bio?: string | null
           comment_score?: number | null
           created_at?: string | null
@@ -495,6 +497,7 @@ export type Database = {
           active_badge_id?: string | null
           avatar_url?: string | null
           average_grade?: number | null
+          banco_geral_expires_at?: string | null
           bio?: string | null
           comment_score?: number | null
           created_at?: string | null

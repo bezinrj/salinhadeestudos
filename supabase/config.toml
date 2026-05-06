@@ -21,3 +21,7 @@ project_id = "lwadfvkaywbdebvwdfgb"
     verify_jwt = true
   [functions.transcribe-answer]
     verify_jwt = false
+  [functions.create-turma-checkout]
+    verify_jwt = false
+  [functions.stripe-turma-webhook]
+    verify_jwt = false
