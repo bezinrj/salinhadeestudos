@@ -1,13 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Lock, BookOpen } from "lucide-react";
+import { Lock, BookOpen, ShoppingCart, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useIsModerator } from "@/hooks/useIsModerator";
 import { getTurmaIcon } from "@/lib/turmasIcons";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { toast } from "@/hooks/use-toast";
+import { useState } from "react";
 
 type Categoria = { id: string; nome: string; cor: string; icone: string };
 type Album = {
@@ -20,9 +23,17 @@ type Album = {
   intervalo_dias: number;
   is_active: boolean;
 };
+type Plano = {
+  id: string;
+  nome: string;
+  valor: number;
+  price_id_stripe: string;
+  meses_banco_geral: number;
+  album_ids: string[];
+};
 
 export default function Turmas() {
-  const { subscribed } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const { isAdmin } = useIsAdmin();
   const { isModerator } = useIsModerator();
   const isStaff = isAdmin || isModerator;
@@ -34,6 +45,7 @@ export default function Turmas() {
       if (error) throw error;
       return (data || []) as Categoria[];
     },
+    staleTime: 10 * 60_000,
   });
 
   const { data: albuns = [], isLoading } = useQuery({
@@ -46,6 +58,34 @@ export default function Turmas() {
       if (error) throw error;
       return (data || []) as Album[];
     },
+    staleTime: 5 * 60_000,
+  });
+
+  const { data: planos = [] } = useQuery({
+    queryKey: ["turmas-planos"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("turmas_planos")
+        .select("id, nome, valor, price_id_stripe, meses_banco_geral, album_ids")
+        .eq("is_active", true);
+      if (error) throw error;
+      return (data || []) as Plano[];
+    },
+    staleTime: 10 * 60_000,
+  });
+
+  const { data: acessos = [] } = useQuery({
+    queryKey: ["turmas-acessos", user?.id],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("turmas_acessos")
+        .select("album_id")
+        .eq("user_id", user!.id);
+      if (error) throw error;
+      return (data || []).map((a: any) => a.album_id) as string[];
+    },
+    enabled: !!user,
+    staleTime: 2 * 60_000,
   });
 
   const visibleAlbuns = isStaff ? albuns : albuns.filter((a) => a.is_active);
@@ -60,7 +100,7 @@ export default function Turmas() {
           <h1 className="text-3xl md:text-4xl font-bold">Minhas Turmas</h1>
         </div>
         <p className="text-muted-foreground">
-          Álbuns de questões liberadas progressivamente. Acesso exclusivo Premium.
+          Turmas de questões liberadas progressivamente. Adquira sua turma e estude com foco.
         </p>
       </div>
 
@@ -81,8 +121,10 @@ export default function Turmas() {
                 key={cat.id}
                 categoria={cat}
                 albuns={items}
-                subscribed={subscribed}
+                planos={planos}
+                acessos={acessos}
                 isStaff={isStaff}
+                isAuthenticated={isAuthenticated}
               />
             );
           })}
@@ -90,8 +132,10 @@ export default function Turmas() {
             <CategoriaSection
               categoria={categoriaSemCat}
               albuns={semCategoria}
-              subscribed={subscribed}
+              planos={planos}
+              acessos={acessos}
               isStaff={isStaff}
+              isAuthenticated={isAuthenticated}
             />
           )}
         </>
@@ -101,15 +145,14 @@ export default function Turmas() {
 }
 
 function CategoriaSection({
-  categoria,
-  albuns,
-  subscribed,
-  isStaff,
+  categoria, albuns, planos, acessos, isStaff, isAuthenticated,
 }: {
   categoria: Categoria;
   albuns: Album[];
-  subscribed: boolean;
+  planos: Plano[];
+  acessos: string[];
   isStaff: boolean;
+  isAuthenticated: boolean;
 }) {
   const Icon = getTurmaIcon(categoria.icone);
   return (
@@ -130,8 +173,10 @@ function CategoriaSection({
             key={album.id}
             album={album}
             categoria={categoria}
-            subscribed={subscribed}
+            planos={planos}
+            temAcesso={isStaff || acessos.includes(album.id)}
             isStaff={isStaff}
+            isAuthenticated={isAuthenticated}
             index={i}
           />
         ))}
@@ -141,20 +186,46 @@ function CategoriaSection({
 }
 
 function AlbumCard({
-  album,
-  categoria,
-  subscribed,
-  isStaff,
-  index,
+  album, categoria, planos, temAcesso, isStaff, isAuthenticated, index,
 }: {
   album: Album;
   categoria: Categoria;
-  subscribed: boolean;
+  planos: Plano[];
+  temAcesso: boolean;
   isStaff: boolean;
+  isAuthenticated: boolean;
   index: number;
 }) {
   const Icon = getTurmaIcon(categoria.icone);
-  const locked = !subscribed && !isStaff;
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+
+  const plano = planos.find((p) => p.album_ids.includes(album.id));
+
+  const handleComprar = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isAuthenticated) {
+      navigate("/login");
+      return;
+    }
+    if (!plano) {
+      toast({ title: "Plano não encontrado", description: "Entre em contato com o suporte.", variant: "destructive" });
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await supabase.functions.invoke("create-turma-checkout", {
+        body: { priceId: plano.price_id_stripe },
+      });
+      if (res.error) throw new Error(res.error.message);
+      if ((res.data as any)?.url) window.location.href = (res.data as any).url;
+    } catch (err: any) {
+      toast({ title: "Erro ao iniciar compra", description: err.message, variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const cardInner = (
     <motion.div
@@ -180,26 +251,45 @@ function AlbumCard({
         </div>
       )}
 
-      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent" />
 
-      {!isStaff && (
-        <div className="absolute top-3 left-3 z-10">
-          <Badge className="bg-yellow-500/90 text-black border-0 font-semibold">
-            Premium
-          </Badge>
-        </div>
-      )}
-
-      {!album.is_active && (
+      {!album.is_active && isStaff && (
         <div className="absolute top-3 right-3 z-10">
           <Badge variant="destructive">Inativo</Badge>
         </div>
       )}
 
-      {locked && (
-        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center gap-2 z-20">
+      {!temAcesso && (
+        <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex flex-col items-center justify-center gap-3 z-20 p-4 text-center">
           <Lock className="h-8 w-8 text-yellow-400" />
-          <span className="text-yellow-400 font-bold tracking-wider text-sm">PREMIUM</span>
+          {plano ? (
+            <>
+              <div className="text-yellow-400 font-bold text-2xl tracking-tight">
+                R$ {plano.valor.toFixed(2).replace(".", ",")}
+              </div>
+              <div className="text-white/80 text-xs">
+                Inclui {plano.meses_banco_geral} {plano.meses_banco_geral === 1 ? "mês" : "meses"} de banco geral
+              </div>
+            </>
+          ) : (
+            <span className="text-yellow-400 font-bold tracking-wider text-sm">EM BREVE</span>
+          )}
+          {plano && (
+            <Button
+              onClick={handleComprar}
+              disabled={loading}
+              size="sm"
+              className="bg-yellow-500 hover:bg-yellow-400 text-black font-semibold gap-2"
+            >
+              {loading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <>
+                  <ShoppingCart className="h-4 w-4" /> Adquirir Turma
+                </>
+              )}
+            </Button>
+          )}
         </div>
       )}
 
@@ -212,21 +302,22 @@ function AlbumCard({
             {album.descricao}
           </p>
         )}
+        {temAcesso && !isStaff && (
+          <Badge className="mt-2 bg-green-500/90 text-black border-0 font-semibold">
+            ✓ Acesso ativo
+          </Badge>
+        )}
       </div>
     </motion.div>
   );
 
-  if (locked) {
+  if (temAcesso) {
     return (
-      <Link to="/meu-plano" className="block">
+      <Link to={`/turmas/${album.id}`} className="block">
         {cardInner}
       </Link>
     );
   }
 
-  return (
-    <Link to={`/turmas/${album.id}`} className="block">
-      {cardInner}
-    </Link>
-  );
+  return <div className="block">{cardInner}</div>;
 }
