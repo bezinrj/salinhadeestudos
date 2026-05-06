@@ -956,6 +956,58 @@ export type Database = {
         }
         Relationships: []
       }
+      turmas_acessos: {
+        Row: {
+          album_id: string
+          assinatura_id: string | null
+          created_at: string | null
+          id: string
+          is_manual: boolean
+          notas: string | null
+          user_id: string
+        }
+        Insert: {
+          album_id: string
+          assinatura_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_manual?: boolean
+          notas?: string | null
+          user_id: string
+        }
+        Update: {
+          album_id?: string
+          assinatura_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_manual?: boolean
+          notas?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "turmas_acessos_album_id_fkey"
+            columns: ["album_id"]
+            isOneToOne: false
+            referencedRelation: "turmas_albuns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "turmas_acessos_assinatura_id_fkey"
+            columns: ["assinatura_id"]
+            isOneToOne: false
+            referencedRelation: "turmas_assinaturas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "turmas_acessos_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       turmas_albuns: {
         Row: {
           capa_url: string | null
@@ -1019,6 +1071,57 @@ export type Database = {
           },
         ]
       }
+      turmas_assinaturas: {
+        Row: {
+          banco_geral_expires_at: string | null
+          created_at: string | null
+          id: string
+          plano_id: string | null
+          status: string
+          stripe_checkout_session_id: string | null
+          stripe_payment_intent_id: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          banco_geral_expires_at?: string | null
+          created_at?: string | null
+          id?: string
+          plano_id?: string | null
+          status?: string
+          stripe_checkout_session_id?: string | null
+          stripe_payment_intent_id?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          banco_geral_expires_at?: string | null
+          created_at?: string | null
+          id?: string
+          plano_id?: string | null
+          status?: string
+          stripe_checkout_session_id?: string | null
+          stripe_payment_intent_id?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "turmas_assinaturas_plano_id_fkey"
+            columns: ["plano_id"]
+            isOneToOne: false
+            referencedRelation: "turmas_planos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "turmas_assinaturas_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       turmas_categorias: {
         Row: {
           cor: string
@@ -1040,6 +1143,88 @@ export type Database = {
           icone?: string
           id?: string
           nome?: string
+        }
+        Relationships: []
+      }
+      turmas_gabarito_downloads: {
+        Row: {
+          album_id: string
+          downloaded_at: string | null
+          id: string
+          question_id: string
+          user_id: string
+        }
+        Insert: {
+          album_id: string
+          downloaded_at?: string | null
+          id?: string
+          question_id: string
+          user_id: string
+        }
+        Update: {
+          album_id?: string
+          downloaded_at?: string | null
+          id?: string
+          question_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "turmas_gabarito_downloads_album_id_fkey"
+            columns: ["album_id"]
+            isOneToOne: false
+            referencedRelation: "turmas_albuns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "turmas_gabarito_downloads_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "weekly_questions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "turmas_gabarito_downloads_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      turmas_planos: {
+        Row: {
+          album_ids: string[]
+          created_at: string | null
+          descricao: string | null
+          id: string
+          is_active: boolean
+          meses_banco_geral: number
+          nome: string
+          price_id_stripe: string
+          valor: number
+        }
+        Insert: {
+          album_ids?: string[]
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          is_active?: boolean
+          meses_banco_geral?: number
+          nome: string
+          price_id_stripe: string
+          valor: number
+        }
+        Update: {
+          album_ids?: string[]
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          is_active?: boolean
+          meses_banco_geral?: number
+          nome?: string
+          price_id_stripe?: string
+          valor?: number
         }
         Relationships: []
       }
