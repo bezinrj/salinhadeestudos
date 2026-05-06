@@ -491,7 +491,7 @@ function QuestoesManagerDialog({ album, onClose }: { album: Album; onClose: () =
   });
 
   const removeMutation = useMutation({
-    mutationFn: async (id: string, ) => {
+    mutationFn: async (id: string) => {
       // Recupera question_id antes de deletar para liberar a questão de volta ao banco geral
       const { data: tq } = await supabase
         .from("turmas_questoes")
