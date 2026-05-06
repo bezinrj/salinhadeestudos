@@ -477,6 +477,7 @@ function QuestoesManagerDialog({ album, onClose }: { album: Album; onClose: () =
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-turma-questoes", album.id] });
+      queryClient.invalidateQueries({ queryKey: ["admin-turmas-questoes-usadas"] });
       toast.success("Questão adicionada.");
     },
     onError: (e: any) => toast.error(e.message),
@@ -489,6 +490,7 @@ function QuestoesManagerDialog({ album, onClose }: { album: Album; onClose: () =
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-turma-questoes", album.id] });
+      queryClient.invalidateQueries({ queryKey: ["admin-turmas-questoes-usadas"] });
       toast.success("Removida.");
     },
   });
