@@ -43,6 +43,7 @@ export default function Discursivas() {
         supabase
           .from("weekly_questions")
           .select("*")
+          .is("album_id", null)
           .order("created_at", { ascending: false }),
         supabase
           .from("weekly_answers")
