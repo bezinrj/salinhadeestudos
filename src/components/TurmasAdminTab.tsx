@@ -510,6 +510,7 @@ function QuestoesManagerDialog({ album, onClose }: { album: Album; onClose: () =
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-turma-questoes", album.id] });
       queryClient.invalidateQueries({ queryKey: ["admin-turmas-questoes-usadas"] });
+      queryClient.invalidateQueries({ queryKey: ["discursivas-questions"] });
       toast.success("Removida.");
     },
   });
