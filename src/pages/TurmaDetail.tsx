@@ -44,7 +44,7 @@ type TurmaQuestao = {
 export default function TurmaDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { subscribed, user } = useAuth();
+  const { user } = useAuth();
   const { isAdmin } = useIsAdmin();
   const { isModerator } = useIsModerator();
   const isStaff = isAdmin || isModerator;
@@ -63,6 +63,21 @@ export default function TurmaDetail() {
         .maybeSingle();
       if (error) throw error;
       return data as unknown as Album | null;
+    },
+  });
+
+  const { data: temAcesso } = useQuery({
+    queryKey: ["turma-acesso", id, user?.id],
+    enabled: !!id && !!user?.id,
+    staleTime: 2 * 60_000,
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("turmas_acessos")
+        .select("id")
+        .eq("user_id", user!.id)
+        .eq("album_id", id!)
+        .maybeSingle();
+      return !!data;
     },
   });
 
@@ -113,12 +128,16 @@ export default function TurmaDetail() {
     );
   }
 
-  if (!subscribed && !isStaff) {
+  if (!temAcesso && !isStaff) {
     return (
       <div className="container mx-auto px-4 py-16 text-center space-y-4">
         <Lock className="h-12 w-12 mx-auto text-yellow-400" />
-        <p className="text-muted-foreground">Esta turma é exclusiva para assinantes Premium.</p>
-        <Button onClick={() => navigate("/meu-plano")}>Ver planos</Button>
+        <p className="text-muted-foreground">
+          Você não possui acesso a esta turma. Adquira na página Minhas Turmas.
+        </p>
+        <Button onClick={() => navigate("/turmas")}>
+          <ArrowLeft className="h-4 w-4 mr-2" /> Ir para Minhas Turmas
+        </Button>
       </div>
     );
   }
