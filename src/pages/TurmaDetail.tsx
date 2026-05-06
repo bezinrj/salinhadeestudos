@@ -199,72 +199,131 @@ export default function TurmaDetail() {
       </div>
 
       <section className="space-y-3">
-        <h2 className="text-2xl font-semibold">Questões</h2>
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <h2 className="text-2xl font-semibold">Questões</h2>
+          <span className="text-sm text-muted-foreground">
+            {(() => {
+              const filtradas = disciplinaFiltro === "Todas"
+                ? questoes
+                : questoes.filter((tq) => tq.question?.discipline === disciplinaFiltro);
+              return `${filtradas.length} de ${questoes.length} questões`;
+            })()}
+          </span>
+        </div>
+
+        {(() => {
+          const disciplinas = Array.from(
+            new Set(questoes.map((tq) => tq.question?.discipline).filter(Boolean) as string[])
+          ).sort();
+          if (disciplinas.length <= 1) return null;
+          const opcoes = ["Todas", ...disciplinas];
+          return (
+            <div className="flex flex-wrap gap-2 pt-1">
+              {opcoes.map((disc) => {
+                const ativo = disciplinaFiltro === disc;
+                return (
+                  <button
+                    key={disc}
+                    onClick={() => setDisciplinaFiltro(disc)}
+                    className="px-3 py-1.5 rounded-full text-xs font-medium border transition-all"
+                    style={
+                      ativo
+                        ? {
+                            backgroundColor: cor,
+                            color: "#fff",
+                            borderColor: cor,
+                            boxShadow: `0 0 12px ${cor}80, 0 0 24px ${cor}40`,
+                          }
+                        : {
+                            backgroundColor: "transparent",
+                            color: "hsl(var(--muted-foreground))",
+                            borderColor: `${cor}40`,
+                          }
+                    }
+                  >
+                    {disc}
+                  </button>
+                );
+              })}
+            </div>
+          );
+        })()}
+
         {questoes.length === 0 ? (
           <p className="text-muted-foreground">Nenhuma questão cadastrada nesta turma ainda.</p>
-        ) : (
-          <div className="space-y-2">
-            {questoes.map((tq, i) => {
-              const liberadoEm = new Date(tq.liberado_em);
-              const liberado = liberadoEm.getTime() <= Date.now() || isStaff;
-              const respondida = respondidasSet?.has(tq.question_id) ?? false;
-              const q = tq.question;
+        ) : (() => {
+          const questoesFiltradas = disciplinaFiltro === "Todas"
+            ? questoes
+            : questoes.filter((tq) => tq.question?.discipline === disciplinaFiltro);
 
-              return (
-                <motion.div
-                  key={tq.id}
-                  initial={{ opacity: 0, x: -8 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.2, delay: i * 0.03 }}
-                  className="flex items-center gap-4 p-4 rounded-lg border bg-card hover:bg-accent/40 transition-all"
-                  style={{
-                    borderColor: `${cor}33`,
-                    boxShadow: `0 0 16px ${cor}1f, 0 0 32px ${cor}10`,
-                  }}
-                >
-                  <div
-                    className="h-10 w-10 rounded-full flex items-center justify-center font-bold flex-shrink-0"
-                    style={{ backgroundColor: `${cor}20`, color: cor }}
+          if (questoesFiltradas.length === 0) {
+            return <p className="text-muted-foreground">Nenhuma questão para esta disciplina.</p>;
+          }
+
+          return (
+            <div className="space-y-2">
+              {questoesFiltradas.map((tq, i) => {
+                const liberadoEm = new Date(tq.liberado_em);
+                const liberado = liberadoEm.getTime() <= Date.now() || isStaff;
+                const respondida = respondidasSet?.has(tq.question_id) ?? false;
+                const q = tq.question;
+
+                return (
+                  <motion.div
+                    key={tq.id}
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.2, delay: i * 0.03 }}
+                    className="flex items-center gap-4 p-4 rounded-lg border bg-card hover:bg-accent/40 transition-all"
+                    style={{
+                      borderColor: `${cor}33`,
+                      boxShadow: `0 0 16px ${cor}1f, 0 0 32px ${cor}10`,
+                    }}
                   >
-                    {tq.ordem}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{q?.title || "Questão removida"}</p>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {q?.discipline && <span>{q.discipline}</span>}
-                      {q?.banca && <span> · {q.banca}</span>}
-                      {q?.year && <span> · {q.year}</span>}
-                      {q?.public_id && <span> · Q-{String(q.public_id).padStart(3, "0")}</span>}
-                    </p>
-                  </div>
-                  {respondida && (
-                    <Badge variant="outline" className="text-green-500 border-green-500/50 hidden sm:flex">
-                      <CheckCircle2 className="h-3 w-3 mr-1" /> Respondida
-                    </Badge>
-                  )}
-                  {liberado ? (
-                    q ? (
-                      <Button size="sm" asChild style={{ backgroundColor: cor }}>
-                        <Link
-                          to={`/turmas/${album.id}/questao/${tq.question_id}?titulo=${encodeURIComponent(albumTitulo)}&cor=${encodeURIComponent(cor)}&intervalo=${album.intervalo_dias}`}
-                        >
-                          Abrir
-                        </Link>
-                      </Button>
-                    ) : null
-                  ) : (
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Lock className="h-3 w-3" />
-                      <span className="hidden sm:inline">
-                        Libera {liberadoEm.toLocaleDateString("pt-BR")}
-                      </span>
+                    <div
+                      className="h-10 w-10 rounded-full flex items-center justify-center font-bold flex-shrink-0"
+                      style={{ backgroundColor: `${cor}20`, color: cor }}
+                    >
+                      {tq.ordem}
                     </div>
-                  )}
-                </motion.div>
-              );
-            })}
-          </div>
-        )}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate">{q?.title || "Questão removida"}</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {q?.discipline && <span>{q.discipline}</span>}
+                        {q?.banca && <span> · {q.banca}</span>}
+                        {q?.year && <span> · {q.year}</span>}
+                        {q?.public_id && <span> · Q-{String(q.public_id).padStart(3, "0")}</span>}
+                      </p>
+                    </div>
+                    {respondida && (
+                      <Badge variant="outline" className="text-green-500 border-green-500/50 hidden sm:flex">
+                        <CheckCircle2 className="h-3 w-3 mr-1" /> Respondida
+                      </Badge>
+                    )}
+                    {liberado ? (
+                      q ? (
+                        <Button size="sm" asChild style={{ backgroundColor: cor }}>
+                          <Link
+                            to={`/turmas/${album.id}/questao/${tq.question_id}?titulo=${encodeURIComponent(albumTitulo)}&cor=${encodeURIComponent(cor)}&intervalo=${album.intervalo_dias}`}
+                          >
+                            Abrir
+                          </Link>
+                        </Button>
+                      ) : null
+                    ) : (
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Lock className="h-3 w-3" />
+                        <span className="hidden sm:inline">
+                          Libera {liberadoEm.toLocaleDateString("pt-BR")}
+                        </span>
+                      </div>
+                    )}
+                  </motion.div>
+                );
+              })}
+            </div>
+          );
+        })()}
       </section>
 
       <TurmaRanking
