@@ -435,6 +435,19 @@ function QuestoesManagerDialog({ album, onClose }: { album: Album; onClose: () =
 
   const existingIds = new Set(turmaQuestoes.map((q) => q.question_id));
 
+  const { data: usedQuestionIds = [] } = useQuery({
+    queryKey: ["admin-turmas-questoes-usadas"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("turmas_questoes")
+        .select("question_id");
+      if (error) throw error;
+      return (data || []).map((d: any) => d.question_id as string);
+    },
+  });
+
+  const usedSet = new Set(usedQuestionIds);
+
   const { data: availableQuestions = [] } = useQuery({
     queryKey: ["admin-available-questoes", search],
     queryFn: async () => {
@@ -443,7 +456,7 @@ function QuestoesManagerDialog({ album, onClose }: { album: Album; onClose: () =
         .select("id, public_id, title, discipline")
         .eq("is_weekly", false)
         .order("created_at", { ascending: false })
-        .limit(50);
+        .limit(200);
       if (search.trim()) q = q.ilike("title", `%${search.trim()}%`);
       const { data, error } = await q;
       if (error) throw error;
