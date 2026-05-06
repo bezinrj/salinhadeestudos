@@ -49,6 +49,7 @@ export default function TurmaDetail() {
   const { isModerator } = useIsModerator();
   const isStaff = isAdmin || isModerator;
   const [rankingOpen, setRankingOpen] = useState(false);
+  const [disciplinaFiltro, setDisciplinaFiltro] = useState<string>("Todas");
 
   // Busca álbum e questões em paralelo — sem cascata
   const { data: album, isLoading: loadingAlbum } = useQuery({
