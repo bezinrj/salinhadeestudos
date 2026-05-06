@@ -474,10 +474,17 @@ function QuestoesManagerDialog({ album, onClose }: { album: Album; onClose: () =
         liberado_em: new Date().toISOString(),
       });
       if (error) throw error;
+      // Vincula a questão ao álbum para removê-la do banco geral de discursivas
+      const { error: updErr } = await supabase
+        .from("weekly_questions")
+        .update({ album_id: album.id })
+        .eq("id", questionId);
+      if (updErr) throw updErr;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-turma-questoes", album.id] });
       queryClient.invalidateQueries({ queryKey: ["admin-turmas-questoes-usadas"] });
+      queryClient.invalidateQueries({ queryKey: ["discursivas-questions"] });
       toast.success("Questão adicionada.");
     },
     onError: (e: any) => toast.error(e.message),
@@ -485,12 +492,25 @@ function QuestoesManagerDialog({ album, onClose }: { album: Album; onClose: () =
 
   const removeMutation = useMutation({
     mutationFn: async (id: string) => {
+      // Recupera question_id antes de deletar para liberar a questão de volta ao banco geral
+      const { data: tq } = await supabase
+        .from("turmas_questoes")
+        .select("question_id")
+        .eq("id", id)
+        .maybeSingle();
       const { error } = await supabase.from("turmas_questoes").delete().eq("id", id);
       if (error) throw error;
+      if (tq?.question_id) {
+        await supabase
+          .from("weekly_questions")
+          .update({ album_id: null })
+          .eq("id", tq.question_id);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-turma-questoes", album.id] });
       queryClient.invalidateQueries({ queryKey: ["admin-turmas-questoes-usadas"] });
+      queryClient.invalidateQueries({ queryKey: ["discursivas-questions"] });
       toast.success("Removida.");
     },
   });
