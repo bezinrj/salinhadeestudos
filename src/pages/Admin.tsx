@@ -1839,6 +1839,121 @@ function SubjectsTab() {
 }
 
 
+function UserTurmasSection({ userId }: { userId: string }) {
+  const queryClient = useQueryClient();
+  const [selectedAlbum, setSelectedAlbum] = useState<string>("");
+
+  const { data: acessos = [], isLoading } = useQuery({
+    queryKey: ["admin-user-turmas", userId],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("turmas_acessos")
+        .select("id, album_id, is_manual, created_at, turmas_albuns(titulo)")
+        .eq("user_id", userId);
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const { data: albuns = [] } = useQuery({
+    queryKey: ["admin-all-albuns"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("turmas_albuns")
+        .select("id, titulo")
+        .order("titulo");
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const addMutation = useMutation({
+    mutationFn: async (albumId: string) => {
+      const { error } = await (supabase as any)
+        .from("turmas_acessos")
+        .insert({ user_id: userId, album_id: albumId, is_manual: true });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-user-turmas", userId] });
+      setSelectedAlbum("");
+      toast({ title: "Acesso concedido!" });
+    },
+    onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
+  });
+
+  const removeMutation = useMutation({
+    mutationFn: async (acessoId: string) => {
+      const { error } = await (supabase as any).from("turmas_acessos").delete().eq("id", acessoId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-user-turmas", userId] });
+      toast({ title: "Acesso removido" });
+    },
+    onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
+  });
+
+  const acessoAlbumIds = new Set(acessos.map((a: any) => a.album_id));
+  const albunsDisponiveis = albuns.filter((a: any) => !acessoAlbumIds.has(a.id));
+
+  return (
+    <div className="space-y-3">
+      <h3 className="text-sm font-medium">Turmas</h3>
+      {isLoading ? (
+        <p className="text-xs text-muted-foreground">Carregando...</p>
+      ) : acessos.length === 0 ? (
+        <p className="text-xs text-muted-foreground">Nenhuma turma com acesso.</p>
+      ) : (
+        <div className="space-y-2">
+          {acessos.map((a: any) => (
+            <div key={a.id} className="flex items-center justify-between gap-2 p-2 rounded-lg bg-secondary/50">
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <span className="text-sm truncate">{a.turmas_albuns?.titulo || a.album_id}</span>
+                <Badge variant={a.is_manual ? "secondary" : "default"} className="text-[10px]">
+                  {a.is_manual ? "Manual" : "Compra"}
+                </Badge>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-destructive/30 text-destructive hover:bg-destructive/10"
+                onClick={() => removeMutation.mutate(a.id)}
+                disabled={removeMutation.isPending}
+              >
+                <Trash2 className="h-3 w-3 mr-1" /> Remover
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="flex gap-2">
+        <Select value={selectedAlbum} onValueChange={setSelectedAlbum}>
+          <SelectTrigger className="flex-1">
+            <SelectValue placeholder="Selecione uma turma..." />
+          </SelectTrigger>
+          <SelectContent>
+            {albunsDisponiveis.length === 0 ? (
+              <div className="text-xs text-muted-foreground px-2 py-1.5">Nenhuma turma disponível</div>
+            ) : (
+              albunsDisponiveis.map((a: any) => (
+                <SelectItem key={a.id} value={a.id}>{a.titulo}</SelectItem>
+              ))
+            )}
+          </SelectContent>
+        </Select>
+        <Button
+          onClick={() => selectedAlbum && addMutation.mutate(selectedAlbum)}
+          disabled={!selectedAlbum || addMutation.isPending}
+        >
+          <Plus className="h-4 w-4 mr-1" /> Adicionar acesso manual
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function UserSubscriptionInfo({ userId }: { userId: string }) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
