@@ -207,12 +207,11 @@ function AlbumCard({
   const Icon = getTurmaIcon(categoria.icone);
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [openDialog, setOpenDialog] = useState(false);
 
   const plano = planos.find((p) => p.album_ids.includes(album.id));
 
-  const handleComprar = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleComprar = async () => {
     if (!isAuthenticated) {
       navigate("/login");
       return;
@@ -241,7 +240,7 @@ function AlbumCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay: index * 0.05 }}
       whileHover={{ y: -4 }}
-      className="group relative aspect-[3/4] rounded-xl overflow-hidden border border-border bg-card shadow-md hover:shadow-xl transition-all"
+      className="group relative aspect-[3/4] rounded-xl overflow-hidden border border-border bg-card shadow-md hover:shadow-xl transition-all cursor-pointer"
     >
       {album.capa_url ? (
         <img
@@ -268,36 +267,8 @@ function AlbumCard({
       )}
 
       {!temAcesso && (
-        <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex flex-col items-center justify-center gap-3 z-20 p-4 text-center">
-          <Lock className="h-8 w-8 text-yellow-400" />
-          {plano ? (
-            <>
-              <div className="text-yellow-400 font-bold text-2xl tracking-tight">
-                R$ {plano.valor.toFixed(2).replace(".", ",")}
-              </div>
-              <div className="text-white/80 text-xs">
-                Inclui {plano.meses_banco_geral} {plano.meses_banco_geral === 1 ? "mês" : "meses"} de banco geral
-              </div>
-            </>
-          ) : (
-            <span className="text-yellow-400 font-bold tracking-wider text-sm">EM BREVE</span>
-          )}
-          {plano && (
-            <Button
-              onClick={handleComprar}
-              disabled={loading}
-              size="sm"
-              className="bg-yellow-500 hover:bg-yellow-400 text-black font-semibold gap-2"
-            >
-              {loading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <>
-                  <ShoppingCart className="h-4 w-4" /> Adquirir Turma
-                </>
-              )}
-            </Button>
-          )}
+        <div className="absolute top-3 right-3 z-10 h-8 w-8 rounded-full bg-black/70 backdrop-blur-sm flex items-center justify-center border border-yellow-400/50">
+          <Lock className="h-4 w-4 text-yellow-400" />
         </div>
       )}
 
@@ -327,5 +298,72 @@ function AlbumCard({
     );
   }
 
-  return <div className="block">{cardInner}</div>;
+  return (
+    <>
+      <div className="block" onClick={() => setOpenDialog(true)}>
+        {cardInner}
+      </div>
+      <Dialog open={openDialog} onOpenChange={setOpenDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{album.titulo}</DialogTitle>
+            {album.descricao && (
+              <DialogDescription>{album.descricao}</DialogDescription>
+            )}
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="aspect-[3/4] max-h-72 mx-auto rounded-lg overflow-hidden border border-border">
+              {album.capa_url ? (
+                <img
+                  src={album.capa_url}
+                  alt={album.titulo}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div
+                  className="w-full h-full flex items-center justify-center"
+                  style={{ background: `linear-gradient(135deg, ${categoria.cor}40, ${categoria.cor}10)` }}
+                >
+                  <Icon className="h-16 w-16" style={{ color: categoria.cor }} />
+                </div>
+              )}
+            </div>
+
+            {plano ? (
+              <div className="text-center space-y-2">
+                <div className="text-yellow-400 font-bold text-3xl tracking-tight">
+                  R$ {plano.valor.toFixed(2).replace(".", ",")}
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Pack vitalício + {plano.meses_banco_geral}{" "}
+                  {plano.meses_banco_geral === 1 ? "mês" : "meses"} de assinatura da plataforma
+                </p>
+              </div>
+            ) : (
+              <p className="text-center text-muted-foreground">Em breve</p>
+            )}
+          </div>
+
+          <DialogFooter>
+            {plano && (
+              <Button
+                onClick={handleComprar}
+                disabled={loading}
+                className="w-full bg-yellow-500 hover:bg-yellow-400 text-black font-semibold gap-2"
+              >
+                {loading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <>
+                    <ShoppingCart className="h-4 w-4" /> Adquirir Turma
+                  </>
+                )}
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
 }
