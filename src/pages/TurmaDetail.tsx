@@ -9,7 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useIsModerator } from "@/hooks/useIsModerator";
 import { getTurmaIcon } from "@/lib/turmasIcons";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { TurmaRanking } from "@/components/TurmaRanking";
 
 type Album = {
