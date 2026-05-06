@@ -741,6 +741,11 @@ function UserDetailDrawer({ user, role, isOnline, onClose }: { user: any; role: 
 
           <Separator />
 
+          {/* Turmas */}
+          <UserTurmasSection userId={user.id} />
+
+          <Separator />
+
           {/* Actions */}
           <div className="space-y-3">
             <h3 className="text-sm font-medium">Ações</h3>
