@@ -435,6 +435,19 @@ function QuestoesManagerDialog({ album, onClose }: { album: Album; onClose: () =
 
   const existingIds = new Set(turmaQuestoes.map((q) => q.question_id));
 
+  const { data: usedQuestionIds = [] } = useQuery({
+    queryKey: ["admin-turmas-questoes-usadas"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("turmas_questoes")
+        .select("question_id");
+      if (error) throw error;
+      return (data || []).map((d: any) => d.question_id as string);
+    },
+  });
+
+  const usedSet = new Set(usedQuestionIds);
+
   const { data: availableQuestions = [] } = useQuery({
     queryKey: ["admin-available-questoes", search],
     queryFn: async () => {
@@ -443,7 +456,7 @@ function QuestoesManagerDialog({ album, onClose }: { album: Album; onClose: () =
         .select("id, public_id, title, discipline")
         .eq("is_weekly", false)
         .order("created_at", { ascending: false })
-        .limit(50);
+        .limit(200);
       if (search.trim()) q = q.ilike("title", `%${search.trim()}%`);
       const { data, error } = await q;
       if (error) throw error;
@@ -464,6 +477,7 @@ function QuestoesManagerDialog({ album, onClose }: { album: Album; onClose: () =
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-turma-questoes", album.id] });
+      queryClient.invalidateQueries({ queryKey: ["admin-turmas-questoes-usadas"] });
       toast.success("Questão adicionada.");
     },
     onError: (e: any) => toast.error(e.message),
@@ -476,6 +490,7 @@ function QuestoesManagerDialog({ album, onClose }: { album: Album; onClose: () =
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-turma-questoes", album.id] });
+      queryClient.invalidateQueries({ queryKey: ["admin-turmas-questoes-usadas"] });
       toast.success("Removida.");
     },
   });
@@ -514,7 +529,7 @@ function QuestoesManagerDialog({ album, onClose }: { album: Album; onClose: () =
             <h3 className="text-xs uppercase text-muted-foreground mb-2 font-semibold">Disponíveis</h3>
             <Input placeholder="Buscar por título..." value={search} onChange={(e) => setSearch(e.target.value)} className="mb-2" />
             <div className="space-y-1 max-h-[50vh] overflow-y-auto">
-              {availableQuestions.filter((q) => !existingIds.has(q.id)).map((q) => (
+              {availableQuestions.filter((q) => !existingIds.has(q.id) && !usedSet.has(q.id)).map((q) => (
                 <div key={q.id} className="flex items-center gap-2 p-2 rounded bg-secondary/40 border border-border/50">
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium truncate">{q.title}</p>
