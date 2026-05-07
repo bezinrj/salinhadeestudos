@@ -278,18 +278,29 @@ export default function Dashboard() {
             <CardTitle className="text-sm font-medium text-muted-foreground">Últimas Correções</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {recentCorrections.length > 0 ? recentCorrections.slice(0, 4).map((c, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{c.questionTitle}</p>
-                  <p className="text-xs text-muted-foreground">{c.career} · {c.date}</p>
+            {recentCorrectionsData && recentCorrectionsData.length > 0 ? recentCorrectionsData.map((c: any, i: number) => {
+              const q = c.question || {};
+              const code = q.public_id ? `Q-${q.public_id}` : "—";
+              return (
+                <div key={i} className="flex items-center gap-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">
+                      <span className="text-primary font-semibold">{code}</span>
+                      {q.subject ? ` · ${q.subject}` : ""}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {[q.discipline, q.career].filter(Boolean).join(" · ") || "—"}
+                    </p>
+                  </div>
+                  {typeof c.score === "number" && (
+                    <div className="text-right shrink-0">
+                      <p className="text-sm font-bold text-primary">{Number(c.score).toFixed(1)}</p>
+                      <Progress value={Math.min(100, (Number(c.score) / 10) * 100)} className="h-1 w-16 mt-1" />
+                    </div>
+                  )}
                 </div>
-                <div className="text-right shrink-0">
-                  <p className="text-sm font-bold text-primary">{c.grade}/{c.maxGrade}</p>
-                  <Progress value={(c.grade / c.maxGrade) * 100} className="h-1 w-16 mt-1" />
-                </div>
-              </div>
-            )) : (
+              );
+            }) : (
               <p className="text-center py-4 text-muted-foreground text-sm">Nenhuma correção ainda. Responda uma discursiva!</p>
             )}
           </CardContent>
