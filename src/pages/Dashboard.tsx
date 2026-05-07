@@ -88,6 +88,43 @@ export default function Dashboard() {
     gcTime: 24 * 60 * 60 * 1000,
   });
 
+  // Total de discursivas + gráfico de questões respondidas por dia (últimos 7 dias)
+  const { data: answersStats } = useQuery({
+    queryKey: ["dashboard-answers-stats", profile?.id],
+    queryFn: async () => {
+      if (!profile) return { total: 0, weekly: [] as { day: string; count: number }[] };
+      const since = new Date();
+      since.setDate(since.getDate() - 6);
+      since.setHours(0, 0, 0, 0);
+
+      const [{ data: wa }, { data: tr }] = await Promise.all([
+        (supabase.from("weekly_answers" as any) as any).select("created_at").eq("user_id", profile.id),
+        supabase.from("turmas_respostas").select("created_at").eq("user_id", profile.id),
+      ]);
+
+      const all = [...((wa as any[]) || []), ...((tr as any[]) || [])];
+      const total = all.length;
+
+      const dayLabels = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+      const weekly: { day: string; count: number }[] = [];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        d.setHours(0, 0, 0, 0);
+        const next = new Date(d);
+        next.setDate(next.getDate() + 1);
+        const count = all.filter((a: any) => {
+          const t = new Date(a.created_at).getTime();
+          return t >= d.getTime() && t < next.getTime();
+        }).length;
+        weekly.push({ day: dayLabels[d.getDay()], count });
+      }
+      return { total, weekly };
+    },
+    enabled: !!profile,
+    staleTime: 60_000,
+  });
+
   if (!profile) return null;
 
   return (
@@ -138,7 +175,7 @@ export default function Dashboard() {
         <StatCard title="Pontuação" value={(rankingInfo?.score ?? 0).toLocaleString("pt-BR")} icon={TrendingUp} variant="electric" />
         <StatCard title="Ranking" value={rankingInfo && rankingInfo.position > 0 ? `#${rankingInfo.position}` : "—"} icon={Trophy} variant="gold" />
         <StatCard title="Horas/Semana" value={`${profile.weekly_hours}h`} icon={Timer} variant="purple" />
-        <StatCard title="Discursivas" value={profile.total_essays} subtitle={profile.average_grade > 0 ? `Média: ${profile.average_grade}` : undefined} icon={FileText} variant="default" />
+        <StatCard title="Discursivas" value={answersStats?.total ?? 0} subtitle={profile.average_grade > 0 ? `Média: ${profile.average_grade}` : undefined} icon={FileText} variant="default" />
       </div>
 
       {/* Streak + Quick Actions */}
@@ -187,15 +224,15 @@ export default function Dashboard() {
       <div className="grid lg:grid-cols-2 gap-4">
         <Card className="gradient-card border-border">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Horas Estudadas na Semana</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total de questões respondidas na semana</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={180}>
-              <BarChart data={weeklyStudyData}>
+              <BarChart data={answersStats?.weekly ?? []}>
                 <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: "hsl(215, 15%, 55%)", fontSize: 12 }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: "hsl(215, 15%, 55%)", fontSize: 12 }} />
+                <YAxis allowDecimals={false} axisLine={false} tickLine={false} tick={{ fill: "hsl(215, 15%, 55%)", fontSize: 12 }} />
                 <Tooltip contentStyle={{ backgroundColor: "hsl(220, 18%, 11%)", border: "1px solid hsl(220, 14%, 18%)", borderRadius: "8px", color: "hsl(210, 20%, 92%)" }} />
-                <Bar dataKey="hours" fill="hsl(217, 91%, 60%)" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="count" fill="hsl(217, 91%, 60%)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
