@@ -125,6 +125,41 @@ export default function Dashboard() {
     staleTime: 60_000,
   });
 
+  // Últimas correções: últimas questões com gabarito enviado pelo usuário
+  const { data: recentCorrectionsData } = useQuery({
+    queryKey: ["dashboard-recent-corrections", profile?.id],
+    queryFn: async () => {
+      if (!profile) return [] as any[];
+      const [{ data: wa }, { data: tr }] = await Promise.all([
+        (supabase.from("weekly_answers" as any) as any)
+          .select("question_id, score, created_at")
+          .eq("user_id", profile.id)
+          .order("created_at", { ascending: false })
+          .limit(8),
+        supabase
+          .from("turmas_respostas")
+          .select("question_id, score, created_at")
+          .eq("user_id", profile.id)
+          .order("created_at", { ascending: false })
+          .limit(8),
+      ]);
+      const merged = [...((wa as any[]) || []), ...((tr as any[]) || [])]
+        .filter((r) => r.question_id)
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .slice(0, 4);
+      if (merged.length === 0) return [];
+      const ids = Array.from(new Set(merged.map((m: any) => m.question_id)));
+      const { data: questions } = await supabase
+        .from("weekly_questions")
+        .select("id, public_id, career, discipline, subject")
+        .in("id", ids);
+      const qMap = new Map((questions || []).map((q: any) => [q.id, q]));
+      return merged.map((m: any) => ({ ...m, question: qMap.get(m.question_id) }));
+    },
+    enabled: !!profile,
+    staleTime: 60_000,
+  });
+
   if (!profile) return null;
 
   return (
@@ -243,18 +278,29 @@ export default function Dashboard() {
             <CardTitle className="text-sm font-medium text-muted-foreground">Últimas Correções</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {recentCorrections.length > 0 ? recentCorrections.slice(0, 4).map((c, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{c.questionTitle}</p>
-                  <p className="text-xs text-muted-foreground">{c.career} · {c.date}</p>
+            {recentCorrectionsData && recentCorrectionsData.length > 0 ? recentCorrectionsData.map((c: any, i: number) => {
+              const q = c.question || {};
+              const code = q.public_id ? `Q-${q.public_id}` : "—";
+              return (
+                <div key={i} className="flex items-center gap-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">
+                      <span className="text-primary font-semibold">{code}</span>
+                      {q.subject ? ` · ${q.subject}` : ""}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {[q.discipline, q.career].filter(Boolean).join(" · ") || "—"}
+                    </p>
+                  </div>
+                  {typeof c.score === "number" && (
+                    <div className="text-right shrink-0">
+                      <p className="text-sm font-bold text-primary">{Number(c.score).toFixed(1)}</p>
+                      <Progress value={Math.min(100, (Number(c.score) / 10) * 100)} className="h-1 w-16 mt-1" />
+                    </div>
+                  )}
                 </div>
-                <div className="text-right shrink-0">
-                  <p className="text-sm font-bold text-primary">{c.grade}/{c.maxGrade}</p>
-                  <Progress value={(c.grade / c.maxGrade) * 100} className="h-1 w-16 mt-1" />
-                </div>
-              </div>
-            )) : (
+              );
+            }) : (
               <p className="text-center py-4 text-muted-foreground text-sm">Nenhuma correção ainda. Responda uma discursiva!</p>
             )}
           </CardContent>
