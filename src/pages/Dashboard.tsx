@@ -66,6 +66,28 @@ export default function Dashboard() {
 
   const activeAnnouncements = announcements?.filter((a: any) => !dismissedAnnouncements.includes(a.id)) || [];
 
+  // Pontuação e posição reais (mesma fonte do menu Ranking)
+  const todayKey = new Date().toLocaleDateString("pt-BR");
+  const { data: rankingInfo } = useQuery({
+    queryKey: ["dashboard-ranking-self", todayKey, profile?.id],
+    queryFn: async () => {
+      const { data: scores } = await (supabase as any).rpc("get_general_ranking");
+      if (!scores) return { score: 0, position: 0 };
+      const sorted = [...scores]
+        .map((r: any) => ({ user_id: r.user_id, total_score: Number(r.total_score) }))
+        .filter((r) => r.total_score > 0)
+        .sort((a, b) => b.total_score - a.total_score);
+      const idx = sorted.findIndex((r) => r.user_id === profile!.id);
+      return {
+        score: idx >= 0 ? Math.round(sorted[idx].total_score * 10) / 10 : 0,
+        position: idx >= 0 ? idx + 1 : 0,
+      };
+    },
+    enabled: !!profile,
+    staleTime: Infinity,
+    gcTime: 24 * 60 * 60 * 1000,
+  });
+
   if (!profile) return null;
 
   return (
