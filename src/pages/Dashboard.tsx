@@ -88,6 +88,43 @@ export default function Dashboard() {
     gcTime: 24 * 60 * 60 * 1000,
   });
 
+  // Total de discursivas + gráfico de questões respondidas por dia (últimos 7 dias)
+  const { data: answersStats } = useQuery({
+    queryKey: ["dashboard-answers-stats", profile?.id],
+    queryFn: async () => {
+      if (!profile) return { total: 0, weekly: [] as { day: string; count: number }[] };
+      const since = new Date();
+      since.setDate(since.getDate() - 6);
+      since.setHours(0, 0, 0, 0);
+
+      const [{ data: wa }, { data: tr }] = await Promise.all([
+        (supabase.from("weekly_answers" as any) as any).select("created_at").eq("user_id", profile.id),
+        supabase.from("turmas_respostas").select("created_at").eq("user_id", profile.id),
+      ]);
+
+      const all = [...((wa as any[]) || []), ...((tr as any[]) || [])];
+      const total = all.length;
+
+      const dayLabels = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+      const weekly: { day: string; count: number }[] = [];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        d.setHours(0, 0, 0, 0);
+        const next = new Date(d);
+        next.setDate(next.getDate() + 1);
+        const count = all.filter((a: any) => {
+          const t = new Date(a.created_at).getTime();
+          return t >= d.getTime() && t < next.getTime();
+        }).length;
+        weekly.push({ day: dayLabels[d.getDay()], count });
+      }
+      return { total, weekly };
+    },
+    enabled: !!profile,
+    staleTime: 60_000,
+  });
+
   if (!profile) return null;
 
   return (
