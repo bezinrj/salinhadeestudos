@@ -257,13 +257,13 @@ export default function Dashboard() {
                 <Flame className="h-5 w-5 text-gold" />
               </div>
               <div>
-                <p className="font-display font-bold text-lg">{profile.streak} dias</p>
+                <p className="font-display font-bold text-lg">{answerStreak ?? 0} dias</p>
                 <p className="text-xs text-muted-foreground">Sequência de estudos 🔥</p>
               </div>
             </div>
             <div className="flex gap-1">
               {Array.from({ length: 7 }).map((_, i) => (
-                <div key={i} className={`h-2 flex-1 rounded-full ${i < Math.min(profile.streak, 7) ? "bg-gold" : "bg-secondary"}`} />
+                <div key={i} className={`h-2 flex-1 rounded-full ${i < Math.min(answerStreak ?? 0, 7) ? "bg-gold" : "bg-secondary"}`} />)}
               ))}
             </div>
           </CardContent>
