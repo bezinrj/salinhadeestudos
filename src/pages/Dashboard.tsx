@@ -125,6 +125,41 @@ export default function Dashboard() {
     staleTime: 60_000,
   });
 
+  // Streak baseado em dias com pelo menos 1 questão respondida
+  const { data: answerStreak } = useQuery({
+    queryKey: ["dashboard-answer-streak", profile?.id],
+    queryFn: async () => {
+      if (!profile) return 0;
+      const [{ data: wa }, { data: tr }] = await Promise.all([
+        (supabase.from("weekly_answers" as any) as any).select("created_at").eq("user_id", profile.id),
+        supabase.from("turmas_respostas").select("created_at").eq("user_id", profile.id),
+      ]);
+      const all = [...((wa as any[]) || []), ...((tr as any[]) || [])];
+      if (all.length === 0) return 0;
+      const days = new Set(
+        all.map((a: any) => {
+          const d = new Date(a.created_at);
+          d.setHours(0, 0, 0, 0);
+          return d.getTime();
+        })
+      );
+      const oneDay = 24 * 60 * 60 * 1000;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      let cursor = today.getTime();
+      // Se não estudou hoje, começar a contar a partir de ontem
+      if (!days.has(cursor)) cursor -= oneDay;
+      let streak = 0;
+      while (days.has(cursor)) {
+        streak++;
+        cursor -= oneDay;
+      }
+      return streak;
+    },
+    enabled: !!profile,
+    staleTime: 60_000,
+  });
+
   // Últimas correções: últimas questões com gabarito enviado pelo usuário
   const { data: recentCorrectionsData } = useQuery({
     queryKey: ["dashboard-recent-corrections", profile?.id],
