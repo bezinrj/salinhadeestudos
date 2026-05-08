@@ -263,7 +263,7 @@ export default function Dashboard() {
             </div>
             <div className="flex gap-1">
               {Array.from({ length: 7 }).map((_, i) => (
-                <div key={i} className={`h-2 flex-1 rounded-full ${i < Math.min(answerStreak ?? 0, 7) ? "bg-gold" : "bg-secondary"}`} />)}
+                <div key={i} className={`h-2 flex-1 rounded-full ${i < Math.min(answerStreak ?? 0, 7) ? "bg-gold" : "bg-secondary"}`} />
               ))}
             </div>
           </CardContent>
