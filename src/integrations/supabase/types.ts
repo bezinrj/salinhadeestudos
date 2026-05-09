@@ -351,6 +351,72 @@ export type Database = {
         }
         Relationships: []
       }
+      hotmart_pendentes: {
+        Row: {
+          album_ids: string[]
+          created_at: string | null
+          email: string
+          hotmart_transaction: string | null
+          id: string
+          meses_assinatura: number
+          processado_at: string | null
+          produto_codigo: string
+          status: string
+        }
+        Insert: {
+          album_ids?: string[]
+          created_at?: string | null
+          email: string
+          hotmart_transaction?: string | null
+          id?: string
+          meses_assinatura?: number
+          processado_at?: string | null
+          produto_codigo: string
+          status?: string
+        }
+        Update: {
+          album_ids?: string[]
+          created_at?: string | null
+          email?: string
+          hotmart_transaction?: string | null
+          id?: string
+          meses_assinatura?: number
+          processado_at?: string | null
+          produto_codigo?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      hotmart_produtos: {
+        Row: {
+          album_ids: string[]
+          created_at: string | null
+          descricao: string | null
+          id: string
+          is_active: boolean
+          meses_assinatura: number
+          produto_codigo: string
+        }
+        Insert: {
+          album_ids?: string[]
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          is_active?: boolean
+          meses_assinatura?: number
+          produto_codigo: string
+        }
+        Update: {
+          album_ids?: string[]
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          is_active?: boolean
+          meses_assinatura?: number
+          produto_codigo?: string
+        }
+        Relationships: []
+      }
       manual_subscriptions: {
         Row: {
           created_at: string | null
