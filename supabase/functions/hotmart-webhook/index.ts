@@ -141,23 +141,6 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-      { auth: { persistSession: false } }
-    );
-
-    // Lookup product mapping
-    const { data: produto, error: prodErr } = await supabase
-      .from("hotmart_produtos")
-      .select("produto_codigo, album_ids, meses_assinatura, is_active")
-      .eq("produto_codigo", productCode)
-      .maybeSingle();
-
-    if (prodErr) throw new Error(`Lookup product failed: ${prodErr.message}`);
-    if (!produto || !produto.is_active) {
-      log("Product not mapped or inactive", { productCode });
-      return new Response(JSON.stringify({ error: "Product not mapped", productCode }), {
-        status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
