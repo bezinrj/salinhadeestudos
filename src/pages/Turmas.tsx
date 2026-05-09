@@ -175,18 +175,19 @@ function CategoriaSection({
         <h2 className="text-2xl font-semibold">{categoria.nome}</h2>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-2 -mx-1 px-1" style={{ scrollSnapType: "x mandatory" }}>
         {albuns.map((album, i) => (
-          <AlbumCard
-            key={album.id}
-            album={album}
-            categoria={categoria}
-            planos={planos}
-            temAcesso={isStaff || acessos.includes(album.id)}
-            isStaff={isStaff}
-            isAuthenticated={isAuthenticated}
-            index={i}
-          />
+          <div key={album.id} className="flex-shrink-0 w-[160px] md:w-[180px]" style={{ scrollSnapAlign: "start" }}>
+            <AlbumCard
+              album={album}
+              categoria={categoria}
+              planos={planos}
+              temAcesso={isStaff || acessos.includes(album.id)}
+              isStaff={isStaff}
+              isAuthenticated={isAuthenticated}
+              index={i}
+            />
+          </div>
         ))}
       </div>
     </section>
