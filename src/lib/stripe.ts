@@ -27,8 +27,6 @@ export const STRIPE_PLANS = {
     popular: true,
     features: [
       "Tudo do plano Mensal",
-      "12% de desconto",
-      "Acesso prioritário a novidades",
       "Suporte prioritário",
     ],
   },
@@ -42,8 +40,7 @@ export const STRIPE_PLANS = {
     discount: 33,
     features: [
       "Tudo do plano Trimestral",
-      "33% de desconto",
-      "Acesso antecipado a funcionalidades",
+      "Acesso prioritário a novidades",
       "Badge exclusivo de assinante anual",
     ],
   },
