@@ -451,13 +451,20 @@ function QuestoesManagerDialog({ album, onClose }: { album: Album; onClose: () =
   const { data: availableQuestions = [] } = useQuery({
     queryKey: ["admin-available-questoes", search],
     queryFn: async () => {
+      const term = search.trim();
+      // Detecta busca por ID público: "Q224", "Q-224", "224"
+      const idMatch = term.match(/^Q?-?\s*(\d+)$/i);
       let q = supabase
         .from("weekly_questions")
         .select("id, public_id, title, discipline")
         .eq("is_weekly", false)
         .order("created_at", { ascending: false })
         .limit(200);
-      if (search.trim()) q = q.ilike("title", `%${search.trim()}%`);
+      if (idMatch) {
+        q = q.eq("public_id", parseInt(idMatch[1], 10));
+      } else if (term) {
+        q = q.ilike("title", `%${term}%`);
+      }
       const { data, error } = await q;
       if (error) throw error;
       return (data || []) as Questao[];
