@@ -18,13 +18,13 @@ import {
 } from "@/components/ui/sidebar";
 
 const mainItems = [
+  { title: "Perfil", url: "/perfil", icon: User },
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Discursivas", url: "/discursivas", icon: FileText },
   { title: "Questões da Semana", url: "/semanal", icon: Calendar },
   { title: "Minhas Turmas", url: "/turmas", icon: BookOpen },
   { title: "Ranking", url: "/ranking", icon: Trophy },
   { title: "Cronômetro", url: "/cronometro", icon: Timer },
-  { title: "Perfil", url: "/perfil", icon: User },
   { title: "Meu Plano", url: "/meu-plano", icon: CreditCard },
 ];
 
