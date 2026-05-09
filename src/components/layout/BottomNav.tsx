@@ -28,10 +28,10 @@ const mainNavItems = [
 ];
 
 const extraNavItems = [
+  { path: "/perfil", icon: User, label: "Perfil" },
   { path: "/cronometro", icon: Timer, label: "Cronômetro" },
   { path: "/turmas", icon: GraduationCap, label: "Minhas Turmas" },
   { path: "/cronograma", icon: CalendarRange, label: "Cronograma" },
-  { path: "/perfil", icon: User, label: "Perfil" },
   { path: "/meu-plano", icon: CreditCard, label: "Meu Plano" },
 ];
 

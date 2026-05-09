@@ -8,6 +8,7 @@ import { Scale, FileText, Trophy, Timer, Target, TrendingUp, Users, ChevronRight
 import { FeatureTour } from "@/components/FeatureTour";
 import { Card, CardContent } from "@/components/ui/card";
 import { PricingCards } from "@/components/PricingCards";
+import { HomeFeedbacksCarousel } from "@/components/HomeFeedbacksCarousel";
 import { demoRanking } from "@/data/mockData";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
@@ -149,6 +150,9 @@ export default function Home() {
           ))}
         </div>
       </section>
+
+      {/* Feedbacks dos alunos */}
+      <HomeFeedbacksCarousel />
 
       {/* Pricing */}
       <section className="container mx-auto px-4 py-16 md:py-24">

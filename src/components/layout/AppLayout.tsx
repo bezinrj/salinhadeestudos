@@ -3,11 +3,13 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { BottomNav } from "./BottomNav";
 import { useOnlineTracker } from "@/hooks/useOnlineTracker";
+import { FeedbackButton } from "@/components/FeedbackButton";
 
 export function AppLayout() {
   useOnlineTracker();
   return (
     <SidebarProvider>
+      <FeedbackButton />
       <div className="min-h-screen flex w-full">
         <div className="hidden md:block">
           <AppSidebar />
