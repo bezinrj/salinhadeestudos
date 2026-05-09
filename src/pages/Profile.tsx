@@ -61,8 +61,28 @@ export default function Profile() {
   const [name, setName] = useState(myProfile?.name || "");
   const [username, setUsername] = useState(myProfile?.username || "");
   const [career, setCareer] = useState(myProfile?.target_career || "");
+  const [whatsapp, setWhatsapp] = useState("");
   const [profileError, setProfileError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Carrega o whatsapp privado (apenas dono ou admin via RLS)
+  const { data: contactInfo, refetch: refetchContact } = useQuery({
+    queryKey: ["user-contact-info", isOwnProfile ? user?.id : userId],
+    enabled: !!(isOwnProfile ? user?.id : userId),
+    queryFn: async () => {
+      const targetId = isOwnProfile ? user!.id : userId!;
+      const { data } = await (supabase as any)
+        .from("user_contact_info")
+        .select("whatsapp")
+        .eq("user_id", targetId)
+        .maybeSingle();
+      return data as { whatsapp: string | null } | null;
+    },
+  });
+
+  useEffect(() => {
+    if (contactInfo?.whatsapp != null) setWhatsapp(contactInfo.whatsapp);
+  }, [contactInfo?.whatsapp]);
 
   if (!profile) return null;
 
