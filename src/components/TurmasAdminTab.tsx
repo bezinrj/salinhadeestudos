@@ -555,7 +555,7 @@ function QuestoesManagerDialog({ album, onClose }: { album: Album; onClose: () =
 
           <div>
             <h3 className="text-xs uppercase text-muted-foreground mb-2 font-semibold">Disponíveis</h3>
-            <Input placeholder="Buscar por título..." value={search} onChange={(e) => setSearch(e.target.value)} className="mb-2" />
+            <Input placeholder="Buscar por título ou ID (ex: Q224)..." value={search} onChange={(e) => setSearch(e.target.value)} className="mb-2" />
             <div className="space-y-1 max-h-[50vh] overflow-y-auto">
               {availableQuestions.filter((q) => !existingIds.has(q.id) && !usedSet.has(q.id)).map((q) => (
                 <div key={q.id} className="flex items-center gap-2 p-2 rounded bg-secondary/40 border border-border/50">
