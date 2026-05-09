@@ -12,16 +12,16 @@ const log = (step: string, details?: unknown) => {
   console.log(`[HOTMART-WEBHOOK] ${step}${d}`);
 };
 
-function pickProductCode(payload: any): string | null {
-  return (
-    payload?.data?.product?.ucode ||
-    payload?.data?.product?.id?.toString() ||
-    payload?.data?.product?.code ||
-    payload?.product?.ucode ||
-    payload?.product?.id?.toString() ||
-    payload?.product_code ||
-    null
-  );
+function pickProductCodes(payload: any): string[] {
+  const candidates = [
+    payload?.data?.product?.id?.toString(),
+    payload?.data?.product?.code,
+    payload?.data?.product?.ucode,
+    payload?.product?.id?.toString(),
+    payload?.product?.ucode,
+    payload?.product_code,
+  ].filter((v): v is string => typeof v === "string" && v.length > 0);
+  return Array.from(new Set(candidates));
 }
 
 function pickEmail(payload: any): string | null {
