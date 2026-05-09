@@ -451,13 +451,20 @@ function QuestoesManagerDialog({ album, onClose }: { album: Album; onClose: () =
   const { data: availableQuestions = [] } = useQuery({
     queryKey: ["admin-available-questoes", search],
     queryFn: async () => {
+      const term = search.trim();
+      // Detecta busca por ID público: "Q224", "Q-224", "224"
+      const idMatch = term.match(/^Q?-?\s*(\d+)$/i);
       let q = supabase
         .from("weekly_questions")
         .select("id, public_id, title, discipline")
         .eq("is_weekly", false)
         .order("created_at", { ascending: false })
         .limit(200);
-      if (search.trim()) q = q.ilike("title", `%${search.trim()}%`);
+      if (idMatch) {
+        q = q.eq("public_id", parseInt(idMatch[1], 10));
+      } else if (term) {
+        q = q.ilike("title", `%${term}%`);
+      }
       const { data, error } = await q;
       if (error) throw error;
       return (data || []) as Questao[];
@@ -533,7 +540,8 @@ function QuestoesManagerDialog({ album, onClose }: { album: Album; onClose: () =
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium truncate">{tq.question?.title || "—"}</p>
                     <p className="text-[10px] text-muted-foreground">
-                      {tq.question?.discipline} · libera {new Date(tq.liberado_em).toLocaleDateString("pt-BR")}
+                      {tq.question?.discipline}
+                      {tq.question?.public_id != null && <> · Q-{String(tq.question.public_id).padStart(3, "0")}</>}
                     </p>
                   </div>
                   <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => removeMutation.mutate(tq.id)}>
@@ -547,7 +555,7 @@ function QuestoesManagerDialog({ album, onClose }: { album: Album; onClose: () =
 
           <div>
             <h3 className="text-xs uppercase text-muted-foreground mb-2 font-semibold">Disponíveis</h3>
-            <Input placeholder="Buscar por título..." value={search} onChange={(e) => setSearch(e.target.value)} className="mb-2" />
+            <Input placeholder="Buscar por título ou ID (ex: Q224)..." value={search} onChange={(e) => setSearch(e.target.value)} className="mb-2" />
             <div className="space-y-1 max-h-[50vh] overflow-y-auto">
               {availableQuestions.filter((q) => !existingIds.has(q.id) && !usedSet.has(q.id)).map((q) => (
                 <div key={q.id} className="flex items-center gap-2 p-2 rounded bg-secondary/40 border border-border/50">
