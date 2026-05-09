@@ -178,7 +178,7 @@ export default function Profile() {
                         </span>
                       )}
                       {isOwnProfile && (
-                        <button onClick={() => { setEditing(true); setBio(myProfile!.bio); setName(myProfile!.name); setUsername(myProfile!.username); setCareer(myProfile!.target_career); setProfileError(""); }} className="text-muted-foreground hover:text-foreground">
+                        <button onClick={() => { setEditing(true); setBio(myProfile!.bio); setName(myProfile!.name); setUsername(myProfile!.username); setCareer(myProfile!.target_career); setWhatsapp(contactInfo?.whatsapp || ""); setProfileError(""); }} className="text-muted-foreground hover:text-foreground">
                           <Pencil className="h-3.5 w-3.5" />
                         </button>
                       )}
