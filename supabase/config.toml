@@ -25,3 +25,5 @@ project_id = "lwadfvkaywbdebvwdfgb"
     verify_jwt = false
   [functions.stripe-turma-webhook]
     verify_jwt = false
+  [functions.hotmart-webhook]
+    verify_jwt = false
