@@ -589,6 +589,11 @@ function UsersTab() {
                     </div>
                     <p className="text-xs text-muted-foreground">@{u.username}</p>
                     <p className="text-xs text-muted-foreground truncate">{(userEmails?.get(u.id) as string) || "—"}</p>
+                    {contacts?.get(u.id) && (
+                      <p className="text-xs text-green-400 truncate flex items-center gap-1">
+                        <Phone className="h-3 w-3" /> {contacts.get(u.id)}
+                      </p>
+                    )}
                     <div className="flex items-center gap-2 mt-1">
                       {isOnline ? (
                         <span className="text-[10px] text-green-400 font-medium">● Ativo</span>
