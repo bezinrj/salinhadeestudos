@@ -1517,6 +1517,27 @@ export type Database = {
           },
         ]
       }
+      user_contact_info: {
+        Row: {
+          created_at: string
+          updated_at: string
+          user_id: string
+          whatsapp: string | null
+        }
+        Insert: {
+          created_at?: string
+          updated_at?: string
+          user_id: string
+          whatsapp?: string | null
+        }
+        Update: {
+          created_at?: string
+          updated_at?: string
+          user_id?: string
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
       user_fonte_progress: {
         Row: {
           concluido: boolean
