@@ -440,6 +440,16 @@ function UsersTab() {
     },
   });
 
+  const { data: contacts } = useQuery({
+    queryKey: ["admin-user-contacts"],
+    queryFn: async () => {
+      const { data } = await (supabase as any).from("user_contact_info").select("user_id, whatsapp");
+      const map = new Map<string, string>();
+      (data || []).forEach((c: any) => { if (c.whatsapp) map.set(c.user_id, c.whatsapp); });
+      return map;
+    },
+  });
+
   const { data: users } = useQuery({
     queryKey: ["admin-users", search],
     queryFn: async () => {
