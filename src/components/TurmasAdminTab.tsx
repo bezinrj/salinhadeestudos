@@ -25,6 +25,8 @@ type Album = {
   intervalo_dias: number;
   data_inicio: string;
   is_active: boolean;
+  whatsapp_url?: string | null;
+  whatsapp_ativo?: boolean;
 };
 type Questao = { id: string; public_id: number; title: string; discipline: string };
 type TurmaQuestao = {
@@ -53,6 +55,8 @@ export default function TurmasAdminTab() {
   const [aIntervalo, setAIntervalo] = useState(7);
   const [aDataInicio, setADataInicio] = useState(new Date().toISOString().slice(0, 10));
   const [aActive, setAActive] = useState(true);
+  const [aWppUrl, setAWppUrl] = useState("");
+  const [aWppAtivo, setAWppAtivo] = useState(false);
   const [uploading, setUploading] = useState(false);
 
   // Categoria form
@@ -90,6 +94,7 @@ export default function TurmasAdminTab() {
     setEditingAlbum(null);
     setATitulo(""); setADescricao(""); setACategoria(""); setACapa("");
     setAQpL(1); setAIntervalo(7); setADataInicio(new Date().toISOString().slice(0, 10)); setAActive(true);
+    setAWppUrl(""); setAWppAtivo(false);
   };
 
   const openEditAlbum = (a: Album) => {
@@ -102,6 +107,8 @@ export default function TurmasAdminTab() {
     setAIntervalo(a.intervalo_dias);
     setADataInicio(a.data_inicio.slice(0, 10));
     setAActive(a.is_active);
+    setAWppUrl((a as any).whatsapp_url || "");
+    setAWppAtivo(!!(a as any).whatsapp_ativo);
     setShowAlbum(true);
   };
 
@@ -116,6 +123,8 @@ export default function TurmasAdminTab() {
         intervalo_dias: Math.max(1, aIntervalo),
         data_inicio: new Date(aDataInicio).toISOString(),
         is_active: aActive,
+        whatsapp_url: aWppUrl.trim() || null,
+        whatsapp_ativo: aWppAtivo,
       };
       if (editingAlbum) {
         const { error } = await supabase.from("turmas_albuns").update(payload).eq("id", editingAlbum.id);
@@ -356,6 +365,18 @@ export default function TurmasAdminTab() {
             <div className="flex items-center gap-2">
               <Switch checked={aActive} onCheckedChange={setAActive} />
               <span className="text-xs">Ativa</span>
+            </div>
+            <div className="space-y-2 rounded-lg border border-border p-3">
+              <label className="text-xs text-muted-foreground">Link do Grupo WhatsApp</label>
+              <Input
+                value={aWppUrl}
+                onChange={(e) => setAWppUrl(e.target.value)}
+                placeholder="https://chat.whatsapp.com/..."
+              />
+              <div className="flex items-center gap-2">
+                <Switch checked={aWppAtivo} onCheckedChange={setAWppAtivo} />
+                <span className="text-xs">Mostrar botão "Grupo WhatsApp" na turma</span>
+              </div>
             </div>
             <Button className="w-full" disabled={!aTitulo.trim() || saveAlbum.isPending} onClick={() => saveAlbum.mutate()}>
               {saveAlbum.isPending ? "Salvando..." : editingAlbum ? "Salvar" : "Criar"}
