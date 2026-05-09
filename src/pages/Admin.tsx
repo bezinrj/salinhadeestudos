@@ -87,12 +87,12 @@ export default function Admin() {
 
       {isAdmin ? (
          <Tabs defaultValue="overview" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-11 bg-secondary overflow-x-auto flex-nowrap scrollbar-hide">
-            <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-            <TabsTrigger value="users">Usuários</TabsTrigger>
-            <TabsTrigger value="weekly">Semanal</TabsTrigger>
-            <TabsTrigger value="turmas">Turmas</TabsTrigger>
-            <TabsTrigger value="alerts" className="relative">
+          <TabsList className="flex w-full justify-start gap-1 overflow-x-auto flex-nowrap scrollbar-hide bg-secondary h-auto p-1 md:grid md:grid-cols-11">
+            <TabsTrigger value="overview" className="shrink-0 md:shrink">Visão Geral</TabsTrigger>
+            <TabsTrigger value="users" className="shrink-0 md:shrink">Usuários</TabsTrigger>
+            <TabsTrigger value="weekly" className="shrink-0 md:shrink">Semanal</TabsTrigger>
+            <TabsTrigger value="turmas" className="shrink-0 md:shrink">Turmas</TabsTrigger>
+            <TabsTrigger value="alerts" className="relative shrink-0 md:shrink">
               Alertas
               {pendingAlerts > 0 && (
                 <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground px-1">
@@ -100,7 +100,7 @@ export default function Admin() {
                 </span>
               )}
             </TabsTrigger>
-            <TabsTrigger value="requests" className="relative">
+            <TabsTrigger value="requests" className="relative shrink-0 md:shrink">
               Solicitações
               {pendingRequests > 0 && (
                 <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground px-1">
@@ -108,10 +108,10 @@ export default function Admin() {
                 </span>
               )}
             </TabsTrigger>
-            <TabsTrigger value="announcements">Avisos</TabsTrigger>
-            <TabsTrigger value="content">Conteúdo</TabsTrigger>
-            <TabsTrigger value="subjects">Assuntos</TabsTrigger>
-            <TabsTrigger value="materias">Matérias</TabsTrigger>
+            <TabsTrigger value="announcements" className="shrink-0 md:shrink">Avisos</TabsTrigger>
+            <TabsTrigger value="content" className="shrink-0 md:shrink">Conteúdo</TabsTrigger>
+            <TabsTrigger value="subjects" className="shrink-0 md:shrink">Assuntos</TabsTrigger>
+            <TabsTrigger value="materias" className="shrink-0 md:shrink">Matérias</TabsTrigger>
             
           </TabsList>
 
@@ -129,11 +129,11 @@ export default function Admin() {
         </Tabs>
       ) : (
         <Tabs defaultValue="weekly" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4 bg-secondary overflow-x-auto flex-nowrap scrollbar-hide">
-            <TabsTrigger value="weekly">Semanal</TabsTrigger>
-            <TabsTrigger value="turmas">Turmas</TabsTrigger>
-            <TabsTrigger value="subjects">Assuntos</TabsTrigger>
-            <TabsTrigger value="materias">Matérias</TabsTrigger>
+          <TabsList className="flex w-full justify-start gap-1 overflow-x-auto flex-nowrap scrollbar-hide bg-secondary h-auto p-1 md:grid md:grid-cols-4">
+            <TabsTrigger value="weekly" className="shrink-0 md:shrink">Semanal</TabsTrigger>
+            <TabsTrigger value="turmas" className="shrink-0 md:shrink">Turmas</TabsTrigger>
+            <TabsTrigger value="subjects" className="shrink-0 md:shrink">Assuntos</TabsTrigger>
+            <TabsTrigger value="materias" className="shrink-0 md:shrink">Matérias</TabsTrigger>
           </TabsList>
 
           <TabsContent value="weekly"><WeeklyQuestionsTab /></TabsContent>
