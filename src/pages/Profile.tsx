@@ -105,7 +105,22 @@ export default function Profile() {
       setProfileError("Nome de usuário não pode estar vazio.");
       return;
     }
+    const cleanWhatsapp = whatsapp.trim().replace(/\s+/g, " ").slice(0, 32);
+    if (cleanWhatsapp && !/^[+0-9()\-\s]{8,32}$/.test(cleanWhatsapp)) {
+      setProfileError("WhatsApp inválido. Use apenas números, espaços, +, ( ) ou -.");
+      return;
+    }
     await updateProfile({ name, bio, target_career: career, username: trimmedUsername });
+    if (user) {
+      const { error } = await (supabase as any)
+        .from("user_contact_info")
+        .upsert({ user_id: user.id, whatsapp: cleanWhatsapp || null }, { onConflict: "user_id" });
+      if (error) {
+        toast.error("Não foi possível salvar o WhatsApp.");
+      } else {
+        await refetchContact();
+      }
+    }
     setEditing(false);
   };
 
