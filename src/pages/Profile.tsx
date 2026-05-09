@@ -160,6 +160,7 @@ export default function Profile() {
                     <Input value={name} onChange={e => setName(e.target.value)} placeholder="Nome" className="bg-secondary border-border" />
                     <Input value={username} onChange={e => setUsername(e.target.value)} placeholder="Nome de usuário" className="bg-secondary border-border" />
                     <Input value={career} onChange={e => setCareer(e.target.value)} placeholder="Carreira alvo (ex: Delegado)" className="bg-secondary border-border" />
+                    <Input value={whatsapp} onChange={e => setWhatsapp(e.target.value)} placeholder="WhatsApp (ex: +55 11 91234-5678) — visível só para você e admins" className="bg-secondary border-border" maxLength={32} />
                     <Textarea value={bio} onChange={e => setBio(e.target.value)} placeholder="Escreva algo sobre você..." className="bg-secondary border-border min-h-[80px]" />
                     <div className="flex gap-2">
                       <Button size="sm" onClick={handleSave} className="gradient-electric text-white"><Save className="h-3.5 w-3.5 mr-1" /> Salvar</Button>
