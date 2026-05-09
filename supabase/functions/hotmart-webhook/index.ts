@@ -108,11 +108,11 @@ serve(async (req) => {
     }
 
     const email = (pickEmail(payload) || "").trim().toLowerCase();
-    const productCode = pickProductCode(payload);
+    const productCodes = pickProductCodes(payload);
     const transaction = pickTransaction(payload);
 
-    if (!email || !productCode) {
-      log("Missing email/product", { email, productCode });
+    if (!email || productCodes.length === 0) {
+      log("Missing email/product", { email, productCodes });
       return new Response(JSON.stringify({ error: "Missing email or product code" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -120,6 +120,27 @@ serve(async (req) => {
     }
 
     const supabase = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      { auth: { persistSession: false } }
+    );
+
+    // Lookup product mapping (try all candidate codes)
+    const { data: produtos, error: prodErr } = await supabase
+      .from("hotmart_produtos")
+      .select("produto_codigo, album_ids, meses_assinatura, is_active")
+      .in("produto_codigo", productCodes);
+
+    if (prodErr) throw new Error(`Lookup product failed: ${prodErr.message}`);
+    const produto = produtos?.find((p) => p.is_active) || null;
+    const productCode = produto?.produto_codigo || productCodes[0];
+    if (!produto) {
+      log("Product not mapped or inactive", { productCodes });
+      return new Response(JSON.stringify({ error: "Product not mapped", productCodes }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
       { auth: { persistSession: false } }
