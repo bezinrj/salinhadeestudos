@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Shield, Users, MessageSquare, Bell, Trash2, Plus, Activity, Crown, GraduationCap, KeyRound, X, UserCheck, UserX, CreditCard, Ban, Eye, Gift, Clock, CalendarDays, Trophy, Pencil, Check, ArrowUp, ArrowDown, Mail, UserPlus } from "lucide-react";
+import { Shield, Users, MessageSquare, Bell, Trash2, Plus, Activity, Crown, GraduationCap, KeyRound, X, UserCheck, UserX, CreditCard, Ban, Eye, Gift, Clock, CalendarDays, Trophy, Pencil, Check, ArrowUp, ArrowDown, Mail, UserPlus, Phone, Download } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { getPlanByPriceId } from "@/lib/stripe";
@@ -440,6 +440,16 @@ function UsersTab() {
     },
   });
 
+  const { data: contacts } = useQuery({
+    queryKey: ["admin-user-contacts"],
+    queryFn: async () => {
+      const { data } = await (supabase as any).from("user_contact_info").select("user_id, whatsapp");
+      const map = new Map<string, string>();
+      (data || []).forEach((c: any) => { if (c.whatsapp) map.set(c.user_id, c.whatsapp); });
+      return map;
+    },
+  });
+
   const { data: users } = useQuery({
     queryKey: ["admin-users", search],
     queryFn: async () => {
@@ -517,9 +527,41 @@ function UsersTab() {
             ))}
           </div>
         </div>
-        <Button size="sm" onClick={() => setInviteOpen(true)} className="gap-1.5">
-          <UserPlus className="h-4 w-4" />Convidar usuário
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-1.5"
+            onClick={() => {
+              const rows = [["Nome", "Username", "Email", "WhatsApp", "Plano", "Cadastro"]];
+              (users || []).forEach((u: any) => {
+                const wpp = contacts?.get(u.id) || "";
+                if (!wpp) return; // só leads com whatsapp
+                rows.push([
+                  u.name || "",
+                  u.username || "",
+                  (userEmails?.get(u.id) as string) || "",
+                  wpp,
+                  getAccessType(u.id, u),
+                  u.created_at ? new Date(u.created_at).toLocaleDateString("pt-BR") : "",
+                ]);
+              });
+              const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
+              const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = `leads-${new Date().toISOString().slice(0, 10)}.csv`;
+              a.click();
+              URL.revokeObjectURL(url);
+            }}
+          >
+            <Download className="h-4 w-4" />Exportar leads
+          </Button>
+          <Button size="sm" onClick={() => setInviteOpen(true)} className="gap-1.5">
+            <UserPlus className="h-4 w-4" />Convidar usuário
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -547,6 +589,11 @@ function UsersTab() {
                     </div>
                     <p className="text-xs text-muted-foreground">@{u.username}</p>
                     <p className="text-xs text-muted-foreground truncate">{(userEmails?.get(u.id) as string) || "—"}</p>
+                    {contacts?.get(u.id) && (
+                      <p className="text-xs text-green-400 truncate flex items-center gap-1">
+                        <Phone className="h-3 w-3" /> {contacts.get(u.id)}
+                      </p>
+                    )}
                     <div className="flex items-center gap-2 mt-1">
                       {isOnline ? (
                         <span className="text-[10px] text-green-400 font-medium">● Ativo</span>

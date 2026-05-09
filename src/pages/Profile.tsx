@@ -13,9 +13,10 @@ import { BadgeDisplay } from "@/components/BadgeDisplay";
 import { useBadges } from "@/hooks/useBadges";
 import { StatCard } from "@/components/StatCard";
 import { ProfileLikeButton } from "@/components/ProfileLikeButton";
-import { Trophy, FileText, Timer, TrendingUp, Target, Camera, Pencil, Save, X, Heart, MessageSquare, Crown } from "lucide-react";
+import { Trophy, FileText, Timer, TrendingUp, Target, Camera, Pencil, Save, X, Heart, MessageSquare, Crown, Phone } from "lucide-react";
 import { ActiveBadge } from "@/components/ActiveBadge";
 import { motion } from "framer-motion";
+import { toast } from "sonner";
 
 export default function Profile() {
   const { userId } = useParams();
@@ -60,8 +61,28 @@ export default function Profile() {
   const [name, setName] = useState(myProfile?.name || "");
   const [username, setUsername] = useState(myProfile?.username || "");
   const [career, setCareer] = useState(myProfile?.target_career || "");
+  const [whatsapp, setWhatsapp] = useState("");
   const [profileError, setProfileError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Carrega o whatsapp privado (apenas dono ou admin via RLS)
+  const { data: contactInfo, refetch: refetchContact } = useQuery({
+    queryKey: ["user-contact-info", isOwnProfile ? user?.id : userId],
+    enabled: !!(isOwnProfile ? user?.id : userId),
+    queryFn: async () => {
+      const targetId = isOwnProfile ? user!.id : userId!;
+      const { data } = await (supabase as any)
+        .from("user_contact_info")
+        .select("whatsapp")
+        .eq("user_id", targetId)
+        .maybeSingle();
+      return data as { whatsapp: string | null } | null;
+    },
+  });
+
+  useEffect(() => {
+    if (contactInfo?.whatsapp != null) setWhatsapp(contactInfo.whatsapp);
+  }, [contactInfo?.whatsapp]);
 
   if (!profile) return null;
 
@@ -84,7 +105,22 @@ export default function Profile() {
       setProfileError("Nome de usuário não pode estar vazio.");
       return;
     }
+    const cleanWhatsapp = whatsapp.trim().replace(/\s+/g, " ").slice(0, 32);
+    if (cleanWhatsapp && !/^[+0-9()\-\s]{8,32}$/.test(cleanWhatsapp)) {
+      setProfileError("WhatsApp inválido. Use apenas números, espaços, +, ( ) ou -.");
+      return;
+    }
     await updateProfile({ name, bio, target_career: career, username: trimmedUsername });
+    if (user) {
+      const { error } = await (supabase as any)
+        .from("user_contact_info")
+        .upsert({ user_id: user.id, whatsapp: cleanWhatsapp || null }, { onConflict: "user_id" });
+      if (error) {
+        toast.error("Não foi possível salvar o WhatsApp.");
+      } else {
+        await refetchContact();
+      }
+    }
     setEditing(false);
   };
 
@@ -124,6 +160,7 @@ export default function Profile() {
                     <Input value={name} onChange={e => setName(e.target.value)} placeholder="Nome" className="bg-secondary border-border" />
                     <Input value={username} onChange={e => setUsername(e.target.value)} placeholder="Nome de usuário" className="bg-secondary border-border" />
                     <Input value={career} onChange={e => setCareer(e.target.value)} placeholder="Carreira alvo (ex: Delegado)" className="bg-secondary border-border" />
+                    <Input value={whatsapp} onChange={e => setWhatsapp(e.target.value)} placeholder="WhatsApp (ex: +55 11 91234-5678) — visível só para você e admins" className="bg-secondary border-border" maxLength={32} />
                     <Textarea value={bio} onChange={e => setBio(e.target.value)} placeholder="Escreva algo sobre você..." className="bg-secondary border-border min-h-[80px]" />
                     <div className="flex gap-2">
                       <Button size="sm" onClick={handleSave} className="gradient-electric text-white"><Save className="h-3.5 w-3.5 mr-1" /> Salvar</Button>
@@ -141,7 +178,7 @@ export default function Profile() {
                         </span>
                       )}
                       {isOwnProfile && (
-                        <button onClick={() => { setEditing(true); setBio(myProfile!.bio); setName(myProfile!.name); setUsername(myProfile!.username); setCareer(myProfile!.target_career); setProfileError(""); }} className="text-muted-foreground hover:text-foreground">
+                        <button onClick={() => { setEditing(true); setBio(myProfile!.bio); setName(myProfile!.name); setUsername(myProfile!.username); setCareer(myProfile!.target_career); setWhatsapp(contactInfo?.whatsapp || ""); setProfileError(""); }} className="text-muted-foreground hover:text-foreground">
                           <Pencil className="h-3.5 w-3.5" />
                         </button>
                       )}
@@ -152,6 +189,11 @@ export default function Profile() {
                       {profile.target_career && (
                         <Badge variant="outline" className="text-primary border-primary/20 bg-primary/10 text-xs">
                           <Target className="h-3 w-3 mr-1" /> {profile.target_career}
+                        </Badge>
+                      )}
+                      {contactInfo?.whatsapp && (
+                        <Badge variant="outline" className="text-green-400 border-green-400/30 bg-green-500/10 text-xs">
+                          <Phone className="h-3 w-3 mr-1" /> {contactInfo.whatsapp}
                         </Badge>
                       )}
                       {isOwnProfile && profile.likes_count > 0 && (
