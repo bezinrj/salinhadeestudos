@@ -13,9 +13,10 @@ import { BadgeDisplay } from "@/components/BadgeDisplay";
 import { useBadges } from "@/hooks/useBadges";
 import { StatCard } from "@/components/StatCard";
 import { ProfileLikeButton } from "@/components/ProfileLikeButton";
-import { Trophy, FileText, Timer, TrendingUp, Target, Camera, Pencil, Save, X, Heart, MessageSquare, Crown } from "lucide-react";
+import { Trophy, FileText, Timer, TrendingUp, Target, Camera, Pencil, Save, X, Heart, MessageSquare, Crown, Phone } from "lucide-react";
 import { ActiveBadge } from "@/components/ActiveBadge";
 import { motion } from "framer-motion";
+import { toast } from "sonner";
 
 export default function Profile() {
   const { userId } = useParams();
