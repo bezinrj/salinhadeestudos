@@ -533,7 +533,8 @@ function QuestoesManagerDialog({ album, onClose }: { album: Album; onClose: () =
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium truncate">{tq.question?.title || "—"}</p>
                     <p className="text-[10px] text-muted-foreground">
-                      {tq.question?.discipline} · libera {new Date(tq.liberado_em).toLocaleDateString("pt-BR")}
+                      {tq.question?.discipline}
+                      {tq.question?.public_id != null && <> · Q-{String(tq.question.public_id).padStart(3, "0")}</>}
                     </p>
                   </div>
                   <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => removeMutation.mutate(tq.id)}>
