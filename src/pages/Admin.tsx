@@ -129,11 +129,11 @@ export default function Admin() {
         </Tabs>
       ) : (
         <Tabs defaultValue="weekly" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4 bg-secondary overflow-x-auto flex-nowrap scrollbar-hide">
-            <TabsTrigger value="weekly">Semanal</TabsTrigger>
-            <TabsTrigger value="turmas">Turmas</TabsTrigger>
-            <TabsTrigger value="subjects">Assuntos</TabsTrigger>
-            <TabsTrigger value="materias">Matérias</TabsTrigger>
+          <TabsList className="flex w-full justify-start gap-1 overflow-x-auto flex-nowrap scrollbar-hide bg-secondary h-auto p-1 md:grid md:grid-cols-4">
+            <TabsTrigger value="weekly" className="shrink-0 md:shrink">Semanal</TabsTrigger>
+            <TabsTrigger value="turmas" className="shrink-0 md:shrink">Turmas</TabsTrigger>
+            <TabsTrigger value="subjects" className="shrink-0 md:shrink">Assuntos</TabsTrigger>
+            <TabsTrigger value="materias" className="shrink-0 md:shrink">Matérias</TabsTrigger>
           </TabsList>
 
           <TabsContent value="weekly"><WeeklyQuestionsTab /></TabsContent>
