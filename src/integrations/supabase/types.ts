@@ -351,6 +351,56 @@ export type Database = {
         }
         Relationships: []
       }
+      feedbacks: {
+        Row: {
+          aprovado: boolean
+          avatar_url: string | null
+          cargo: string
+          created_at: string | null
+          estrelas: number
+          exibir_carrossel: boolean
+          id: string
+          nome: string
+          publico: boolean
+          texto: string
+          user_id: string | null
+        }
+        Insert: {
+          aprovado?: boolean
+          avatar_url?: string | null
+          cargo: string
+          created_at?: string | null
+          estrelas: number
+          exibir_carrossel?: boolean
+          id?: string
+          nome: string
+          publico?: boolean
+          texto: string
+          user_id?: string | null
+        }
+        Update: {
+          aprovado?: boolean
+          avatar_url?: string | null
+          cargo?: string
+          created_at?: string | null
+          estrelas?: number
+          exibir_carrossel?: boolean
+          id?: string
+          nome?: string
+          publico?: boolean
+          texto?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feedbacks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       hotmart_pendentes: {
         Row: {
           album_ids: string[]
