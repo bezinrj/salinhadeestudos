@@ -89,7 +89,7 @@ export default function Admin() {
 
       {isAdmin ? (
          <Tabs defaultValue="overview" className="space-y-4">
-          <TabsList className="flex w-full justify-start gap-1 overflow-x-auto flex-nowrap scrollbar-hide bg-secondary h-auto p-1 md:grid md:grid-cols-13">
+          <TabsList className="flex w-full justify-start gap-1 overflow-x-auto flex-nowrap scrollbar-hide bg-secondary h-auto p-1 md:grid md:grid-cols-[repeat(13,minmax(0,1fr))]">
             <TabsTrigger value="overview" className="shrink-0 md:shrink">Visão Geral</TabsTrigger>
             <TabsTrigger value="users" className="shrink-0 md:shrink">Usuários</TabsTrigger>
             <TabsTrigger value="weekly" className="shrink-0 md:shrink">Semanal</TabsTrigger>
