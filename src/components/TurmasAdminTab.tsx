@@ -205,9 +205,27 @@ export default function TurmasAdminTab() {
       return;
     }
     const { data: urlData } = supabase.storage.from("schedule-covers").getPublicUrl(path);
-    setACapa(urlData.publicUrl);
+    const publicUrl = urlData.publicUrl;
+    setACapa(publicUrl);
+
+    // Persiste imediatamente quando estiver editando uma turma existente,
+    // para evitar perder a capa se o usuário fechar o modal antes de Salvar.
+    if (editingAlbum) {
+      const { error: updErr } = await supabase
+        .from("turmas_albuns")
+        .update({ capa_url: publicUrl })
+        .eq("id", editingAlbum.id);
+      if (updErr) {
+        toast.error("Imagem enviada, mas falhou ao salvar na turma: " + updErr.message);
+      } else {
+        queryClient.invalidateQueries({ queryKey: ["admin-turmas-albuns"] });
+        queryClient.invalidateQueries({ queryKey: ["turmas-albuns"] });
+        toast.success("Capa atualizada!");
+      }
+    } else {
+      toast.success("Imagem enviada!");
+    }
     setUploading(false);
-    toast.success("Imagem enviada!");
   };
 
   return (
