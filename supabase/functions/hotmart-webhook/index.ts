@@ -141,9 +141,6 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
 
     const albumIds = (produto.album_ids ?? []) as string[];
     const meses = produto.meses_assinatura ?? 1;
