@@ -32,6 +32,7 @@ import AdminAlertsTab from "@/components/AdminAlertsTab";
 import MateriasTab from "@/components/MateriasTab";
 import TurmasAdminTab from "@/components/TurmasAdminTab";
 import FeedbacksAdminTab from "@/components/admin/FeedbacksAdminTab";
+import SiteConfigTab from "@/components/admin/SiteConfigTab";
 
 
 const ABSOLUTE_ADMIN_ID = "ffdb2f38-0e5b-4f29-8cb8-712fcfde53f6";
@@ -88,7 +89,7 @@ export default function Admin() {
 
       {isAdmin ? (
          <Tabs defaultValue="overview" className="space-y-4">
-          <TabsList className="flex w-full justify-start gap-1 overflow-x-auto flex-nowrap scrollbar-hide bg-secondary h-auto p-1 md:grid md:grid-cols-12">
+          <TabsList className="flex w-full justify-start gap-1 overflow-x-auto flex-nowrap scrollbar-hide bg-secondary h-auto p-1 md:grid md:grid-cols-13">
             <TabsTrigger value="overview" className="shrink-0 md:shrink">Visão Geral</TabsTrigger>
             <TabsTrigger value="users" className="shrink-0 md:shrink">Usuários</TabsTrigger>
             <TabsTrigger value="weekly" className="shrink-0 md:shrink">Semanal</TabsTrigger>
@@ -114,6 +115,7 @@ export default function Admin() {
             <TabsTrigger value="subjects" className="shrink-0 md:shrink">Assuntos</TabsTrigger>
             <TabsTrigger value="materias" className="shrink-0 md:shrink">Matérias</TabsTrigger>
             <TabsTrigger value="feedbacks" className="shrink-0 md:shrink">Feedbacks</TabsTrigger>
+            <TabsTrigger value="config" className="shrink-0 md:shrink">Configurações</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview"><OverviewTab /></TabsContent>
@@ -127,6 +129,7 @@ export default function Admin() {
           <TabsContent value="subjects"><SubjectsTab /></TabsContent>
           <TabsContent value="materias"><MateriasTab /></TabsContent>
           <TabsContent value="feedbacks"><FeedbacksAdminTab /></TabsContent>
+          <TabsContent value="config"><SiteConfigTab /></TabsContent>
         </Tabs>
       ) : (
         <Tabs defaultValue="weekly" className="space-y-4">
