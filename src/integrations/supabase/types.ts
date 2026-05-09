@@ -1166,6 +1166,8 @@ export type Database = {
           questoes_por_liberacao: number
           titulo: string
           updated_at: string | null
+          whatsapp_ativo: boolean
+          whatsapp_url: string | null
         }
         Insert: {
           capa_url?: string | null
@@ -1181,6 +1183,8 @@ export type Database = {
           questoes_por_liberacao?: number
           titulo: string
           updated_at?: string | null
+          whatsapp_ativo?: boolean
+          whatsapp_url?: string | null
         }
         Update: {
           capa_url?: string | null
@@ -1196,6 +1200,8 @@ export type Database = {
           questoes_por_liberacao?: number
           titulo?: string
           updated_at?: string | null
+          whatsapp_ativo?: boolean
+          whatsapp_url?: string | null
         }
         Relationships: [
           {
