@@ -12,16 +12,16 @@ const log = (step: string, details?: unknown) => {
   console.log(`[HOTMART-WEBHOOK] ${step}${d}`);
 };
 
-function pickProductCode(payload: any): string | null {
-  return (
-    payload?.data?.product?.ucode ||
-    payload?.data?.product?.id?.toString() ||
-    payload?.data?.product?.code ||
-    payload?.product?.ucode ||
-    payload?.product?.id?.toString() ||
-    payload?.product_code ||
-    null
-  );
+function pickProductCodes(payload: any): string[] {
+  const candidates = [
+    payload?.data?.product?.id?.toString(),
+    payload?.data?.product?.code,
+    payload?.data?.product?.ucode,
+    payload?.product?.id?.toString(),
+    payload?.product?.ucode,
+    payload?.product_code,
+  ].filter((v): v is string => typeof v === "string" && v.length > 0);
+  return Array.from(new Set(candidates));
 }
 
 function pickEmail(payload: any): string | null {
@@ -108,11 +108,11 @@ serve(async (req) => {
     }
 
     const email = (pickEmail(payload) || "").trim().toLowerCase();
-    const productCode = pickProductCode(payload);
+    const productCodes = pickProductCodes(payload);
     const transaction = pickTransaction(payload);
 
-    if (!email || !productCode) {
-      log("Missing email/product", { email, productCode });
+    if (!email || productCodes.length === 0) {
+      log("Missing email/product", { email, productCodes });
       return new Response(JSON.stringify({ error: "Missing email or product code" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -125,17 +125,18 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
-    // Lookup product mapping
-    const { data: produto, error: prodErr } = await supabase
+    // Lookup product mapping (try all candidate codes)
+    const { data: produtos, error: prodErr } = await supabase
       .from("hotmart_produtos")
       .select("produto_codigo, album_ids, meses_assinatura, is_active")
-      .eq("produto_codigo", productCode)
-      .maybeSingle();
+      .in("produto_codigo", productCodes);
 
     if (prodErr) throw new Error(`Lookup product failed: ${prodErr.message}`);
-    if (!produto || !produto.is_active) {
-      log("Product not mapped or inactive", { productCode });
-      return new Response(JSON.stringify({ error: "Product not mapped", productCode }), {
+    const produto = produtos?.find((p) => p.is_active) || null;
+    const productCode = produto?.produto_codigo || productCodes[0];
+    if (!produto) {
+      log("Product not mapped or inactive", { productCodes });
+      return new Response(JSON.stringify({ error: "Product not mapped", productCodes }), {
         status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
