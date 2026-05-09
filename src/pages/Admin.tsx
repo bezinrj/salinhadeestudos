@@ -527,9 +527,41 @@ function UsersTab() {
             ))}
           </div>
         </div>
-        <Button size="sm" onClick={() => setInviteOpen(true)} className="gap-1.5">
-          <UserPlus className="h-4 w-4" />Convidar usuário
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-1.5"
+            onClick={() => {
+              const rows = [["Nome", "Username", "Email", "WhatsApp", "Plano", "Cadastro"]];
+              (users || []).forEach((u: any) => {
+                const wpp = contacts?.get(u.id) || "";
+                if (!wpp) return; // só leads com whatsapp
+                rows.push([
+                  u.name || "",
+                  u.username || "",
+                  (userEmails?.get(u.id) as string) || "",
+                  wpp,
+                  getAccessType(u.id, u),
+                  u.created_at ? new Date(u.created_at).toLocaleDateString("pt-BR") : "",
+                ]);
+              });
+              const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
+              const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = `leads-${new Date().toISOString().slice(0, 10)}.csv`;
+              a.click();
+              URL.revokeObjectURL(url);
+            }}
+          >
+            <Download className="h-4 w-4" />Exportar leads
+          </Button>
+          <Button size="sm" onClick={() => setInviteOpen(true)} className="gap-1.5">
+            <UserPlus className="h-4 w-4" />Convidar usuário
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
