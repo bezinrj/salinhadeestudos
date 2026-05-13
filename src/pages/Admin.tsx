@@ -1665,11 +1665,12 @@ function ContentTab() {
               <p className="text-sm mt-1">{c.content}</p>
               <p className="text-[10px] text-muted-foreground mt-1">{new Date(c.created_at).toLocaleDateString("pt-BR")}</p>
             </div>
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive shrink-0" onClick={() => deleteMutation.mutate(c.id)}>
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive shrink-0" onClick={(e) => { e.preventDefault(); e.stopPropagation(); deleteMutation.mutate(c.id); }}>
               <Trash2 className="h-4 w-4" />
             </Button>
-          </div>
-        ))}
+          </a>
+          );
+        })}
         {!comments?.length && <p className="text-sm text-muted-foreground text-center py-4">Nenhum comentário encontrado.</p>}
       </CardContent>
     </Card>
