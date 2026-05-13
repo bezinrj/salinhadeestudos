@@ -670,7 +670,15 @@ function UserDetailDrawer({ user, role, isOnline, onClose }: { user: any; role: 
   const { data: userComments } = useQuery({
     queryKey: ["admin-user-comments", user.id],
     queryFn: async () => {
-      const { data } = await supabase.from("question_comments").select("id, question_id, content, created_at, score, weekly_questions:question_id(public_id, is_weekly, title)").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10);
+      const { data } = await supabase.from("question_comments").select("id, question_id, content, created_at, score").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10);
+      const list = data || [];
+      const ids = Array.from(new Set(list.map((c: any) => c.question_id).filter(Boolean)));
+      let qmap: Record<string, any> = {};
+      if (ids.length) {
+        const { data: qs } = await supabase.from("weekly_questions").select("id, public_id, is_weekly, title").in("id", ids as string[]);
+        qmap = Object.fromEntries((qs || []).map((q: any) => [q.id, q]));
+      }
+      return list.map((c: any) => ({ ...c, weekly_questions: qmap[c.question_id] || null }));
       return data || [];
     },
   });
@@ -1625,10 +1633,20 @@ function ContentTab() {
     queryFn: async () => {
       const { data } = await supabase
         .from("question_comments")
-        .select("*, profiles(username, name, avatar_url), weekly_questions:question_id(public_id, is_weekly, title)")
+        .select("*, profiles(username, name, avatar_url)")
         .order("created_at", { ascending: false })
         .limit(30);
-      return data || [];
+      const list = data || [];
+      const ids = Array.from(new Set(list.map((c: any) => c.question_id).filter(Boolean)));
+      let qmap: Record<string, any> = {};
+      if (ids.length) {
+        const { data: qs } = await supabase
+          .from("weekly_questions")
+          .select("id, public_id, is_weekly, title")
+          .in("id", ids as string[]);
+        qmap = Object.fromEntries((qs || []).map((q: any) => [q.id, q]));
+      }
+      return list.map((c: any) => ({ ...c, weekly_questions: qmap[c.question_id] || null }));
     },
   });
 
