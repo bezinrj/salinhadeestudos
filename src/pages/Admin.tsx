@@ -671,6 +671,14 @@ function UserDetailDrawer({ user, role, isOnline, onClose }: { user: any; role: 
     queryKey: ["admin-user-comments", user.id],
     queryFn: async () => {
       const { data } = await supabase.from("question_comments").select("id, question_id, content, created_at, score").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10);
+      const list = data || [];
+      const ids = Array.from(new Set(list.map((c: any) => c.question_id).filter(Boolean)));
+      let qmap: Record<string, any> = {};
+      if (ids.length) {
+        const { data: qs } = await supabase.from("weekly_questions").select("id, public_id, is_weekly, title").in("id", ids as string[]);
+        qmap = Object.fromEntries((qs || []).map((q: any) => [q.id, q]));
+      }
+      return list.map((c: any) => ({ ...c, weekly_questions: qmap[c.question_id] || null }));
       return data || [];
     },
   });
@@ -863,12 +871,18 @@ function UserDetailDrawer({ user, role, isOnline, onClose }: { user: any; role: 
           {/* Recent comments */}
           <div className="space-y-2">
             <h3 className="text-sm font-medium">Comentários Recentes</h3>
-            {userComments?.length ? userComments.map((c: any) => (
-              <div key={c.id} className="p-2 rounded-lg bg-secondary/50">
-                <p className="text-xs text-muted-foreground">Questão {c.question_id} · {new Date(c.created_at).toLocaleDateString("pt-BR")}</p>
+            {userComments?.length ? userComments.map((c: any) => {
+              const pid = c.weekly_questions?.public_id;
+              const isWeekly = c.weekly_questions?.is_weekly;
+              const code = pid ? `Q-${String(pid).padStart(3, "0")}` : null;
+              const href = code ? (isWeekly ? `/semanal/${code}` : `/discursivas/${code}`) : `/discursivas/${c.question_id}`;
+              return (
+              <a key={c.id} href={href} target="_blank" rel="noopener noreferrer" className="block p-2 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors">
+                <p className="text-xs text-muted-foreground">Questão {code || c.question_id}{c.weekly_questions?.title ? ` — ${c.weekly_questions.title}` : ""} · {new Date(c.created_at).toLocaleDateString("pt-BR")}</p>
                 <p className="text-sm mt-1">{c.content}</p>
-              </div>
-            )) : (
+              </a>
+              );
+            }) : (
               <p className="text-xs text-muted-foreground">Nenhum comentário.</p>
             )}
           </div>
@@ -1622,7 +1636,17 @@ function ContentTab() {
         .select("*, profiles(username, name, avatar_url)")
         .order("created_at", { ascending: false })
         .limit(30);
-      return data || [];
+      const list = data || [];
+      const ids = Array.from(new Set(list.map((c: any) => c.question_id).filter(Boolean)));
+      let qmap: Record<string, any> = {};
+      if (ids.length) {
+        const { data: qs } = await supabase
+          .from("weekly_questions")
+          .select("id, public_id, is_weekly, title")
+          .in("id", ids as string[]);
+        qmap = Object.fromEntries((qs || []).map((q: any) => [q.id, q]));
+      }
+      return list.map((c: any) => ({ ...c, weekly_questions: qmap[c.question_id] || null }));
     },
   });
 
@@ -1643,22 +1667,34 @@ function ContentTab() {
         <CardTitle className="text-sm font-medium">Comentários Recentes</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        {comments?.map((c: any) => (
-          <div key={c.id} className="flex items-start gap-3 p-3 rounded-lg bg-secondary/50">
+        {comments?.map((c: any) => {
+          const pid = c.weekly_questions?.public_id;
+          const isWeekly = c.weekly_questions?.is_weekly;
+          const code = pid ? `Q-${String(pid).padStart(3, "0")}` : null;
+          const href = code ? (isWeekly ? `/semanal/${code}` : `/discursivas/${code}`) : `/discursivas/${c.question_id}`;
+          return (
+          <a
+            key={c.id}
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-start gap-3 p-3 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors cursor-pointer"
+          >
             <Avatar className="h-7 w-7 mt-0.5">
               <AvatarImage src={c.profiles?.avatar_url} />
               <AvatarFallback className="bg-primary/20 text-primary text-[10px]">{(c.profiles?.name || c.profiles?.username || "?")[0].toUpperCase()}</AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium">@{c.profiles?.username} <span className="text-muted-foreground">· Questão {c.question_id}</span></p>
+              <p className="text-xs font-medium">@{c.profiles?.username} <span className="text-muted-foreground">· Questão {code || c.question_id}</span>{c.weekly_questions?.title ? <span className="text-muted-foreground"> — {c.weekly_questions.title}</span> : null}</p>
               <p className="text-sm mt-1">{c.content}</p>
               <p className="text-[10px] text-muted-foreground mt-1">{new Date(c.created_at).toLocaleDateString("pt-BR")}</p>
             </div>
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive shrink-0" onClick={() => deleteMutation.mutate(c.id)}>
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive shrink-0" onClick={(e) => { e.preventDefault(); e.stopPropagation(); deleteMutation.mutate(c.id); }}>
               <Trash2 className="h-4 w-4" />
             </Button>
-          </div>
-        ))}
+          </a>
+          );
+        })}
         {!comments?.length && <p className="text-sm text-muted-foreground text-center py-4">Nenhum comentário encontrado.</p>}
       </CardContent>
     </Card>
