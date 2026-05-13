@@ -1619,7 +1619,7 @@ function ContentTab() {
     queryFn: async () => {
       const { data } = await supabase
         .from("question_comments")
-        .select("*, profiles(username, name, avatar_url)")
+        .select("*, profiles(username, name, avatar_url), weekly_questions:question_id(public_id, is_weekly, title)")
         .order("created_at", { ascending: false })
         .limit(30);
       return data || [];
@@ -1643,14 +1643,25 @@ function ContentTab() {
         <CardTitle className="text-sm font-medium">Comentários Recentes</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        {comments?.map((c: any) => (
-          <div key={c.id} className="flex items-start gap-3 p-3 rounded-lg bg-secondary/50">
+        {comments?.map((c: any) => {
+          const pid = c.weekly_questions?.public_id;
+          const isWeekly = c.weekly_questions?.is_weekly;
+          const code = pid ? `Q-${String(pid).padStart(3, "0")}` : null;
+          const href = code ? (isWeekly ? `/semanal/${code}` : `/discursivas/${code}`) : `/discursivas/${c.question_id}`;
+          return (
+          <a
+            key={c.id}
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-start gap-3 p-3 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors cursor-pointer"
+          >
             <Avatar className="h-7 w-7 mt-0.5">
               <AvatarImage src={c.profiles?.avatar_url} />
               <AvatarFallback className="bg-primary/20 text-primary text-[10px]">{(c.profiles?.name || c.profiles?.username || "?")[0].toUpperCase()}</AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium">@{c.profiles?.username} <span className="text-muted-foreground">· Questão {c.question_id}</span></p>
+              <p className="text-xs font-medium">@{c.profiles?.username} <span className="text-muted-foreground">· Questão {code || c.question_id}</span>{c.weekly_questions?.title ? <span className="text-muted-foreground"> — {c.weekly_questions.title}</span> : null}</p>
               <p className="text-sm mt-1">{c.content}</p>
               <p className="text-[10px] text-muted-foreground mt-1">{new Date(c.created_at).toLocaleDateString("pt-BR")}</p>
             </div>
