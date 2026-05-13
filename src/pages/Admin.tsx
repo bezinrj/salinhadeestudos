@@ -670,7 +670,7 @@ function UserDetailDrawer({ user, role, isOnline, onClose }: { user: any; role: 
   const { data: userComments } = useQuery({
     queryKey: ["admin-user-comments", user.id],
     queryFn: async () => {
-      const { data } = await supabase.from("question_comments").select("id, question_id, content, created_at, score").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10);
+      const { data } = await supabase.from("question_comments").select("id, question_id, content, created_at, score, weekly_questions:question_id(public_id, is_weekly, title)").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10);
       return data || [];
     },
   });
@@ -863,12 +863,18 @@ function UserDetailDrawer({ user, role, isOnline, onClose }: { user: any; role: 
           {/* Recent comments */}
           <div className="space-y-2">
             <h3 className="text-sm font-medium">Comentários Recentes</h3>
-            {userComments?.length ? userComments.map((c: any) => (
-              <div key={c.id} className="p-2 rounded-lg bg-secondary/50">
-                <p className="text-xs text-muted-foreground">Questão {c.question_id} · {new Date(c.created_at).toLocaleDateString("pt-BR")}</p>
+            {userComments?.length ? userComments.map((c: any) => {
+              const pid = c.weekly_questions?.public_id;
+              const isWeekly = c.weekly_questions?.is_weekly;
+              const code = pid ? `Q-${String(pid).padStart(3, "0")}` : null;
+              const href = code ? (isWeekly ? `/semanal/${code}` : `/discursivas/${code}`) : `/discursivas/${c.question_id}`;
+              return (
+              <a key={c.id} href={href} target="_blank" rel="noopener noreferrer" className="block p-2 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors">
+                <p className="text-xs text-muted-foreground">Questão {code || c.question_id}{c.weekly_questions?.title ? ` — ${c.weekly_questions.title}` : ""} · {new Date(c.created_at).toLocaleDateString("pt-BR")}</p>
                 <p className="text-sm mt-1">{c.content}</p>
-              </div>
-            )) : (
+              </a>
+              );
+            }) : (
               <p className="text-xs text-muted-foreground">Nenhum comentário.</p>
             )}
           </div>
