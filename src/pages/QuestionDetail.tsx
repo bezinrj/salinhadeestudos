@@ -564,7 +564,7 @@ export default function QuestionDetail() {
       )}
 
       {/* Comments section - always visible */}
-      {id && <QuestionComments questionId={id} />}
+      {question?.id && <QuestionComments questionId={question.id} />}
     </div>
   );
 }
