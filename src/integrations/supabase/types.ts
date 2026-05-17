@@ -604,8 +604,10 @@ export type Database = {
           id: string
           likes_count: number | null
           name: string | null
+          price_id: string | null
           rank_position: number | null
           streak: number | null
+          subscription_end: string | null
           subscription_tier: string | null
           target_career: string | null
           total_essays: number | null
@@ -624,8 +626,10 @@ export type Database = {
           id: string
           likes_count?: number | null
           name?: string | null
+          price_id?: string | null
           rank_position?: number | null
           streak?: number | null
+          subscription_end?: string | null
           subscription_tier?: string | null
           target_career?: string | null
           total_essays?: number | null
@@ -644,8 +648,10 @@ export type Database = {
           id?: string
           likes_count?: number | null
           name?: string | null
+          price_id?: string | null
           rank_position?: number | null
           streak?: number | null
+          subscription_end?: string | null
           subscription_tier?: string | null
           target_career?: string | null
           total_essays?: number | null
@@ -1930,6 +1936,7 @@ export type Database = {
         Args: { p_album_id: string }
         Returns: undefined
       }
+      sync_expired_subscriptions: { Args: never; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"

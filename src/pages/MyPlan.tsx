@@ -16,11 +16,10 @@ export default function MyPlan() {
     );
   }
 
-  const priceId = (profile as unknown as { price_id?: string | null })?.price_id ?? null;
+  const priceId = profile?.price_id ?? null;
   const plan = priceId ? getPlanByPriceId(priceId) : null;
 
-  const subscriptionEnd =
-    (profile as unknown as { subscription_end?: string | null })?.subscription_end ?? null;
+  const subscriptionEnd = profile?.subscription_end ?? null;
 
   const daysRemaining = subscriptionEnd
     ? Math.max(

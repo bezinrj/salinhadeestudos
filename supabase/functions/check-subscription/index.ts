@@ -13,6 +13,18 @@ const logStep = (step: string, details?: unknown) => {
   console.log(`[CHECK-SUBSCRIPTION] ${step}${d}`);
 };
 
+const planByPriceId: Record<string, { tier: string; months: number }> = {
+  price_1TBMTPLy0axdgWvJblk2ZJjZ: { tier: "monthly", months: 1 },
+  price_1TBMTpLy0axdgWvJjbmiZ92u: { tier: "quarterly", months: 3 },
+  price_1TBMUHLy0axdgWvJInHob9Il: { tier: "annual", months: 12 },
+};
+
+const addMonths = (base: Date, months: number) => {
+  const d = new Date(base);
+  d.setMonth(d.getMonth() + months);
+  return d;
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -96,7 +108,10 @@ serve(async (req) => {
     if (manualSubs && manualSubs.length > 0) {
       const ms = manualSubs[0];
       logStep("Active manual subscription found", { plan_type: ms.plan_type, expires_at: ms.expires_at });
-      await supabaseClient.from("profiles").update({ subscription_tier: ms.plan_type || "premium" }).eq("id", targetUserId);
+      await supabaseClient
+        .from("profiles")
+        .update({ subscription_tier: ms.plan_type || "premium", subscription_end: ms.expires_at, price_id: null })
+        .eq("id", targetUserId);
       return new Response(
         JSON.stringify({
           subscribed: true,
@@ -122,6 +137,8 @@ serve(async (req) => {
     let priceId: string | null = null;
     let productId: string | null = null;
     let subscriptionEnd: string | null = null;
+    let currentPeriodStart: number | null = null;
+    let currentPeriodEnd: number | null = null;
 
     try {
       const customers = await stripe.customers.list({ email: targetEmail, limit: 1 });
@@ -137,10 +154,12 @@ serve(async (req) => {
         if (subscriptions.data.length > 0) {
           hasStripeSub = true;
           const subscription = subscriptions.data[0];
-          subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
-          priceId = subscription.items.data[0].price.id;
-          productId = subscription.items.data[0].price.product as string;
-          logStep("Active Stripe subscription found", { priceId, productId, subscriptionEnd });
+          const item = subscription.items.data[0];
+          priceId = item.price.id;
+          productId = item.price.product as string;
+          currentPeriodStart = (subscription as any).current_period_start ?? (item as any).current_period_start ?? subscription.created;
+          currentPeriodEnd = (subscription as any).current_period_end ?? (item as any).current_period_end ?? null;
+          logStep("Active Stripe subscription found", { priceId, productId, currentPeriodStart, currentPeriodEnd });
         }
       }
     } catch (stripeErr) {
@@ -149,13 +168,20 @@ serve(async (req) => {
     }
 
     if (hasStripeSub) {
-      const annualPriceId = "price_1TBMUHLy0axdgWvJInHob9Il";
-      const quarterlyPriceId = "price_1TBMTpLy0axdgWvJjbmiZ92u";
-      let tier = "monthly";
-      if (priceId === annualPriceId) tier = "annual";
-      else if (priceId === quarterlyPriceId) tier = "quarterly";
+      const plan = priceId ? planByPriceId[priceId] : null;
+      const tier = plan?.tier ?? "monthly";
+      const periodStartDate = new Date((currentPeriodStart ?? Math.floor(Date.now() / 1000)) * 1000);
+      const stripeEndDate = currentPeriodEnd ? new Date(currentPeriodEnd * 1000) : null;
+      const packageEndDate = plan ? addMonths(periodStartDate, plan.months) : stripeEndDate;
+      const effectiveEndDate = [stripeEndDate, packageEndDate]
+        .filter((d): d is Date => !!d && !Number.isNaN(d.getTime()))
+        .sort((a, b) => b.getTime() - a.getTime())[0] ?? addMonths(new Date(), 1);
+      subscriptionEnd = effectiveEndDate.toISOString();
 
-      await supabaseClient.from("profiles").update({ subscription_tier: tier }).eq("id", targetUserId);
+      await supabaseClient
+        .from("profiles")
+        .update({ subscription_tier: tier, subscription_end: subscriptionEnd, price_id: priceId })
+        .eq("id", targetUserId);
 
       return new Response(
         JSON.stringify({
@@ -170,9 +196,39 @@ serve(async (req) => {
       );
     }
 
+    const { data: localProfile } = await supabaseClient
+      .from("profiles")
+      .select("subscription_tier, subscription_end, price_id")
+      .eq("id", targetUserId)
+      .maybeSingle();
+
+    if (localProfile?.subscription_tier && localProfile?.subscription_end) {
+      const localEnd = new Date(localProfile.subscription_end);
+      if (localEnd >= new Date()) {
+        logStep("Active local entitlement found", {
+          tier: localProfile.subscription_tier,
+          subscriptionEnd: localProfile.subscription_end,
+        });
+        return new Response(
+          JSON.stringify({
+            subscribed: true,
+            price_id: localProfile.price_id,
+            product_id: null,
+            subscription_end: localProfile.subscription_end,
+            subscription_tier: localProfile.subscription_tier,
+            manual: false,
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+        );
+      }
+    }
+
 
     // Clear subscription_tier if no active sub
-    await supabaseClient.from("profiles").update({ subscription_tier: null }).eq("id", targetUserId);
+    await supabaseClient
+      .from("profiles")
+      .update({ subscription_tier: null, subscription_end: null, price_id: null })
+      .eq("id", targetUserId);
     logStep("No active subscription found");
     return new Response(
       JSON.stringify({ subscribed: false }),
