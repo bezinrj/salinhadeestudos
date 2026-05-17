@@ -18,6 +18,8 @@ export interface Profile {
   likes_count: number;
   comment_score: number;
   subscription_tier: string | null;
+  subscription_end: string | null;
+  price_id: string | null;
   active_badge_id: string | null;
   created_at: string;
 }
@@ -65,7 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchProfile = async (userId: string) => {
     const { data, error } = await supabase
       .from("profiles")
-      .select("id, username, name, bio, avatar_url, target_career, total_score, rank_position, weekly_hours, total_essays, average_grade, streak, likes_count, comment_score, subscription_tier, active_badge_id, created_at")
+      .select("id, username, name, bio, avatar_url, target_career, total_score, rank_position, weekly_hours, total_essays, average_grade, streak, likes_count, comment_score, subscription_tier, subscription_end, price_id, active_badge_id, created_at")
       .eq("id", userId)
       .single();
     if (!error && data) {
