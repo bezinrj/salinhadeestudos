@@ -196,6 +196,33 @@ serve(async (req) => {
       );
     }
 
+    const { data: localProfile } = await supabaseClient
+      .from("profiles")
+      .select("subscription_tier, subscription_end, price_id")
+      .eq("id", targetUserId)
+      .maybeSingle();
+
+    if (localProfile?.subscription_tier && localProfile?.subscription_end) {
+      const localEnd = new Date(localProfile.subscription_end);
+      if (localEnd >= new Date()) {
+        logStep("Active local entitlement found", {
+          tier: localProfile.subscription_tier,
+          subscriptionEnd: localProfile.subscription_end,
+        });
+        return new Response(
+          JSON.stringify({
+            subscribed: true,
+            price_id: localProfile.price_id,
+            product_id: null,
+            subscription_end: localProfile.subscription_end,
+            subscription_tier: localProfile.subscription_tier,
+            manual: false,
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+        );
+      }
+    }
+
 
     // Clear subscription_tier if no active sub
     await supabaseClient
