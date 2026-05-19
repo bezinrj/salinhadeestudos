@@ -49,8 +49,68 @@ export function PricingCards({
     }
   };
 
+  const isFreeCurrent = isAuthenticated && !currentPriceId;
+
   return (
-    <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+    <div className="grid md:grid-cols-4 gap-6 max-w-6xl mx-auto">
+      {/* Free / Degustação card */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+      >
+        <Card
+          className={cn(
+            "relative h-full transition-all border",
+            "border-border hover:border-primary/30",
+            isFreeCurrent && "ring-2 ring-gold"
+          )}
+        >
+          {isFreeCurrent && (
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+              <Badge className="gradient-gold text-accent-foreground border-0 gap-1">
+                <Crown className="h-3 w-3" /> Plano atual
+              </Badge>
+            </div>
+          )}
+          <CardHeader className="text-center pb-2 pt-6">
+            <CardTitle className="text-lg font-display">Grátis</CardTitle>
+            <span className="text-xs text-muted-foreground">Degustação</span>
+          </CardHeader>
+          <CardContent className="text-center space-y-4">
+            <div>
+              <div className="flex items-baseline justify-center gap-1">
+                <span className="text-sm text-muted-foreground">R$</span>
+                <span className="text-4xl font-display font-bold">0,00</span>
+                <span className="text-sm text-muted-foreground">/mês</span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">Sem cobrança</p>
+            </div>
+            <ul className="space-y-2 text-left text-sm">
+              {[
+                "3 questões premium por mês",
+                "Acesso a questões gratuitas",
+                "Cronômetro de estudos",
+                "Ranking e gamificação básicos",
+              ].map((f) => (
+                <li key={f} className="flex items-start gap-2">
+                  <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                  <span className="text-muted-foreground">{f}</span>
+                </li>
+              ))}
+            </ul>
+            <Button
+              disabled={isFreeCurrent}
+              onClick={() => !isAuthenticated && onSelectUnauthenticated?.()}
+              className="w-full font-semibold"
+              variant="outline"
+            >
+              {isFreeCurrent ? "Plano atual" : isAuthenticated ? "Ativo por padrão" : "Começar grátis"}
+            </Button>
+          </CardContent>
+        </Card>
+      </motion.div>
+
       {STRIPE_PLANS_LIST.map((plan, i) => {
         const isCurrent = currentPriceId === plan.priceId;
         const isPopular = "popular" in plan && plan.popular;
