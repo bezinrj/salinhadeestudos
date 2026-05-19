@@ -164,7 +164,13 @@ export default function Home() {
             Invista na sua aprovação. Comece hoje e evolua suas discursivas com correção inteligente.
           </p>
         </div>
-        <PricingCards onSelectUnauthenticated={() => navigate("/login")} />
+        <PricingCards onSelectUnauthenticated={(plan) => navigate(`/login?tab=register&plan=${encodeURIComponent(plan)}`)} />
+        <p className="text-center text-sm text-muted-foreground mt-6">
+          Já tem conta?{" "}
+          <button onClick={() => navigate("/login?tab=login")} className="text-primary hover:underline font-semibold">
+            Entrar
+          </button>
+        </p>
       </section>
       {/* CTA */}
       <section className="container mx-auto px-4 py-16 md:py-24">
@@ -172,9 +178,14 @@ export default function Home() {
           <CardContent className="p-10 md:p-16">
             <h2 className="text-3xl md:text-4xl font-display font-bold text-white mb-4">Pronto para começar?</h2>
             <p className="text-white/80 mb-8 max-w-lg mx-auto">Junte-se a centenas de concurseiros e comece a evoluir suas discursivas hoje.</p>
-            <Button size="lg" onClick={() => navigate("/login")} className="bg-white text-primary hover:bg-white/90 font-semibold px-8">
-              Criar minha conta
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Button size="lg" onClick={() => navigate("/login?tab=register")} className="bg-white text-primary hover:bg-white/90 font-semibold px-8">
+                Criar minha conta
+              </Button>
+              <Button size="lg" variant="outline" onClick={() => navigate("/login?tab=login")} className="border-white/40 text-white hover:bg-white/10 font-semibold px-8">
+                Já tenho conta
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </section>

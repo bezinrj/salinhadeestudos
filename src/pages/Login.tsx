@@ -8,11 +8,16 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Scale } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { getPlanByPriceId } from "@/lib/stripe";
 import loginBg from "@/assets/login-bg.png";
 
 export default function Login() {
   const [searchParams] = useSearchParams();
   const invitedEmail = useMemo(() => (searchParams.get("invite") || "").trim().toLowerCase(), [searchParams]);
+  const tabParam = (searchParams.get("tab") || "").toLowerCase();
+  const planParam = (searchParams.get("plan") || "").trim();
+  const initialTab: "login" | "register" =
+    tabParam === "register" || invitedEmail || planParam ? "register" : tabParam === "login" ? "login" : "login";
   const [email, setEmail] = useState(invitedEmail);
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
@@ -22,7 +27,7 @@ export default function Login() {
   const [showForgot, setShowForgot] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
   const [forgotLoading, setForgotLoading] = useState(false);
-  const [defaultTab, setDefaultTab] = useState<"login" | "register">(invitedEmail ? "register" : "login");
+  const [defaultTab, setDefaultTab] = useState<"login" | "register">(initialTab);
   const { login, register } = useAuth();
   const navigate = useNavigate();
 
@@ -81,12 +86,35 @@ export default function Login() {
     }
     setIsLoading(true);
     const result = await register(username.trim(), email, password);
-    setIsLoading(false);
-    if (result.success) {
-      navigate("/dashboard");
-    } else {
+    if (!result.success) {
+      setIsLoading(false);
       setError(result.error || "Erro ao criar conta.");
+      return;
     }
+
+    // If a paid plan was chosen on the landing pricing cards, kick off checkout
+    if (planParam && planParam !== "free") {
+      // Ensure we have a session before invoking the edge function
+      const { data: signIn } = await supabase.auth.signInWithPassword({ email, password });
+      if (signIn?.session) {
+        try {
+          const { data, error: ckErr } = await supabase.functions.invoke("create-checkout", {
+            body: { priceId: planParam },
+          });
+          if (ckErr) throw ckErr;
+          if (data?.url) {
+            window.location.href = data.url;
+            return;
+          }
+        } catch (err) {
+          // fall through to dashboard if checkout fails
+          console.warn("Checkout after register failed:", err);
+        }
+      }
+    }
+
+    setIsLoading(false);
+    navigate(planParam === "free" ? "/dashboard" : "/dashboard");
   };
 
   return (
@@ -111,8 +139,24 @@ export default function Login() {
 
         <Card className="border-border/30 bg-card/85 backdrop-blur-xl shadow-2xl">
           <CardHeader className="text-center">
-            <CardTitle className="font-display text-xl">Bem-vindo(a)</CardTitle>
-            <CardDescription>Entre ou crie sua conta para começar</CardDescription>
+            <CardTitle className="font-display text-xl">
+              {defaultTab === "register" ? "Criar conta" : "Entrar"}
+            </CardTitle>
+            <CardDescription>
+              {defaultTab === "register"
+                ? "Preencha seus dados para começar"
+                : "Acesse sua conta para continuar estudando"}
+            </CardDescription>
+            {planParam && defaultTab === "register" && (
+              <div className="mt-3 mx-auto inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs text-primary">
+                Plano selecionado:&nbsp;
+                <strong>
+                  {planParam === "free"
+                    ? "Grátis"
+                    : getPlanByPriceId(planParam)?.name ?? "Premium"}
+                </strong>
+              </div>
+            )}
           </CardHeader>
           <CardContent>
             {error && (
@@ -207,7 +251,9 @@ export default function Login() {
                     <Input id="reg-password" type="password" placeholder="Mínimo 6 caracteres" value={password} onChange={e => setPassword(e.target.value)} className="bg-secondary border-border" required />
                   </div>
                   <Button type="submit" className="w-full gradient-electric text-white font-semibold" disabled={isLoading}>
-                    {isLoading ? "Criando conta..." : "Criar conta"}
+                    {isLoading
+                      ? planParam && planParam !== "free" ? "Redirecionando ao pagamento..." : "Criando conta..."
+                      : planParam && planParam !== "free" ? "Criar conta e continuar para pagamento" : "Criar conta"}
                   </Button>
                 </form>
               </TabsContent>
