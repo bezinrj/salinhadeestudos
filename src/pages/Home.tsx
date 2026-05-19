@@ -73,13 +73,12 @@ export default function Home() {
               Plataforma gamificada para concurseiros da área jurídica. Correção inteligente, rankings competitivos e controle total dos seus estudos.
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
-              <Button size="lg" onClick={() => navigate("/login")} className="gradient-electric text-white font-semibold text-base px-8">
-                Começar agora <ChevronRight className="ml-1 h-4 w-4" />
+              <Button size="lg" onClick={() => navigate("/cadastro")} className="gradient-electric text-white font-semibold text-base px-8">
+                Criar conta <ChevronRight className="ml-1 h-4 w-4" />
               </Button>
-              <Button size="lg" variant="outline" onClick={() => setTourOpen(true)} className="border-border text-foreground hover:bg-secondary">
-                Conhecer funcionalidades
+              <Button size="lg" variant="outline" onClick={() => navigate("/login")} className="border-border text-foreground hover:bg-secondary">
+                Fazer Login
               </Button>
-              <FeatureTour open={tourOpen} onOpenChange={setTourOpen} />
             </div>
           </motion.div>
         </div>
