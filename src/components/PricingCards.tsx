@@ -11,7 +11,8 @@ import { useToast } from "@/hooks/use-toast";
 
 interface PricingCardsProps {
   currentPriceId?: string | null;
-  onSelectUnauthenticated?: () => void;
+  /** Called when a visitor (not authenticated) clicks a plan. Receives the chosen priceId, or "free" for the free plan. */
+  onSelectUnauthenticated?: (planRef: string) => void;
   isAuthenticated?: boolean;
 }
 
@@ -25,7 +26,7 @@ export function PricingCards({
 
   const handleSelect = async (priceId: string) => {
     if (!isAuthenticated) {
-      onSelectUnauthenticated?.();
+      onSelectUnauthenticated?.(priceId);
       return;
     }
 
