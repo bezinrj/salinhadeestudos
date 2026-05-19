@@ -1,11 +1,9 @@
-import { useState } from "react";
 import heroBg from "@/assets/hero-bg.png";
 const heroVideo = "/hero-video.mp4";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Scale, FileText, Trophy, Timer, Target, TrendingUp, Users, ChevronRight } from "lucide-react";
-import { FeatureTour } from "@/components/FeatureTour";
 import { Card, CardContent } from "@/components/ui/card";
 import { PricingCards } from "@/components/PricingCards";
 import { HomeFeedbacksCarousel } from "@/components/HomeFeedbacksCarousel";
@@ -27,7 +25,6 @@ const benefits = [
 
 export default function Home() {
   const navigate = useNavigate();
-  const [tourOpen, setTourOpen] = useState(false);
   return (
     <div className="min-h-screen bg-background">
       {/* Hero */}
@@ -76,13 +73,12 @@ export default function Home() {
               Plataforma gamificada para concurseiros da área jurídica. Correção inteligente, rankings competitivos e controle total dos seus estudos.
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
-              <Button size="lg" onClick={() => navigate("/login")} className="gradient-electric text-white font-semibold text-base px-8">
-                Começar agora <ChevronRight className="ml-1 h-4 w-4" />
+              <Button size="lg" onClick={() => navigate("/cadastro")} className="gradient-electric text-white font-semibold text-base px-8">
+                Criar conta <ChevronRight className="ml-1 h-4 w-4" />
               </Button>
-              <Button size="lg" variant="outline" onClick={() => setTourOpen(true)} className="border-border text-foreground hover:bg-secondary">
-                Conhecer funcionalidades
+              <Button size="lg" variant="outline" onClick={() => navigate("/login")} className="border-border text-foreground hover:bg-secondary">
+                Fazer Login
               </Button>
-              <FeatureTour open={tourOpen} onOpenChange={setTourOpen} />
             </div>
           </motion.div>
         </div>
