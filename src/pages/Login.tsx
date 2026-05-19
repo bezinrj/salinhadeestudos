@@ -85,12 +85,35 @@ export default function Login() {
     }
     setIsLoading(true);
     const result = await register(username.trim(), email, password);
-    setIsLoading(false);
-    if (result.success) {
-      navigate("/dashboard");
-    } else {
+    if (!result.success) {
+      setIsLoading(false);
       setError(result.error || "Erro ao criar conta.");
+      return;
     }
+
+    // If a paid plan was chosen on the landing pricing cards, kick off checkout
+    if (planParam && planParam !== "free") {
+      // Ensure we have a session before invoking the edge function
+      const { data: signIn } = await supabase.auth.signInWithPassword({ email, password });
+      if (signIn?.session) {
+        try {
+          const { data, error: ckErr } = await supabase.functions.invoke("create-checkout", {
+            body: { priceId: planParam },
+          });
+          if (ckErr) throw ckErr;
+          if (data?.url) {
+            window.location.href = data.url;
+            return;
+          }
+        } catch (err) {
+          // fall through to dashboard if checkout fails
+          console.warn("Checkout after register failed:", err);
+        }
+      }
+    }
+
+    setIsLoading(false);
+    navigate(planParam === "free" ? "/dashboard" : "/dashboard");
   };
 
   return (
