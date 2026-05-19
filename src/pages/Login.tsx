@@ -251,7 +251,9 @@ export default function Login() {
                     <Input id="reg-password" type="password" placeholder="Mínimo 6 caracteres" value={password} onChange={e => setPassword(e.target.value)} className="bg-secondary border-border" required />
                   </div>
                   <Button type="submit" className="w-full gradient-electric text-white font-semibold" disabled={isLoading}>
-                    {isLoading ? "Criando conta..." : "Criar conta"}
+                    {isLoading
+                      ? planParam && planParam !== "free" ? "Redirecionando ao pagamento..." : "Criando conta..."
+                      : planParam && planParam !== "free" ? "Criar conta e continuar para pagamento" : "Criar conta"}
                   </Button>
                 </form>
               </TabsContent>
