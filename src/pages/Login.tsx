@@ -139,8 +139,24 @@ export default function Login() {
 
         <Card className="border-border/30 bg-card/85 backdrop-blur-xl shadow-2xl">
           <CardHeader className="text-center">
-            <CardTitle className="font-display text-xl">Bem-vindo(a)</CardTitle>
-            <CardDescription>Entre ou crie sua conta para começar</CardDescription>
+            <CardTitle className="font-display text-xl">
+              {defaultTab === "register" ? "Criar conta" : "Entrar"}
+            </CardTitle>
+            <CardDescription>
+              {defaultTab === "register"
+                ? "Preencha seus dados para começar"
+                : "Acesse sua conta para continuar estudando"}
+            </CardDescription>
+            {planParam && defaultTab === "register" && (
+              <div className="mt-3 mx-auto inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs text-primary">
+                Plano selecionado:&nbsp;
+                <strong>
+                  {planParam === "free"
+                    ? "Grátis"
+                    : getPlanByPriceId(planParam)?.name ?? "Premium"}
+                </strong>
+              </div>
+            )}
           </CardHeader>
           <CardContent>
             {error && (
