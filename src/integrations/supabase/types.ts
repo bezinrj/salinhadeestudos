@@ -425,6 +425,27 @@ export type Database = {
           },
         ]
       }
+      free_plan_usage: {
+        Row: {
+          id: string
+          question_id: string
+          used_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          question_id: string
+          used_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          question_id?: string
+          used_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       hotmart_pendentes: {
         Row: {
           album_ids: string[]

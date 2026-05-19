@@ -93,11 +93,32 @@ export default function QuestionDetail() {
     }
   }, [existingAnswer]);
 
+  // Free plan: 3 premium question attempts per calendar month
+  const { data: freeUsage, refetch: refetchFreeUsage } = useQuery({
+    queryKey: ["free-plan-usage", user?.id],
+    queryFn: async () => {
+      const monthStart = new Date();
+      monthStart.setDate(1);
+      monthStart.setHours(0, 0, 0, 0);
+      const { data } = await (supabase.from("free_plan_usage" as any) as any)
+        .select("question_id, used_at")
+        .eq("user_id", user!.id)
+        .gte("used_at", monthStart.toISOString());
+      return (data || []) as Array<{ question_id: string; used_at: string }>;
+    },
+    enabled: !!user && !subscribed,
+  });
+
   if (isLoading) return <div className="text-center py-16 text-muted-foreground">Carregando...</div>;
   if (!question) return <div className="text-center py-16 text-muted-foreground">Questão não encontrada.</div>;
 
+  const FREE_MONTHLY_LIMIT = 3;
   const isPremium = question.isPremium || question.isWeekly;
-  const canAnswer = !isPremium || subscribed;
+  const freeUsedCount = freeUsage?.length ?? 0;
+  const alreadyUsedThis = !!freeUsage?.some((u) => u.question_id === question.id);
+  const freeCanAnswer =
+    isPremium && !question.isWeekly && (alreadyUsedThis || freeUsedCount < FREE_MONTHLY_LIMIT);
+  const canAnswer = !isPremium || subscribed || freeCanAnswer;
   const isLocked = question.isWeekly && lockedScore !== null;
   const isWeeklyActive = !!question.isWeekly && !!question.deadline && new Date(question.deadline) > new Date();
   const canDownloadAnswerKey = !isWeeklyActive && (!!question.idealAnswer || !!question.mirrorText || !!question.barema);
@@ -177,6 +198,15 @@ export default function QuestionDetail() {
 
     // Fetch current profile data for badge checks
     const { data: currentProfile } = await supabase.from("profiles").select("total_essays, weekly_hours, streak, rank_position, subscription_tier").eq("id", user!.id).single();
+
+    // Register free-plan usage (only for free users answering premium non-weekly questions)
+    if (user && !subscribed && isPremium && !question.isWeekly) {
+      await (supabase.from("free_plan_usage" as any) as any).insert({
+        user_id: user.id,
+        question_id: question.id,
+      });
+      refetchFreeUsage();
+    }
 
     if (user) {
       const insertData: any = {
@@ -371,8 +401,19 @@ export default function QuestionDetail() {
         <Card className="gradient-card border-gold/20">
           <CardContent className="p-8 text-center space-y-4">
             <Lock className="h-10 w-10 text-gold mx-auto" />
-            <p className="text-lg font-display font-bold">Questão exclusiva para assinantes</p>
-            <p className="text-sm text-muted-foreground">Assine um plano para responder questões premium e participar dos desafios semanais.</p>
+            {question.isWeekly ? (
+              <>
+                <p className="text-lg font-display font-bold">Questão da Semana — exclusiva para assinantes</p>
+                <p className="text-sm text-muted-foreground">Os desafios semanais valem ranking e são liberados apenas para planos pagos.</p>
+              </>
+            ) : (
+              <>
+                <p className="text-lg font-display font-bold">Você usou suas {FREE_MONTHLY_LIMIT} questões grátis do mês</p>
+                <p className="text-sm text-muted-foreground">
+                  No plano Grátis você corrige até {FREE_MONTHLY_LIMIT} questões premium por mês. Assine para liberar correções ilimitadas.
+                </p>
+              </>
+            )}
             <Button onClick={() => navigate("/meu-plano")} className="gradient-electric text-white font-semibold">
               Ver planos
             </Button>
