@@ -164,7 +164,13 @@ export default function Home() {
             Invista na sua aprovação. Comece hoje e evolua suas discursivas com correção inteligente.
           </p>
         </div>
-        <PricingCards onSelectUnauthenticated={() => navigate("/login")} />
+        <PricingCards onSelectUnauthenticated={(plan) => navigate(`/login?tab=register&plan=${encodeURIComponent(plan)}`)} />
+        <p className="text-center text-sm text-muted-foreground mt-6">
+          Já tem conta?{" "}
+          <button onClick={() => navigate("/login?tab=login")} className="text-primary hover:underline font-semibold">
+            Entrar
+          </button>
+        </p>
       </section>
       {/* CTA */}
       <section className="container mx-auto px-4 py-16 md:py-24">
