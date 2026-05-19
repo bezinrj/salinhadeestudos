@@ -93,11 +93,32 @@ export default function QuestionDetail() {
     }
   }, [existingAnswer]);
 
+  // Free plan: 3 premium question attempts per calendar month
+  const { data: freeUsage, refetch: refetchFreeUsage } = useQuery({
+    queryKey: ["free-plan-usage", user?.id],
+    queryFn: async () => {
+      const monthStart = new Date();
+      monthStart.setDate(1);
+      monthStart.setHours(0, 0, 0, 0);
+      const { data } = await (supabase.from("free_plan_usage" as any) as any)
+        .select("question_id, used_at")
+        .eq("user_id", user!.id)
+        .gte("used_at", monthStart.toISOString());
+      return (data || []) as Array<{ question_id: string; used_at: string }>;
+    },
+    enabled: !!user && !subscribed,
+  });
+
   if (isLoading) return <div className="text-center py-16 text-muted-foreground">Carregando...</div>;
   if (!question) return <div className="text-center py-16 text-muted-foreground">Questão não encontrada.</div>;
 
+  const FREE_MONTHLY_LIMIT = 3;
   const isPremium = question.isPremium || question.isWeekly;
-  const canAnswer = !isPremium || subscribed;
+  const freeUsedCount = freeUsage?.length ?? 0;
+  const alreadyUsedThis = !!freeUsage?.some((u) => u.question_id === question.id);
+  const freeCanAnswer =
+    isPremium && !question.isWeekly && (alreadyUsedThis || freeUsedCount < FREE_MONTHLY_LIMIT);
+  const canAnswer = !isPremium || subscribed || freeCanAnswer;
   const isLocked = question.isWeekly && lockedScore !== null;
   const isWeeklyActive = !!question.isWeekly && !!question.deadline && new Date(question.deadline) > new Date();
   const canDownloadAnswerKey = !isWeeklyActive && (!!question.idealAnswer || !!question.mirrorText || !!question.barema);
