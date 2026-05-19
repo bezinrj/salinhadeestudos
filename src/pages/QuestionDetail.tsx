@@ -401,8 +401,19 @@ export default function QuestionDetail() {
         <Card className="gradient-card border-gold/20">
           <CardContent className="p-8 text-center space-y-4">
             <Lock className="h-10 w-10 text-gold mx-auto" />
-            <p className="text-lg font-display font-bold">Questão exclusiva para assinantes</p>
-            <p className="text-sm text-muted-foreground">Assine um plano para responder questões premium e participar dos desafios semanais.</p>
+            {question.isWeekly ? (
+              <>
+                <p className="text-lg font-display font-bold">Questão da Semana — exclusiva para assinantes</p>
+                <p className="text-sm text-muted-foreground">Os desafios semanais valem ranking e são liberados apenas para planos pagos.</p>
+              </>
+            ) : (
+              <>
+                <p className="text-lg font-display font-bold">Você usou suas {FREE_MONTHLY_LIMIT} questões grátis do mês</p>
+                <p className="text-sm text-muted-foreground">
+                  No plano Grátis você corrige até {FREE_MONTHLY_LIMIT} questões premium por mês. Assine para liberar correções ilimitadas.
+                </p>
+              </>
+            )}
             <Button onClick={() => navigate("/meu-plano")} className="gradient-electric text-white font-semibold">
               Ver planos
             </Button>
