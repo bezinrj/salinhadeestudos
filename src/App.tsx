@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { AppLayout } from "@/components/layout/AppLayout";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
+import Cadastro from "./pages/Cadastro";
 import Dashboard from "./pages/Dashboard";
 import Discursivas from "./pages/Discursivas";
 import QuestionDetail from "./pages/QuestionDetail";
@@ -44,6 +45,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/cadastro" element={<Cadastro />} />
             <Route path="/checkout-success" element={<CheckoutSuccess />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
