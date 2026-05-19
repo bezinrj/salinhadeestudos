@@ -102,7 +102,7 @@ export function PricingCards({
             </ul>
             <Button
               disabled={isFreeCurrent}
-              onClick={() => !isAuthenticated && onSelectUnauthenticated?.()}
+              onClick={() => !isAuthenticated && onSelectUnauthenticated?.("free")}
               className="w-full font-semibold"
               variant="outline"
             >
