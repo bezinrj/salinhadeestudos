@@ -13,6 +13,10 @@ import loginBg from "@/assets/login-bg.png";
 export default function Login() {
   const [searchParams] = useSearchParams();
   const invitedEmail = useMemo(() => (searchParams.get("invite") || "").trim().toLowerCase(), [searchParams]);
+  const tabParam = (searchParams.get("tab") || "").toLowerCase();
+  const planParam = (searchParams.get("plan") || "").trim();
+  const initialTab: "login" | "register" =
+    tabParam === "register" || invitedEmail || planParam ? "register" : tabParam === "login" ? "login" : "login";
   const [email, setEmail] = useState(invitedEmail);
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
@@ -22,7 +26,7 @@ export default function Login() {
   const [showForgot, setShowForgot] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
   const [forgotLoading, setForgotLoading] = useState(false);
-  const [defaultTab, setDefaultTab] = useState<"login" | "register">(invitedEmail ? "register" : "login");
+  const [defaultTab, setDefaultTab] = useState<"login" | "register">(initialTab);
   const { login, register } = useAuth();
   const navigate = useNavigate();
 
