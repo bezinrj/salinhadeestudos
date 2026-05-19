@@ -179,10 +179,10 @@ export default function Home() {
             <h2 className="text-3xl md:text-4xl font-display font-bold text-white mb-4">Pronto para começar?</h2>
             <p className="text-white/80 mb-8 max-w-lg mx-auto">Junte-se a centenas de concurseiros e comece a evoluir suas discursivas hoje.</p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Button size="lg" onClick={() => navigate("/login?tab=register")} className="bg-white text-primary hover:bg-white/90 font-semibold px-8">
+              <Button size="lg" onClick={() => navigate("/cadastro")} className="bg-white text-primary hover:bg-white/90 font-semibold px-8">
                 Criar minha conta
               </Button>
-              <Button size="lg" variant="outline" onClick={() => navigate("/login?tab=login")} className="border-white/40 text-white hover:bg-white/10 font-semibold px-8">
+              <Button size="lg" variant="outline" onClick={() => navigate("/login")} className="border-white/40 text-white hover:bg-white/10 font-semibold px-8">
                 Já tenho conta
               </Button>
             </div>
