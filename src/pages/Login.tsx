@@ -8,6 +8,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Scale } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { getPlanByPriceId } from "@/lib/stripe";
 import loginBg from "@/assets/login-bg.png";
 
 export default function Login() {
