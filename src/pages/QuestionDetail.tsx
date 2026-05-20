@@ -112,6 +112,15 @@ export default function QuestionDetail() {
     enabled: !!user && !subscribed,
   });
 
+  // Auto-open upgrade popup when free limit is reached
+  useEffect(() => {
+    if (!user || subscribed || !question) return;
+    if (!(question.isPremium || question.isWeekly) || question.isWeekly) return;
+    const used = freeUsage?.length ?? 0;
+    const alreadyUsed = !!freeUsage?.some((u) => u.question_id === question.id);
+    if (!alreadyUsed && used >= 3) setUpgradeOpen(true);
+  }, [freeUsage, subscribed, user, question]);
+
   if (isLoading) return <div className="text-center py-16 text-muted-foreground">Carregando...</div>;
   if (!question) return <div className="text-center py-16 text-muted-foreground">Questão não encontrada.</div>;
 
