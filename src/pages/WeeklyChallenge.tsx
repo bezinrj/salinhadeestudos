@@ -59,10 +59,8 @@ export default function WeeklyChallenge() {
   // Get waitlist count via a count query
   useEffect(() => {
     const fetchCount = async () => {
-      const { count } = await supabase
-        .from("weekly_waitlist")
-        .select("*", { count: "exact", head: true });
-      setWaitlistCount(count || 0);
+      const { data } = await (supabase.rpc as any)("get_weekly_waitlist_count");
+      setWaitlistCount(Number(data) || 0);
     };
     fetchCount();
 
