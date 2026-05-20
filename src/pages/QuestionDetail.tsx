@@ -125,6 +125,7 @@ export default function QuestionDetail() {
   const isLocked = question.isWeekly && lockedScore !== null;
   const isWeeklyActive = !!question.isWeekly && !!question.deadline && new Date(question.deadline) > new Date();
   const canDownloadAnswerKey = !isWeeklyActive && (!!question.idealAnswer || !!question.mirrorText || !!question.barema);
+  const shouldShowUpgrade = !subscribed && isPremium && !question.isWeekly && !freeCanAnswer && !alreadyUsedThis;
 
   const handleDownloadAnswerKey = () => {
     if (isWeeklyActive) {
