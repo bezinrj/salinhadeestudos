@@ -13,6 +13,8 @@ import { ArrowLeft, CheckCircle2, XCircle, AlertTriangle, Lightbulb, FileText, S
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { QuestionComments } from "@/components/QuestionComments";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Sparkles } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useBadges } from "@/hooks/useBadges";
 import { ReportQuestionDialog } from "@/components/ReportQuestionDialog";
