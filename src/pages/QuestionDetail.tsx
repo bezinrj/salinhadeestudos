@@ -361,6 +361,31 @@ export default function QuestionDetail() {
         onOpenChange={setReportOpen}
       />
 
+      <Dialog open={upgradeOpen} onOpenChange={setUpgradeOpen}>
+        <DialogContent className="sm:max-w-md border-gold/30 bg-card">
+          <DialogHeader className="text-center items-center">
+            <div className="h-14 w-14 rounded-full bg-gold/10 flex items-center justify-center mb-2">
+              <Sparkles className="h-7 w-7 text-gold" />
+            </div>
+            <DialogTitle className="font-display text-xl">Suas questões grátis acabaram</DialogTitle>
+            <DialogDescription className="text-center">
+              No plano Grátis você corrige até 3 questões premium por mês. Assine um plano para liberar correções ilimitadas, questões da semana e muito mais.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex-col sm:flex-col gap-2 sm:space-x-0">
+            <Button
+              onClick={() => { setUpgradeOpen(false); navigate("/meu-plano"); }}
+              className="w-full gradient-electric text-white font-semibold"
+            >
+              Ver planos disponíveis
+            </Button>
+            <Button variant="ghost" onClick={() => setUpgradeOpen(false)} className="w-full">
+              Agora não
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Locked state - already answered weekly */}
       {isLocked && !correction ? (
         <Card className="gradient-card border-green-500/20">
