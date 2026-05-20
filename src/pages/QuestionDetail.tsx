@@ -13,6 +13,8 @@ import { ArrowLeft, CheckCircle2, XCircle, AlertTriangle, Lightbulb, FileText, S
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { QuestionComments } from "@/components/QuestionComments";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Sparkles } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useBadges } from "@/hooks/useBadges";
 import { ReportQuestionDialog } from "@/components/ReportQuestionDialog";
@@ -33,6 +35,7 @@ export default function QuestionDetail() {
   const [uploadedFileUrl, setUploadedFileUrl] = useState<string | null>(null);
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
   const [answerForReport, setAnswerForReport] = useState<string>("");
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
   const { checkAndAward } = useBadges(user?.id);
 
   const { data: question, isLoading } = useQuery({
@@ -109,6 +112,15 @@ export default function QuestionDetail() {
     enabled: !!user && !subscribed,
   });
 
+  // Auto-open upgrade popup when free limit is reached
+  useEffect(() => {
+    if (!user || subscribed || !question) return;
+    if (!(question.isPremium || question.isWeekly) || question.isWeekly) return;
+    const used = freeUsage?.length ?? 0;
+    const alreadyUsed = !!freeUsage?.some((u) => u.question_id === question.id);
+    if (!alreadyUsed && used >= 3) setUpgradeOpen(true);
+  }, [freeUsage, subscribed, user, question]);
+
   if (isLoading) return <div className="text-center py-16 text-muted-foreground">Carregando...</div>;
   if (!question) return <div className="text-center py-16 text-muted-foreground">Questão não encontrada.</div>;
 
@@ -122,6 +134,7 @@ export default function QuestionDetail() {
   const isLocked = question.isWeekly && lockedScore !== null;
   const isWeeklyActive = !!question.isWeekly && !!question.deadline && new Date(question.deadline) > new Date();
   const canDownloadAnswerKey = !isWeeklyActive && (!!question.idealAnswer || !!question.mirrorText || !!question.barema);
+  const shouldShowUpgrade = !subscribed && isPremium && !question.isWeekly && !freeCanAnswer && !alreadyUsedThis;
 
   const handleDownloadAnswerKey = () => {
     if (isWeeklyActive) {
@@ -347,6 +360,31 @@ export default function QuestionDetail() {
         open={reportOpen}
         onOpenChange={setReportOpen}
       />
+
+      <Dialog open={upgradeOpen} onOpenChange={setUpgradeOpen}>
+        <DialogContent className="sm:max-w-md border-gold/30 bg-card">
+          <DialogHeader className="text-center items-center">
+            <div className="h-14 w-14 rounded-full bg-gold/10 flex items-center justify-center mb-2">
+              <Sparkles className="h-7 w-7 text-gold" />
+            </div>
+            <DialogTitle className="font-display text-xl">Suas questões grátis acabaram</DialogTitle>
+            <DialogDescription className="text-center">
+              No plano Grátis você corrige até 3 questões premium por mês. Assine um plano para liberar correções ilimitadas, questões da semana e muito mais.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex-col sm:flex-col gap-2 sm:space-x-0">
+            <Button
+              onClick={() => { setUpgradeOpen(false); navigate("/meu-plano"); }}
+              className="w-full gradient-electric text-white font-semibold"
+            >
+              Ver planos disponíveis
+            </Button>
+            <Button variant="ghost" onClick={() => setUpgradeOpen(false)} className="w-full">
+              Agora não
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Locked state - already answered weekly */}
       {isLocked && !correction ? (
