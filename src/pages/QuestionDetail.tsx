@@ -362,25 +362,52 @@ export default function QuestionDetail() {
       />
 
       <Dialog open={upgradeOpen} onOpenChange={setUpgradeOpen}>
-        <DialogContent className="sm:max-w-md border-gold/30 bg-card">
-          <DialogHeader className="text-center items-center">
-            <div className="h-14 w-14 rounded-full bg-gold/10 flex items-center justify-center mb-2">
-              <Sparkles className="h-7 w-7 text-gold" />
+        <DialogContent className="sm:max-w-lg p-0 overflow-hidden border-gold/40 bg-card">
+          {/* Top gradient banner */}
+          <div className="relative bg-gradient-to-br from-gold/30 via-gold/10 to-transparent px-6 pt-8 pb-6 text-center">
+            <div className="absolute inset-0 opacity-20 pointer-events-none"
+              style={{ background: "radial-gradient(circle at 50% 0%, hsl(45 93% 55% / 0.4), transparent 60%)" }} />
+            <div className="relative mx-auto h-16 w-16 rounded-full gradient-gold flex items-center justify-center mb-3 glow-gold">
+              <Crown className="h-8 w-8 text-background" />
             </div>
-            <DialogTitle className="font-display text-xl">Suas questões grátis acabaram</DialogTitle>
-            <DialogDescription className="text-center">
-              No plano Grátis você corrige até 3 questões premium por mês. Assine um plano para liberar correções ilimitadas, questões da semana e muito mais.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="flex-col sm:flex-col gap-2 sm:space-x-0">
+            <DialogHeader className="space-y-2">
+              <DialogTitle className="font-display text-2xl text-center text-gold">
+                Suas 3 questões grátis acabaram
+              </DialogTitle>
+              <DialogDescription className="text-center text-base text-foreground/80">
+                Desbloqueie a plataforma completa e continue evoluindo sem limites.
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+
+          {/* Benefits */}
+          <div className="px-6 pb-2 space-y-3">
+            {[
+              { icon: Zap, text: "Correções ilimitadas de questões discursivas" },
+              { icon: Trophy, text: "Acesso às Questões da Semana e ao ranking" },
+              { icon: Sparkles, text: "Gabaritos, espelhos e baremas completos" },
+              { icon: Check, text: "Comentários, conquistas e suporte premium" },
+            ].map(({ icon: Icon, text }, i) => (
+              <div key={i} className="flex items-center gap-3 rounded-lg bg-secondary/40 border border-border/50 p-3">
+                <div className="h-8 w-8 rounded-md bg-gold/15 flex items-center justify-center shrink-0">
+                  <Icon className="h-4 w-4 text-gold" />
+                </div>
+                <p className="text-sm text-foreground/90">{text}</p>
+              </div>
+            ))}
+          </div>
+
+          <DialogFooter className="flex-col sm:flex-col gap-2 sm:space-x-0 p-6 pt-4">
             <Button
               onClick={() => { setUpgradeOpen(false); navigate("/meu-plano"); }}
-              className="w-full gradient-electric text-white font-semibold"
+              size="lg"
+              className="w-full gradient-gold text-background font-bold text-base h-12 glow-gold hover:opacity-90"
             >
-              Ver planos disponíveis
+              <Crown className="h-5 w-5" />
+              Ver planos e assinar agora
             </Button>
-            <Button variant="ghost" onClick={() => setUpgradeOpen(false)} className="w-full">
-              Agora não
+            <Button variant="ghost" onClick={() => setUpgradeOpen(false)} className="w-full text-muted-foreground">
+              Talvez depois
             </Button>
           </DialogFooter>
         </DialogContent>
