@@ -35,6 +35,7 @@ export default function QuestionDetail() {
   const [uploadedFileUrl, setUploadedFileUrl] = useState<string | null>(null);
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
   const [answerForReport, setAnswerForReport] = useState<string>("");
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
   const { checkAndAward } = useBadges(user?.id);
 
   const { data: question, isLoading } = useQuery({
