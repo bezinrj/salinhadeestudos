@@ -177,10 +177,38 @@ IMPORTANTE:
       errors: { type: "array", items: { type: "string" }, description: "Erros e imprecisões" },
       omissions: { type: "array", items: { type: "string" }, description: "Omissões" },
       idealAnswer: { type: "string", description: "Resposta ideal PERSONALIZADA" },
-      feedback: { type: "string", description: "Feedback de melhoria" },
+      feedback: { type: "string", description: "Feedback de melhoria geral, curto" },
+      maxScoreFeedback: {
+        type: "object",
+        description: "Feedback DETALHADO, ESPECÍFICO e NÃO genérico para o aluno alcançar a nota máxima. DEVE comparar a resposta concreta do aluno com o enunciado, barema e gabarito. NUNCA usar frases genéricas como 'estude mais o tema'. Sempre falar com o aluno em 2ª pessoa, como um corretor de banca.",
+        properties: {
+          thesisAssessment: {
+            type: "string",
+            description: "Diga EXPRESSAMENTE se o aluno acertou ou errou a TESE CENTRAL da questão. Se errou, aponte qual era a tese correta. Se acertou parcialmente, reconheça e explique o que faltou.",
+          },
+          pointsLost: {
+            type: "array",
+            items: { type: "string" },
+            description: "Lista dos erros materiais, omissões, imprecisões e classificações erradas que derrubaram a nota. Cada item deve referenciar o que o aluno escreveu (ou deixou de escrever) e o critério do barema afetado.",
+          },
+          whatShouldHaveBeenWritten: {
+            type: "string",
+            description: "Mostre objetivamente, item por item do barema, quais FUNDAMENTOS JURÍDICOS, palavras-chave, expressões técnicas e dispositivos legais deveriam ter sido citados, e a consequência prática no caso concreto. Não repita o gabarito — transforme-o em orientação prática.",
+          },
+          howToImprove: {
+            type: "string",
+            description: "Orientação prática e direta de como o aluno deve estruturar e escrever a resposta na próxima prova para alcançar a nota máxima.",
+          },
+          modelSentence: {
+            type: "string",
+            description: "Um trecho-modelo curto, em estilo de prova discursiva de concurso, que o aluno poderia usar para responder no padrão da banca.",
+          },
+        },
+        required: ["thesisAssessment", "pointsLost", "whatShouldHaveBeenWritten", "howToImprove", "modelSentence"],
+      },
     };
 
-    const requiredFields = ["baremaBreakdown", "mirror", "positives", "errors", "omissions", "idealAnswer", "feedback"];
+    const requiredFields = ["baremaBreakdown", "mirror", "positives", "errors", "omissions", "idealAnswer", "feedback", "maxScoreFeedback"];
 
     if (hasImage) {
       toolProperties.handwritingNote = {
