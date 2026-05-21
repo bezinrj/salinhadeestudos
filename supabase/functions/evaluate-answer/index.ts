@@ -306,6 +306,7 @@ IMPORTANTE:
       omissions: correction.omissions,
       idealAnswer: correction.idealAnswer,
       feedback: correction.feedback,
+      maxScoreFeedback: correction.maxScoreFeedback || null,
       createdAt: new Date().toISOString().split("T")[0],
       baremaBreakdown: correction.baremaBreakdown,
     };
