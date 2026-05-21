@@ -75,6 +75,13 @@ export interface CorrectionResult {
   baremaBreakdown: BaremaScore[];
   handwritingNote?: string;
   handwritingLevel?: string;
+  maxScoreFeedback?: {
+    thesisAssessment: string;
+    pointsLost: string[];
+    whatShouldHaveBeenWritten: string;
+    howToImprove: string;
+    modelSentence: string;
+  };
 }
 
 export interface BaremaScore {

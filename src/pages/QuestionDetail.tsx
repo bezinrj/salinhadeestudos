@@ -637,6 +637,53 @@ export default function QuestionDetail() {
             </CardContent>
           </Card>
 
+          {/* Feedback para alcançar a nota máxima */}
+          {correction.maxScoreFeedback && (
+            <Card className="gradient-card border-gold/40">
+              <CardHeader>
+                <CardTitle className="text-base font-semibold flex items-center gap-2 text-gold">
+                  🏆 Feedback para alcançar a nota máxima
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-5">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-wide text-gold/90 mb-1">1. Tese central</p>
+                  <p className="text-sm text-foreground/85 leading-relaxed whitespace-pre-line">
+                    {correction.maxScoreFeedback.thesisAssessment}
+                  </p>
+                </div>
+                {correction.maxScoreFeedback.pointsLost?.length > 0 && (
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wide text-gold/90 mb-1">2. Pontos que fizeram perder nota</p>
+                    <ul className="list-disc pl-5 space-y-1.5">
+                      {correction.maxScoreFeedback.pointsLost.map((p, i) => (
+                        <li key={i} className="text-sm text-foreground/85 leading-relaxed">{p}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-wide text-gold/90 mb-1">3. O que deveria ter sido escrito</p>
+                  <p className="text-sm text-foreground/85 leading-relaxed whitespace-pre-line">
+                    {correction.maxScoreFeedback.whatShouldHaveBeenWritten}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-wide text-gold/90 mb-1">4. Como melhorar na próxima</p>
+                  <p className="text-sm text-foreground/85 leading-relaxed whitespace-pre-line">
+                    {correction.maxScoreFeedback.howToImprove}
+                  </p>
+                </div>
+                <div className="border-l-2 border-gold/60 pl-4 bg-gold/5 py-3 rounded-r">
+                  <p className="text-xs font-bold uppercase tracking-wide text-gold/90 mb-1">5. Frase-modelo</p>
+                  <p className="text-sm text-foreground/90 italic leading-relaxed whitespace-pre-line">
+                    "{correction.maxScoreFeedback.modelSentence}"
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <div className="flex items-center gap-3 flex-wrap">
             {!question.isWeekly && (
               <Button variant="outline" onClick={() => { setCorrection(null); setAnswer(""); setAnswerForReport(""); setSubmissionType("texto_manual"); setUploadedFileName(null); setUploadedFileUrl(null); }} className="border-border">

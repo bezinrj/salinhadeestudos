@@ -110,7 +110,22 @@ Essa resposta ideal deve:
 - Manter os trechos corretos da resposta do aluno
 - Reescrever apenas os trechos deficientes
 - Manter fidelidade ao espelho oficial da correção
-- Usar a resposta do aluno como BASE para a personalização${handwritingSection}`;
+- Usar a resposta do aluno como BASE para a personalização
+
+## FEEDBACK PARA ALCANÇAR A NOTA MÁXIMA (obrigatório — campo maxScoreFeedback):
+
+Você DEVE preencher o campo estruturado "maxScoreFeedback" comparando: enunciado, barema, gabarito, resposta concreta do aluno e a pontuação atribuída em cada critério. Mostre EXATAMENTE o que o aluno precisaria corrigir, acrescentar ou substituir para sair da nota obtida e chegar à nota máxima.
+
+Regras inegociáveis:
+- NUNCA genérico ("estude mais o tema", "leia a doutrina"). PROIBIDO.
+- Sempre relacionar a CADA frase concreta escrita (ou omitida) pelo aluno.
+- Sempre dizer o que faltou pontuar em cada item do barema.
+- Sempre indicar expressões técnicas, palavras-chave, dispositivos legais e fundamentos jurídicos que aumentariam a nota.
+- Se o aluno errou a TESE principal, aponte isso expressamente em thesisAssessment.
+- Se houve acerto parcial, reconheça o acerto e explique o que faltou para a pontuação integral.
+- Tom: corretor de banca falando diretamente com o aluno (2ª pessoa), didático, direto.
+- Não apenas repetir o gabarito — transformá-lo em orientação prática de melhoria.
+- O campo "modelSentence" deve trazer um trecho curto no estilo de prova discursiva (1 a 3 frases) que o aluno poderia usar como modelo.${handwritingSection}`;
 
     // Build user message content
     const userContent: any[] = [];
@@ -177,10 +192,38 @@ IMPORTANTE:
       errors: { type: "array", items: { type: "string" }, description: "Erros e imprecisões" },
       omissions: { type: "array", items: { type: "string" }, description: "Omissões" },
       idealAnswer: { type: "string", description: "Resposta ideal PERSONALIZADA" },
-      feedback: { type: "string", description: "Feedback de melhoria" },
+      feedback: { type: "string", description: "Feedback de melhoria geral, curto" },
+      maxScoreFeedback: {
+        type: "object",
+        description: "Feedback DETALHADO, ESPECÍFICO e NÃO genérico para o aluno alcançar a nota máxima. DEVE comparar a resposta concreta do aluno com o enunciado, barema e gabarito. NUNCA usar frases genéricas como 'estude mais o tema'. Sempre falar com o aluno em 2ª pessoa, como um corretor de banca.",
+        properties: {
+          thesisAssessment: {
+            type: "string",
+            description: "Diga EXPRESSAMENTE se o aluno acertou ou errou a TESE CENTRAL da questão. Se errou, aponte qual era a tese correta. Se acertou parcialmente, reconheça e explique o que faltou.",
+          },
+          pointsLost: {
+            type: "array",
+            items: { type: "string" },
+            description: "Lista dos erros materiais, omissões, imprecisões e classificações erradas que derrubaram a nota. Cada item deve referenciar o que o aluno escreveu (ou deixou de escrever) e o critério do barema afetado.",
+          },
+          whatShouldHaveBeenWritten: {
+            type: "string",
+            description: "Mostre objetivamente, item por item do barema, quais FUNDAMENTOS JURÍDICOS, palavras-chave, expressões técnicas e dispositivos legais deveriam ter sido citados, e a consequência prática no caso concreto. Não repita o gabarito — transforme-o em orientação prática.",
+          },
+          howToImprove: {
+            type: "string",
+            description: "Orientação prática e direta de como o aluno deve estruturar e escrever a resposta na próxima prova para alcançar a nota máxima.",
+          },
+          modelSentence: {
+            type: "string",
+            description: "Um trecho-modelo curto, em estilo de prova discursiva de concurso, que o aluno poderia usar para responder no padrão da banca.",
+          },
+        },
+        required: ["thesisAssessment", "pointsLost", "whatShouldHaveBeenWritten", "howToImprove", "modelSentence"],
+      },
     };
 
-    const requiredFields = ["baremaBreakdown", "mirror", "positives", "errors", "omissions", "idealAnswer", "feedback"];
+    const requiredFields = ["baremaBreakdown", "mirror", "positives", "errors", "omissions", "idealAnswer", "feedback", "maxScoreFeedback"];
 
     if (hasImage) {
       toolProperties.handwritingNote = {
@@ -278,6 +321,7 @@ IMPORTANTE:
       omissions: correction.omissions,
       idealAnswer: correction.idealAnswer,
       feedback: correction.feedback,
+      maxScoreFeedback: correction.maxScoreFeedback || null,
       createdAt: new Date().toISOString().split("T")[0],
       baremaBreakdown: correction.baremaBreakdown,
     };
