@@ -318,6 +318,35 @@ export async function generateCorrectionReport(data: ReportData) {
     </div>
   </div>
 
+  ${data.correction.maxScoreFeedback ? `
+  <!-- FEEDBACK PARA NOTA MÁXIMA -->
+  <div class="section">
+    <div class="feedback-card" style="background:#fffbeb;border-color:#f59e0b;">
+      <div class="feedback-header">
+        <span style="color:#92400e;">🏆 FEEDBACK PARA ALCANÇAR A NOTA MÁXIMA</span>
+      </div>
+      <div style="font-size:12px;color:#451a03;line-height:1.7;">
+        <p style="margin:8px 0 4px;font-weight:700;text-transform:uppercase;font-size:10px;color:#92400e;">1. Tese central</p>
+        <div>${paragraphize(data.correction.maxScoreFeedback.thesisAssessment)}</div>
+
+        ${data.correction.maxScoreFeedback.pointsLost?.length ? `
+        <p style="margin:12px 0 4px;font-weight:700;text-transform:uppercase;font-size:10px;color:#92400e;">2. Pontos que fizeram perder nota</p>
+        <ul style="margin:4px 0 0 18px;padding:0;">${data.correction.maxScoreFeedback.pointsLost.map((p: string) => `<li style="margin-bottom:4px;">${esc(p)}</li>`).join("")}</ul>
+        ` : ""}
+
+        <p style="margin:12px 0 4px;font-weight:700;text-transform:uppercase;font-size:10px;color:#92400e;">3. O que deveria ter sido escrito</p>
+        <div>${paragraphize(data.correction.maxScoreFeedback.whatShouldHaveBeenWritten)}</div>
+
+        <p style="margin:12px 0 4px;font-weight:700;text-transform:uppercase;font-size:10px;color:#92400e;">4. Como melhorar na próxima</p>
+        <div>${paragraphize(data.correction.maxScoreFeedback.howToImprove)}</div>
+
+        <p style="margin:12px 0 4px;font-weight:700;text-transform:uppercase;font-size:10px;color:#92400e;">5. Frase-modelo</p>
+        <div style="border-left:3px solid #f59e0b;padding:6px 10px;background:#fef3c7;font-style:italic;">"${esc(data.correction.maxScoreFeedback.modelSentence)}"</div>
+      </div>
+    </div>
+  </div>
+  ` : ""}
+
   <!-- ANÁLISE POR CRITÉRIO -->
   ${criteriaHTML ? `
   <div class="section">
