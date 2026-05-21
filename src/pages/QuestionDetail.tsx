@@ -629,13 +629,6 @@ export default function QuestionDetail() {
             </Card>
           )}
 
-          {/* Feedback */}
-          <Card className="gradient-card border-gold/20">
-            <CardContent className="p-6">
-              <p className="text-sm font-medium text-gold mb-2">💡 Feedback de Melhoria</p>
-              <p className="text-sm text-foreground/85 leading-relaxed">{correction.feedback}</p>
-            </CardContent>
-          </Card>
 
           {/* Feedback para alcançar a nota máxima */}
           {correction.maxScoreFeedback && (
