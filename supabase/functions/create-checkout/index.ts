@@ -52,15 +52,15 @@ serve(async (req) => {
       logStep("Existing Stripe customer found", { customerId });
     }
 
-    const origin = req.headers.get("origin") || "https://salinhadeestudos.lovable.app";
+    const SITE_URL = "https://salinhadeestudos.com.br";
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
       line_items: [{ price: priceId, quantity: 1 }],
       mode: "subscription",
-      success_url: `${origin}/checkout-success`,
-      cancel_url: `${origin}/meu-plano`,
+      success_url: `${SITE_URL}/checkout-success`,
+      cancel_url: `${SITE_URL}/meu-plano`,
     });
 
     logStep("Checkout session created", { sessionId: session.id });

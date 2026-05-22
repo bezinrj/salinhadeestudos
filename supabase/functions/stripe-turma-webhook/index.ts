@@ -22,27 +22,35 @@ serve(async (req) => {
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     const webhookSecret = Deno.env.get("STRIPE_TURMA_WEBHOOK_SECRET");
     if (!stripeKey) throw new Error("STRIPE_SECRET_KEY not set");
+    if (!webhookSecret) {
+      log("ERROR STRIPE_TURMA_WEBHOOK_SECRET not configured");
+      return new Response(JSON.stringify({ error: "Webhook secret not configured" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
     const signature = req.headers.get("stripe-signature");
+    if (!signature) {
+      return new Response(JSON.stringify({ error: "Missing stripe-signature header" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     const rawBody = await req.text();
 
     let event: Stripe.Event;
-    if (webhookSecret && signature) {
-      try {
-        event = await stripe.webhooks.constructEventAsync(rawBody, signature, webhookSecret);
-        log("Signature verified", { type: event.type });
-      } catch (err) {
-        const m = err instanceof Error ? err.message : String(err);
-        log("Signature verification FAILED", { message: m });
-        return new Response(JSON.stringify({ error: `Webhook signature failed: ${m}` }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-    } else {
-      log("WARN no webhook secret configured, parsing without verification");
-      event = JSON.parse(rawBody) as Stripe.Event;
+    try {
+      event = await stripe.webhooks.constructEventAsync(rawBody, signature, webhookSecret);
+      log("Signature verified", { type: event.type });
+    } catch (err) {
+      const m = err instanceof Error ? err.message : String(err);
+      log("Signature verification FAILED", { message: m });
+      return new Response(JSON.stringify({ error: `Webhook signature failed: ${m}` }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     if (event.type !== "checkout.session.completed") {
