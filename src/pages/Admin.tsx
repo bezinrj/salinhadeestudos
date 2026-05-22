@@ -1156,6 +1156,8 @@ function WeeklyQuestionsTab() {
           ideal_answer: editIdealAnswer.trim() || null,
           banca: editBanca,
           year: parseInt(editYear),
+          disciplines: editExtraDisciplines,
+          subjects: editExtraSubjects,
         })
         .eq("id", editingQuestion.id);
       if (error) throw error;
