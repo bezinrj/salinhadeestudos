@@ -1294,6 +1294,11 @@ function WeeklyQuestionsTab() {
               </SelectContent>
             </Select>
           </div>
+          <QuestionTagsEditor
+            disciplines={extraDisciplines}
+            subjects={extraSubjects}
+            onChange={(d, s) => { setExtraDisciplines(d); setExtraSubjects(s); }}
+          />
           <Textarea placeholder="Enunciado completo da questão..." value={statement} onChange={(e) => setStatement(e.target.value)} rows={6} />
           
           <div className="space-y-2">
