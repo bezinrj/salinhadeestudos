@@ -1785,6 +1785,7 @@ export type Database = {
           deadline: string | null
           difficulty: string
           discipline: string
+          disciplines: string[]
           id: string
           ideal_answer: string | null
           is_active: boolean
@@ -1795,6 +1796,7 @@ export type Database = {
           public_id: number
           statement: string
           subject: string | null
+          subjects: string[]
           title: string
           year: number | null
         }
@@ -1808,6 +1810,7 @@ export type Database = {
           deadline?: string | null
           difficulty?: string
           discipline: string
+          disciplines?: string[]
           id?: string
           ideal_answer?: string | null
           is_active?: boolean
@@ -1818,6 +1821,7 @@ export type Database = {
           public_id?: number
           statement: string
           subject?: string | null
+          subjects?: string[]
           title: string
           year?: number | null
         }
@@ -1831,6 +1835,7 @@ export type Database = {
           deadline?: string | null
           difficulty?: string
           discipline?: string
+          disciplines?: string[]
           id?: string
           ideal_answer?: string | null
           is_active?: boolean
@@ -1841,6 +1846,7 @@ export type Database = {
           public_id?: number
           statement?: string
           subject?: string | null
+          subjects?: string[]
           title?: string
           year?: number | null
         }
