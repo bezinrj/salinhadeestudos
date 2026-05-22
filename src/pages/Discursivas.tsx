@@ -65,6 +65,8 @@ export default function Discursivas() {
         career: q.career,
         discipline: q.discipline,
         subject: q.subject || null,
+        disciplines: Array.isArray(q.disciplines) ? q.disciplines : [],
+        subjects: Array.isArray(q.subjects) ? q.subjects : [],
         statement: q.statement,
         difficulty: q.difficulty,
         participants: countMap[q.id]?.size || 0,
