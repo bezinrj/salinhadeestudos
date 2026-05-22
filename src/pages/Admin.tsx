@@ -1002,6 +1002,8 @@ function WeeklyQuestionsTab() {
   const [career, setCareer] = useState("Delegado");
   const [discipline, setDiscipline] = useState("");
   const [subject, setSubject] = useState("");
+  const [extraDisciplines, setExtraDisciplines] = useState<string[]>([]);
+  const [extraSubjects, setExtraSubjects] = useState<string[]>([]);
   const [statement, setStatement] = useState("");
   
   const [testAnswer, setTestAnswer] = useState("");
