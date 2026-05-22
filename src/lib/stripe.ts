@@ -33,7 +33,7 @@ export const STRIPE_PLANS = {
   annual: {
     id: "annual",
     name: "Anual",
-    priceId: "price_1TBMUHLy0axdgWvJInHob9Il",
+    priceId: "price_1TZtzSQ4whpSK2DUVFLcsM0g",
     billingCycle: "annual" as const,
     priceMonthly: 33.43,
     priceTotal: 401.21,
