@@ -100,10 +100,8 @@ export function ReportQuestionDialog({ questionId, questionTitle, open, onOpenCh
 
         if (uploadError) throw uploadError;
 
-        const { data: urlData } = supabase.storage.from("report-attachments").getPublicUrl(path);
-
         attachmentData = {
-          attachment_url: urlData.publicUrl,
+          attachment_url: path,
           attachment_path: path,
           attachment_name: file.name,
           attachment_size: file.size,

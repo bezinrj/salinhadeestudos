@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,7 +37,25 @@ export default function AdminAlertsTab() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [sortBy, setSortBy] = useState<"date" | "reports">("date");
   const [selectedReport, setSelectedReport] = useState<any>(null);
+  const [signedAttachmentUrl, setSignedAttachmentUrl] = useState<string | null>(null);
   const [adminNote, setAdminNote] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    setSignedAttachmentUrl(null);
+    const path = selectedReport?.attachment_path || selectedReport?.attachment_url;
+    if (selectedReport && path && !selectedReport.attachment_deleted_at) {
+      supabase.storage
+        .from("report-attachments")
+        .createSignedUrl(path, 60 * 10)
+        .then(({ data }) => {
+          if (active && data?.signedUrl) setSignedAttachmentUrl(data.signedUrl);
+        });
+    }
+    return () => {
+      active = false;
+    };
+  }, [selectedReport]);
   const [newStatus, setNewStatus] = useState("");
 
   const { data: reports = [], isLoading } = useQuery({
@@ -307,13 +325,19 @@ export default function AdminAlertsTab() {
                   </p>
                   {!selectedReport.attachment_deleted_at ? (
                     <div className="space-y-2">
-                      <img src={selectedReport.attachment_url} alt="Anexo" className="rounded-lg max-h-60 object-contain border border-border" />
+                      {signedAttachmentUrl ? (
+                        <img src={signedAttachmentUrl} alt="Anexo" className="rounded-lg max-h-60 object-contain border border-border" />
+                      ) : (
+                        <div className="rounded-lg h-40 bg-secondary/50 animate-pulse" />
+                      )}
                       <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
                         <span>{selectedReport.attachment_name}</span>
                         <span>({((selectedReport.attachment_size || 0) / 1024).toFixed(0)} KB)</span>
-                        <a href={selectedReport.attachment_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline flex items-center gap-0.5">
-                          <ExternalLink className="h-3 w-3" /> Abrir
-                        </a>
+                        {signedAttachmentUrl && (
+                          <a href={signedAttachmentUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline flex items-center gap-0.5">
+                            <ExternalLink className="h-3 w-3" /> Abrir
+                          </a>
+                        )}
                       </div>
                       {selectedReport.attachment_expires_at && (
                         <p className="text-[10px] text-yellow-400">
