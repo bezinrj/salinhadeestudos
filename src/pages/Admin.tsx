@@ -1022,6 +1022,8 @@ function WeeklyQuestionsTab() {
   const [editCareer, setEditCareer] = useState("Delegado");
   const [editDiscipline, setEditDiscipline] = useState("");
   const [editSubject, setEditSubject] = useState("");
+  const [editExtraDisciplines, setEditExtraDisciplines] = useState<string[]>([]);
+  const [editExtraSubjects, setEditExtraSubjects] = useState<string[]>([]);
   const [editStatement, setEditStatement] = useState("");
   
   const [editMirrorText, setEditMirrorText] = useState("");
