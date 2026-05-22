@@ -625,6 +625,7 @@ export type Database = {
           id: string
           likes_count: number | null
           name: string | null
+          phone: string | null
           price_id: string | null
           rank_position: number | null
           streak: number | null
@@ -647,6 +648,7 @@ export type Database = {
           id: string
           likes_count?: number | null
           name?: string | null
+          phone?: string | null
           price_id?: string | null
           rank_position?: number | null
           streak?: number | null
@@ -669,6 +671,7 @@ export type Database = {
           id?: string
           likes_count?: number | null
           name?: string | null
+          phone?: string | null
           price_id?: string | null
           rank_position?: number | null
           streak?: number | null
