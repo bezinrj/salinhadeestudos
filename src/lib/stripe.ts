@@ -3,7 +3,7 @@ export const STRIPE_PLANS = {
   monthly: {
     id: "monthly",
     name: "Mensal",
-    priceId: "price_1TBMTPLy0axdgWvJblk2ZJjZ",
+    priceId: "price_1TZtxTQ4whpSK2DUbG7Rt4CO",
     billingCycle: "monthly" as const,
     priceMonthly: 49.90,
     priceTotal: 49.90,
