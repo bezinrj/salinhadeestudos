@@ -65,6 +65,8 @@ export default function Discursivas() {
         career: q.career,
         discipline: q.discipline,
         subject: q.subject || null,
+        disciplines: Array.isArray(q.disciplines) ? q.disciplines : [],
+        subjects: Array.isArray(q.subjects) ? q.subjects : [],
         statement: q.statement,
         difficulty: q.difficulty,
         participants: countMap[q.id]?.size || 0,
@@ -118,8 +120,8 @@ export default function Discursivas() {
       if (!matchesPublicId && !matchesTitle) return false;
     }
     if (career !== "Todas" && q.career !== career) return false;
-    if (selectedDiscipline !== "Todas" && q.discipline !== selectedDiscipline) return false;
-    if (selectedSubject !== "Todas" && q.subject !== selectedSubject) return false;
+    if (selectedDiscipline !== "Todas" && q.discipline !== selectedDiscipline && !(q.disciplines || []).includes(selectedDiscipline)) return false;
+    if (selectedSubject !== "Todas" && q.subject !== selectedSubject && !(q.subjects || []).includes(selectedSubject)) return false;
     if (selectedBanca !== "Todas" && q.banca !== selectedBanca) return false;
     if (selectedYear !== "Todos" && String(q.year) !== selectedYear) return false;
     const isPremium = q.isPremium || q.isWeekly;

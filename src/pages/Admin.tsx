@@ -27,6 +27,7 @@ import { evaluateAnswer } from "@/data/mockData";
 import { useDisciplines } from "@/hooks/useDisciplines";
 import { cn } from "@/lib/utils";
 import { SubjectTreeSelect } from "@/components/SubjectTreeSelect";
+import { QuestionTagsEditor } from "@/components/QuestionTagsEditor";
 import ModerationRequestsTab from "@/components/ModerationRequestsTab";
 import AdminAlertsTab from "@/components/AdminAlertsTab";
 import MateriasTab from "@/components/MateriasTab";
@@ -1002,6 +1003,8 @@ function WeeklyQuestionsTab() {
   const [career, setCareer] = useState("Delegado");
   const [discipline, setDiscipline] = useState("");
   const [subject, setSubject] = useState("");
+  const [extraDisciplines, setExtraDisciplines] = useState<string[]>([]);
+  const [extraSubjects, setExtraSubjects] = useState<string[]>([]);
   const [statement, setStatement] = useState("");
   
   const [testAnswer, setTestAnswer] = useState("");
@@ -1020,6 +1023,8 @@ function WeeklyQuestionsTab() {
   const [editCareer, setEditCareer] = useState("Delegado");
   const [editDiscipline, setEditDiscipline] = useState("");
   const [editSubject, setEditSubject] = useState("");
+  const [editExtraDisciplines, setEditExtraDisciplines] = useState<string[]>([]);
+  const [editExtraSubjects, setEditExtraSubjects] = useState<string[]>([]);
   const [editStatement, setEditStatement] = useState("");
   
   const [editMirrorText, setEditMirrorText] = useState("");
@@ -1031,7 +1036,7 @@ function WeeklyQuestionsTab() {
   const { data: questions } = useQuery({
     queryKey: ["admin-weekly-questions"],
     queryFn: async () => {
-      const { data } = await supabase.from("weekly_questions").select("id, public_id, title, career, discipline, subject, statement, mirror_text, ideal_answer, banca, year, is_active, is_weekly, is_premium, created_at, deadline").order("created_at", { ascending: false });
+      const { data } = await supabase.from("weekly_questions").select("id, public_id, title, career, discipline, subject, disciplines, subjects, statement, mirror_text, ideal_answer, banca, year, is_active, is_weekly, is_premium, created_at, deadline").order("created_at", { ascending: false });
       return data || [];
     },
   });
@@ -1070,6 +1075,8 @@ function WeeklyQuestionsTab() {
           ideal_answer: idealAnswer.trim() || null,
           banca, subject: subject.trim() || null,
           year: parseInt(year),
+          disciplines: extraDisciplines,
+          subjects: extraSubjects,
         });
         if (error) throw error;
         await supabase.from("weekly_waitlist").update({ notified: false }).eq("notified", true);
@@ -1082,6 +1089,8 @@ function WeeklyQuestionsTab() {
           ideal_answer: idealAnswer.trim() || null,
           banca, subject: subject.trim() || null,
           year: parseInt(year),
+          disciplines: extraDisciplines,
+          subjects: extraSubjects,
         });
         if (error) throw error;
       }
@@ -1089,7 +1098,7 @@ function WeeklyQuestionsTab() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-weekly-questions"] });
       queryClient.invalidateQueries({ queryKey: ["discursivas-questions"] });
-      setTitle(""); setCareer("Delegado"); setDiscipline(""); setSubject(""); setStatement(""); setTestResult(null); setTestAnswer(""); setShowTest(false); setIsWeekly(true); setIsPremiumQ(false); setMirrorText(""); setIdealAnswer(""); setBanca("INÉDITA"); setYear(String(new Date().getFullYear()));
+      setTitle(""); setCareer("Delegado"); setDiscipline(""); setSubject(""); setExtraDisciplines([]); setExtraSubjects([]); setStatement(""); setTestResult(null); setTestAnswer(""); setShowTest(false); setIsWeekly(true); setIsPremiumQ(false); setMirrorText(""); setIdealAnswer(""); setBanca("INÉDITA"); setYear(String(new Date().getFullYear()));
       toast({ title: isWeekly ? "Questão semanal publicada!" : "Questão discursiva publicada!", description: isWeekly ? "Os usuários na lista de espera serão notificados." : undefined });
     },
     onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
@@ -1148,6 +1157,8 @@ function WeeklyQuestionsTab() {
           ideal_answer: editIdealAnswer.trim() || null,
           banca: editBanca,
           year: parseInt(editYear),
+          disciplines: editExtraDisciplines,
+          subjects: editExtraSubjects,
         })
         .eq("id", editingQuestion.id);
       if (error) throw error;
@@ -1191,6 +1202,8 @@ function WeeklyQuestionsTab() {
     setEditCareer(q.career);
     setEditDiscipline(q.discipline);
     setEditSubject(q.subject || "");
+    setEditExtraDisciplines(Array.isArray(q.disciplines) ? q.disciplines : []);
+    setEditExtraSubjects(Array.isArray(q.subjects) ? q.subjects : []);
     setEditStatement(q.statement);
     
     setEditIsWeekly(q.is_weekly);
@@ -1281,6 +1294,11 @@ function WeeklyQuestionsTab() {
               </SelectContent>
             </Select>
           </div>
+          <QuestionTagsEditor
+            disciplines={extraDisciplines}
+            subjects={extraSubjects}
+            onChange={(d, s) => { setExtraDisciplines(d); setExtraSubjects(s); }}
+          />
           <Textarea placeholder="Enunciado completo da questão..." value={statement} onChange={(e) => setStatement(e.target.value)} rows={6} />
           
           <div className="space-y-2">
@@ -1511,6 +1529,11 @@ function WeeklyQuestionsTab() {
                   </SelectContent>
                 </Select>
               </div>
+              <QuestionTagsEditor
+                disciplines={editExtraDisciplines}
+                subjects={editExtraSubjects}
+                onChange={(d, s) => { setEditExtraDisciplines(d); setEditExtraSubjects(s); }}
+              />
               <Textarea placeholder="Enunciado" value={editStatement} onChange={(e) => setEditStatement(e.target.value)} rows={5} />
               <div className="space-y-2">
                 <label className="text-sm font-medium">Barema / Critérios de Correção (texto livre)</label>
