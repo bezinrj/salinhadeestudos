@@ -177,6 +177,7 @@ export default function QuestionDetail() {
         baremaText: question.mirrorText || undefined,
         gabarito: question.idealAnswer || undefined,
         statement: question.statement || undefined,
+        questionId: question.id,
       };
 
       if (isDirect) {
