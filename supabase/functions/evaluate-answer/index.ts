@@ -18,11 +18,11 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const supabase = createClient(
+    const supabaseAuth = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_ANON_KEY") ?? "",
     );
-    const { data: userData, error: userErr } = await supabase.auth.getUser(
+    const { data: userData, error: userErr } = await supabaseAuth.auth.getUser(
       authHeader.replace("Bearer ", ""),
     );
     if (userErr || !userData?.user) {
@@ -31,11 +31,12 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    const userId = userData.user.id;
 
-    const { answer, baremaText, gabarito, statement, imageBase64, mimeType, directCorrection } = await req.json();
+    const { answer, baremaText, gabarito, statement, imageBase64, mimeType, directCorrection, questionId } = await req.json();
 
     const hasImage = !!imageBase64 && directCorrection;
-    
+
     if (!answer && !hasImage) {
       return new Response(JSON.stringify({ error: "answer or image is required" }), {
         status: 400,
@@ -48,6 +49,64 @@ serve(async (req) => {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Server-side subscription / free-tier paywall enforcement
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+    );
+
+    const now = new Date();
+    const { data: profile } = await supabaseAdmin
+      .from("profiles")
+      .select("subscription_tier, subscription_end, banco_geral_expires_at")
+      .eq("id", userId)
+      .maybeSingle();
+
+    const isSubscribed = !!profile && (
+      (!!profile.subscription_tier && (!profile.subscription_end || new Date(profile.subscription_end) > now)) ||
+      (!!profile.banco_geral_expires_at && new Date(profile.banco_geral_expires_at) > now)
+    );
+
+    let isPremiumQuestion = false;
+    let isWeeklyQuestion = false;
+    if (questionId) {
+      const { data: q } = await supabaseAdmin
+        .from("weekly_questions")
+        .select("is_premium, is_weekly")
+        .eq("id", questionId)
+        .maybeSingle();
+      if (q) {
+        isPremiumQuestion = !!q.is_premium || !!q.is_weekly;
+        isWeeklyQuestion = !!q.is_weekly;
+      }
+    }
+
+    const FREE_MONTHLY_LIMIT = 3;
+    let shouldLogFreeUsage = false;
+    if (!isSubscribed && isPremiumQuestion && !isWeeklyQuestion && questionId) {
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      const { data: usage } = await supabaseAdmin
+        .from("free_plan_usage")
+        .select("question_id")
+        .eq("user_id", userId)
+        .gte("used_at", monthStart);
+      const used = (usage || []) as Array<{ question_id: string }>;
+      const alreadyUsedThis = used.some((u) => u.question_id === questionId);
+      if (!alreadyUsedThis && used.length >= FREE_MONTHLY_LIMIT) {
+        return new Response(
+          JSON.stringify({ error: "Limite gratuito mensal atingido. Assine para continuar." }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+      shouldLogFreeUsage = !alreadyUsedThis;
+    } else if (!isSubscribed && isPremiumQuestion && !isWeeklyQuestion && !questionId) {
+      // Premium content requested without questionId → cannot validate quota safely
+      return new Response(
+        JSON.stringify({ error: "questionId obrigatório para conteúdo premium" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
