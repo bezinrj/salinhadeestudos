@@ -177,6 +177,7 @@ export default function QuestionDetail() {
         baremaText: question.mirrorText || undefined,
         gabarito: question.idealAnswer || undefined,
         statement: question.statement || undefined,
+        questionId: question.id,
       };
 
       if (isDirect) {
@@ -215,12 +216,8 @@ export default function QuestionDetail() {
     // Fetch current profile data for badge checks
     const { data: currentProfile } = await supabase.from("profiles").select("total_essays, weekly_hours, streak, rank_position, subscription_tier").eq("id", user!.id).single();
 
-    // Register free-plan usage (only for free users answering premium non-weekly questions)
+    // Free-plan usage is recorded server-side by the evaluate-answer edge function.
     if (user && !subscribed && isPremium && !question.isWeekly) {
-      await (supabase.from("free_plan_usage" as any) as any).insert({
-        user_id: user.id,
-        question_id: question.id,
-      });
       refetchFreeUsage();
     }
 

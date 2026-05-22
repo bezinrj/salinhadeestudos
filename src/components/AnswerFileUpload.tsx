@@ -96,7 +96,7 @@ export function AnswerFileUpload({
 
       // For PDFs, we need to handle differently - convert first page
       const { data, error } = await supabase.functions.invoke("transcribe-answer", {
-        body: { imageBase64: base64, mimeType: file.type },
+        body: { imageBase64: base64, mimeType: file.type, questionId },
       });
 
       if (error || data?.error) {
