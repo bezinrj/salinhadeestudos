@@ -246,6 +246,20 @@ export default function Cadastro() {
                   />
                 </div>
                 <div className="space-y-2">
+                  <Label htmlFor="reg-phone">WhatsApp</Label>
+                  <Input
+                    id="reg-phone"
+                    type="tel"
+                    inputMode="tel"
+                    placeholder="(11) 91234-5678"
+                    value={phone}
+                    onChange={(e) => setPhone(formatPhone(e.target.value))}
+                    className="bg-secondary border-border"
+                    maxLength={16}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="reg-password">Senha</Label>
                   <Input
                     id="reg-password"
