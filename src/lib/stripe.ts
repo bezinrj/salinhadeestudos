@@ -3,7 +3,7 @@ export const STRIPE_PLANS = {
   monthly: {
     id: "monthly",
     name: "Mensal",
-    priceId: "price_1TBMTPLy0axdgWvJblk2ZJjZ",
+    priceId: "price_1TZtxTQ4whpSK2DUbG7Rt4CO",
     billingCycle: "monthly" as const,
     priceMonthly: 49.90,
     priceTotal: 49.90,
@@ -19,7 +19,7 @@ export const STRIPE_PLANS = {
   quarterly: {
     id: "quarterly",
     name: "Trimestral",
-    priceId: "price_1TBMTpLy0axdgWvJjbmiZ92u",
+    priceId: "price_1TZtyRQ4whpSK2DULWuMkqyY",
     billingCycle: "quarterly" as const,
     priceMonthly: 43.91,
     priceTotal: 131.73,
@@ -33,7 +33,7 @@ export const STRIPE_PLANS = {
   annual: {
     id: "annual",
     name: "Anual",
-    priceId: "price_1TBMUHLy0axdgWvJInHob9Il",
+    priceId: "price_1TZtzSQ4whpSK2DUVFLcsM0g",
     billingCycle: "annual" as const,
     priceMonthly: 33.43,
     priceTotal: 401.21,
