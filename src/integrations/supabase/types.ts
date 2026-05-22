@@ -1944,6 +1944,7 @@ export type Database = {
         }[]
       }
       get_weekly_waitlist_count: { Args: never; Returns: number }
+      has_active_subscription: { Args: { _user_id: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
