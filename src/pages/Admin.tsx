@@ -27,6 +27,7 @@ import { evaluateAnswer } from "@/data/mockData";
 import { useDisciplines } from "@/hooks/useDisciplines";
 import { cn } from "@/lib/utils";
 import { SubjectTreeSelect } from "@/components/SubjectTreeSelect";
+import { QuestionTagsEditor } from "@/components/QuestionTagsEditor";
 import ModerationRequestsTab from "@/components/ModerationRequestsTab";
 import AdminAlertsTab from "@/components/AdminAlertsTab";
 import MateriasTab from "@/components/MateriasTab";
