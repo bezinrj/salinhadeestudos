@@ -65,13 +65,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const fetchProfile = async (userId: string) => {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("id, username, name, bio, avatar_url, target_career, total_score, rank_position, weekly_hours, total_essays, average_grade, streak, likes_count, comment_score, subscription_tier, subscription_end, price_id, active_badge_id, created_at")
-      .eq("id", userId)
-      .single();
+    const [{ data, error }, billingRes] = await Promise.all([
+      supabase
+        .from("profiles")
+        .select("id, username, name, bio, avatar_url, target_career, total_score, rank_position, weekly_hours, total_essays, average_grade, streak, likes_count, comment_score, subscription_tier, active_badge_id, created_at")
+        .eq("id", userId)
+        .single(),
+      supabase.rpc("get_my_billing"),
+    ]);
     if (!error && data) {
-      setProfile(data as Profile);
+      const billing = Array.isArray(billingRes.data) ? billingRes.data[0] : null;
+      setProfile({
+        ...(data as any),
+        subscription_end: billing?.subscription_end ?? null,
+        price_id: billing?.price_id ?? null,
+        banco_geral_expires_at: billing?.banco_geral_expires_at ?? null,
+      } as Profile);
     }
   };
 
