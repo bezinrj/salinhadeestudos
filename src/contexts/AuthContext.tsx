@@ -31,7 +31,7 @@ interface AuthContextType {
   loading: boolean;
   subscribed: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  register: (username: string, email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  register: (username: string, email: string, password: string, phone: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   updateProfile: (updates: Partial<Pick<Profile, "name" | "bio" | "avatar_url" | "target_career" | "username">>) => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -123,11 +123,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { success: true };
   };
 
-  const register = async (username: string, email: string, password: string) => {
+  const register = async (username: string, email: string, password: string, phone: string) => {
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { username } },
+      options: { data: { username, phone } },
     });
     if (error) return { success: false, error: error.message };
     return { success: true };

@@ -25,6 +25,7 @@ export default function Cadastro() {
   const [email, setEmail] = useState(invitedEmail);
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
+  const [phone, setPhone] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { register } = useAuth();
@@ -32,6 +33,14 @@ export default function Cadastro() {
 
   const isPaid = selectedPlan && selectedPlan !== FREE_REF;
   const selectedPlanObj = isPaid ? getPlanByPriceId(selectedPlan) : null;
+
+  const formatPhone = (raw: string) => {
+    const digits = raw.replace(/\D/g, "").slice(0, 11);
+    if (digits.length <= 2) return digits;
+    if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+    if (digits.length <= 10) return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+  };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,8 +53,13 @@ export default function Cadastro() {
       setError("Nome de usuário é obrigatório.");
       return;
     }
+    const phoneDigits = phone.replace(/\D/g, "");
+    if (phoneDigits.length < 10 || phoneDigits.length > 11) {
+      setError("Informe um WhatsApp válido com DDD (10 ou 11 dígitos).");
+      return;
+    }
     setIsLoading(true);
-    const result = await register(username.trim(), email, password);
+    const result = await register(username.trim(), email, password, phoneDigits);
     if (!result.success) {
       setIsLoading(false);
       setError(result.error || "Erro ao criar conta.");
@@ -228,6 +242,20 @@ export default function Cadastro() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="bg-secondary border-border"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="reg-phone">WhatsApp</Label>
+                  <Input
+                    id="reg-phone"
+                    type="tel"
+                    inputMode="tel"
+                    placeholder="(11) 91234-5678"
+                    value={phone}
+                    onChange={(e) => setPhone(formatPhone(e.target.value))}
+                    className="bg-secondary border-border"
+                    maxLength={16}
                     required
                   />
                 </div>
