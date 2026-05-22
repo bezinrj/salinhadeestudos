@@ -1035,7 +1035,7 @@ function WeeklyQuestionsTab() {
   const { data: questions } = useQuery({
     queryKey: ["admin-weekly-questions"],
     queryFn: async () => {
-      const { data } = await supabase.from("weekly_questions").select("id, public_id, title, career, discipline, subject, statement, mirror_text, ideal_answer, banca, year, is_active, is_weekly, is_premium, created_at, deadline").order("created_at", { ascending: false });
+      const { data } = await supabase.from("weekly_questions").select("id, public_id, title, career, discipline, subject, disciplines, subjects, statement, mirror_text, ideal_answer, banca, year, is_active, is_weekly, is_premium, created_at, deadline").order("created_at", { ascending: false });
       return data || [];
     },
   });
