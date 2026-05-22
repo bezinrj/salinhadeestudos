@@ -1529,6 +1529,11 @@ function WeeklyQuestionsTab() {
                   </SelectContent>
                 </Select>
               </div>
+              <QuestionTagsEditor
+                disciplines={editExtraDisciplines}
+                subjects={editExtraSubjects}
+                onChange={(d, s) => { setEditExtraDisciplines(d); setEditExtraSubjects(s); }}
+              />
               <Textarea placeholder="Enunciado" value={editStatement} onChange={(e) => setEditStatement(e.target.value)} rows={5} />
               <div className="space-y-2">
                 <label className="text-sm font-medium">Barema / Critérios de Correção (texto livre)</label>
