@@ -70,6 +70,9 @@ export default function QuestionDetail() {
         subject: (data as any).subject as string | null,
         banca: (data as any).banca as string | null,
         year: (data as any).year as number | null,
+        disciplines: ((data as any).disciplines || []) as string[],
+        subjects: ((data as any).subjects || []) as string[],
+
       };
     },
     enabled: !!id,
