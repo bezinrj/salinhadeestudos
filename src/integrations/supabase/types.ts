@@ -1901,6 +1901,15 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_my_billing: {
+        Args: never
+        Returns: {
+          banco_geral_expires_at: string
+          price_id: string
+          subscription_end: string
+          subscription_tier: string
+        }[]
+      }
       get_turma_ranking_geral: {
         Args: { p_album_id: string }
         Returns: {
