@@ -32,11 +32,6 @@ export function QuestionCard({ question, onDelete }: QuestionCardProps) {
   const { subscribed } = useAuth();
   const isPremium = question.isPremium || question.isWeekly;
 
-  const extraDisciplines = ((question as any).disciplines || []) as string[];
-  const extraSubjects = ((question as any).subjects || []) as string[];
-  const allDisciplines = Array.from(new Set([question.discipline, ...extraDisciplines].filter(Boolean)));
-  const allSubjects = Array.from(new Set([(question as any).subject, ...extraSubjects].filter(Boolean)));
-
   const handleClick = () => {
     if (isPremium && !subscribed) {
       toast.info("Esta questão é exclusiva para assinantes.", {
@@ -73,22 +68,10 @@ export function QuestionCard({ question, onDelete }: QuestionCardProps) {
       <CardContent className="pt-0">
         <p className="text-xs text-muted-foreground mb-3">
           <span className="font-mono text-muted-foreground/60">{(question as any).publicId ? `Q-${String((question as any).publicId).padStart(3, '0')}` : `#${question.id.slice(0, 8)}`}</span>
+          <span className="mx-1">·</span>
+          {question.discipline}
           {(question as any).banca && <span className="ml-1">· {(question as any).banca}</span>}
         </p>
-        {(allDisciplines.length > 0 || allSubjects.length > 0) && (
-          <div className="flex flex-wrap gap-1.5 mb-3">
-            {allDisciplines.map((d) => (
-              <Badge key={`d-${d}`} variant="outline" className="text-[10px] bg-primary/10 text-primary border-primary/30">
-                {d}
-              </Badge>
-            ))}
-            {allSubjects.map((s) => (
-              <Badge key={`s-${s}`} variant="outline" className="text-[10px] bg-purple/10 text-purple border-purple/30">
-                {s}
-              </Badge>
-            ))}
-          </div>
-        )}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1 text-xs text-muted-foreground">
             <Users className="h-3.5 w-3.5" />

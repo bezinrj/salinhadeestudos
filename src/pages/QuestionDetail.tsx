@@ -70,6 +70,9 @@ export default function QuestionDetail() {
         subject: (data as any).subject as string | null,
         banca: (data as any).banca as string | null,
         year: (data as any).year as number | null,
+        disciplines: ((data as any).disciplines || []) as string[],
+        subjects: ((data as any).subjects || []) as string[],
+
       };
     },
     enabled: !!id,
@@ -342,6 +345,16 @@ export default function QuestionDetail() {
                 {question.subject}
               </Badge>
             )}
+            {((question as any).disciplines || []).filter((d: string) => d && d !== question.discipline).map((d: string) => (
+              <Badge key={`d-${d}`} variant="outline" className="text-[10px] bg-primary/10 text-primary border-primary/30">
+                {d}
+              </Badge>
+            ))}
+            {((question as any).subjects || []).filter((s: string) => s && s !== question.subject).map((s: string) => (
+              <Badge key={`s-${s}`} variant="outline" className="text-[10px] bg-blue-500/10 text-blue-400 border-blue-500/20">
+                {s}
+              </Badge>
+            ))}
             {question.isWeekly && <Badge className="bg-gold/10 text-gold border-gold/20 text-[10px]">🏆 Questão da Semana</Badge>}
           </div>
           <CardTitle className="font-display text-xl">{question.title}</CardTitle>
