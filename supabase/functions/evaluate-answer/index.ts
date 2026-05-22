@@ -412,6 +412,13 @@ IMPORTANTE:
       result.handwritingLevel = correction.handwritingLevel || null;
     }
 
+    if (shouldLogFreeUsage && questionId) {
+      await supabaseAdmin.from("free_plan_usage").insert({
+        user_id: userId,
+        question_id: questionId,
+      });
+    }
+
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
