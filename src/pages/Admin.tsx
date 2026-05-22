@@ -1074,6 +1074,8 @@ function WeeklyQuestionsTab() {
           ideal_answer: idealAnswer.trim() || null,
           banca, subject: subject.trim() || null,
           year: parseInt(year),
+          disciplines: extraDisciplines,
+          subjects: extraSubjects,
         });
         if (error) throw error;
         await supabase.from("weekly_waitlist").update({ notified: false }).eq("notified", true);
@@ -1086,6 +1088,8 @@ function WeeklyQuestionsTab() {
           ideal_answer: idealAnswer.trim() || null,
           banca, subject: subject.trim() || null,
           year: parseInt(year),
+          disciplines: extraDisciplines,
+          subjects: extraSubjects,
         });
         if (error) throw error;
       }
@@ -1093,7 +1097,7 @@ function WeeklyQuestionsTab() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-weekly-questions"] });
       queryClient.invalidateQueries({ queryKey: ["discursivas-questions"] });
-      setTitle(""); setCareer("Delegado"); setDiscipline(""); setSubject(""); setStatement(""); setTestResult(null); setTestAnswer(""); setShowTest(false); setIsWeekly(true); setIsPremiumQ(false); setMirrorText(""); setIdealAnswer(""); setBanca("INÉDITA"); setYear(String(new Date().getFullYear()));
+      setTitle(""); setCareer("Delegado"); setDiscipline(""); setSubject(""); setExtraDisciplines([]); setExtraSubjects([]); setStatement(""); setTestResult(null); setTestAnswer(""); setShowTest(false); setIsWeekly(true); setIsPremiumQ(false); setMirrorText(""); setIdealAnswer(""); setBanca("INÉDITA"); setYear(String(new Date().getFullYear()));
       toast({ title: isWeekly ? "Questão semanal publicada!" : "Questão discursiva publicada!", description: isWeekly ? "Os usuários na lista de espera serão notificados." : undefined });
     },
     onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
