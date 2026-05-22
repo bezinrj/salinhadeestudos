@@ -31,7 +31,7 @@ interface AuthContextType {
   loading: boolean;
   subscribed: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  register: (username: string, email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  register: (username: string, email: string, password: string, phone: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   updateProfile: (updates: Partial<Pick<Profile, "name" | "bio" | "avatar_url" | "target_career" | "username">>) => Promise<void>;
   refreshProfile: () => Promise<void>;
