@@ -19,7 +19,7 @@ export const STRIPE_PLANS = {
   quarterly: {
     id: "quarterly",
     name: "Trimestral",
-    priceId: "price_1TBMTpLy0axdgWvJjbmiZ92u",
+    priceId: "price_1TZtyRQ4whpSK2DULWuMkqyY",
     billingCycle: "quarterly" as const,
     priceMonthly: 43.91,
     priceTotal: 131.73,
