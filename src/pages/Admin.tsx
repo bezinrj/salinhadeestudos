@@ -1201,6 +1201,8 @@ function WeeklyQuestionsTab() {
     setEditCareer(q.career);
     setEditDiscipline(q.discipline);
     setEditSubject(q.subject || "");
+    setEditExtraDisciplines(Array.isArray(q.disciplines) ? q.disciplines : []);
+    setEditExtraSubjects(Array.isArray(q.subjects) ? q.subjects : []);
     setEditStatement(q.statement);
     
     setEditIsWeekly(q.is_weekly);
