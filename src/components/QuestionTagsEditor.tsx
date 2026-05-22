@@ -14,17 +14,25 @@ interface QuestionTagsEditorProps {
 
 /**
  * Permite adicionar tags extras de Matéria e Assunto à questão.
- * As tags extras são usadas para que a questão apareça em filtros
- * adicionais na página de Discursivas.
+ * Cada seção tem seu próprio estado interno para evitar conflito
+ * entre o picker de "adicionar matéria" e o de "matéria do assunto".
  */
 export function QuestionTagsEditor({ disciplines, subjects, onChange }: QuestionTagsEditorProps) {
   const { disciplines: allDisciplines } = useDisciplines();
-  const [pickDiscipline, setPickDiscipline] = useState("");
+
+  // Estados independentes para cada seção
+  const [pickDisciplineToAdd, setPickDisciplineToAdd] = useState("");
+  const [subjectDiscipline, setSubjectDiscipline] = useState("");
   const [pickSubject, setPickSubject] = useState("");
 
-  const addDiscipline = (d: string) => {
-    if (!d || disciplines.includes(d)) return;
+  const addDiscipline = () => {
+    const d = pickDisciplineToAdd;
+    if (!d || disciplines.includes(d)) {
+      setPickDisciplineToAdd("");
+      return;
+    }
     onChange([...disciplines, d], subjects);
+    setPickDisciplineToAdd("");
   };
   const removeDiscipline = (d: string) => {
     onChange(disciplines.filter((x) => x !== d), subjects);
@@ -65,18 +73,23 @@ export function QuestionTagsEditor({ disciplines, subjects, onChange }: Question
           ))}
         </div>
         <div className="flex gap-2">
-          <Select value={pickDiscipline} onValueChange={(v) => { addDiscipline(v); setPickDiscipline(""); }}>
-            <SelectTrigger className="h-9">
-              <SelectValue placeholder="Adicionar matéria..." />
-            </SelectTrigger>
-            <SelectContent>
-              {allDisciplines
-                .filter((d) => !disciplines.includes(d))
-                .map((d) => (
-                  <SelectItem key={d} value={d}>{d}</SelectItem>
-                ))}
-            </SelectContent>
-          </Select>
+          <div className="flex-1">
+            <Select value={pickDisciplineToAdd} onValueChange={setPickDisciplineToAdd}>
+              <SelectTrigger className="h-9">
+                <SelectValue placeholder="Selecionar matéria..." />
+              </SelectTrigger>
+              <SelectContent>
+                {allDisciplines
+                  .filter((d) => !disciplines.includes(d))
+                  .map((d) => (
+                    <SelectItem key={d} value={d}>{d}</SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <Button type="button" size="sm" onClick={addDiscipline} disabled={!pickDisciplineToAdd}>
+            <Plus className="h-4 w-4" />
+          </Button>
         </div>
       </div>
 
@@ -103,7 +116,13 @@ export function QuestionTagsEditor({ disciplines, subjects, onChange }: Question
         </div>
         <div className="flex gap-2">
           <div className="flex-1">
-            <Select value={pickDiscipline || ""} onValueChange={setPickDiscipline}>
+            <Select
+              value={subjectDiscipline}
+              onValueChange={(v) => {
+                setSubjectDiscipline(v);
+                setPickSubject("");
+              }}
+            >
               <SelectTrigger className="h-9">
                 <SelectValue placeholder="Matéria do assunto..." />
               </SelectTrigger>
@@ -116,11 +135,11 @@ export function QuestionTagsEditor({ disciplines, subjects, onChange }: Question
           </div>
           <div className="flex-1">
             <SubjectTreeSelect
-              discipline={pickDiscipline}
+              discipline={subjectDiscipline}
               value={pickSubject || "Todas"}
               onValueChange={(v) => setPickSubject(v === "Todas" ? "" : v)}
-              disabled={!pickDiscipline}
-              placeholder={pickDiscipline ? "Selecione um assunto" : "Selecione matéria"}
+              disabled={!subjectDiscipline}
+              placeholder={subjectDiscipline ? "Selecione um assunto" : "Selecione matéria"}
             />
           </div>
           <Button type="button" size="sm" onClick={addSubject} disabled={!pickSubject}>
