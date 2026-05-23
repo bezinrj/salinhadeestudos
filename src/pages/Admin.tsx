@@ -537,17 +537,17 @@ function UsersTab() {
             variant="outline"
             className="gap-1.5"
             onClick={() => {
-              const rows = [["Nome", "Username", "Email", "WhatsApp", "Plano", "Cadastro"]];
+              const rows = [["Nome", "Email", "Telefone", "Plano atual", "Data de cadastro", "Último login"]];
               (users || []).forEach((u: any) => {
-                const wpp = contacts?.get(u.id) || "";
-                if (!wpp) return; // só leads com whatsapp
+                const phone = contacts?.get(u.id) || "";
+                const lastSeen = getLastSeen(u.id);
                 rows.push([
                   u.name || "",
-                  u.username || "",
                   (userEmails?.get(u.id) as string) || "",
-                  wpp,
+                  phone,
                   getAccessType(u.id, u),
                   u.created_at ? new Date(u.created_at).toLocaleDateString("pt-BR") : "",
+                  lastSeen ? new Date(lastSeen).toLocaleString("pt-BR") : "",
                 ]);
               });
               const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
