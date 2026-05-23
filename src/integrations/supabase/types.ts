@@ -1913,6 +1913,7 @@ export type Database = {
           subscription_tier: string
         }[]
       }
+      get_my_phone: { Args: never; Returns: string }
       get_turma_ranking_geral: {
         Args: { p_album_id: string }
         Returns: {
