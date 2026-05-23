@@ -536,28 +536,74 @@ function UsersTab() {
             size="sm"
             variant="outline"
             className="gap-1.5"
-            onClick={() => {
-              const rows = [["Nome", "Email", "Telefone", "Plano atual", "Data de cadastro", "Último login"]];
-              (users || []).forEach((u: any) => {
-                const phone = contacts?.get(u.id) || "";
+            onClick={async () => {
+              const { default: jsPDF } = await import("jspdf");
+              const { default: autoTable } = await import("jspdf-autotable");
+              const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
+              const now = new Date();
+              const dateStr = now.toLocaleDateString("pt-BR");
+              const timeStr = now.toLocaleTimeString("pt-BR");
+
+              doc.setFont("helvetica", "bold");
+              doc.setFontSize(16);
+              doc.text("Relatório de Leads", 40, 40);
+              doc.setFont("helvetica", "normal");
+              doc.setFontSize(10);
+              doc.setTextColor(120);
+              doc.text(`Gerado em ${dateStr} às ${timeStr} • Total: ${(users || []).length} usuários`, 40, 58);
+              doc.setTextColor(0);
+
+              const body = (users || []).map((u: any) => {
                 const lastSeen = getLastSeen(u.id);
-                rows.push([
-                  u.name || "",
-                  (userEmails?.get(u.id) as string) || "",
-                  phone,
+                return [
+                  u.name || "—",
+                  (userEmails?.get(u.id) as string) || "—",
+                  contacts?.get(u.id) || "—",
                   getAccessType(u.id, u),
-                  u.created_at ? new Date(u.created_at).toLocaleDateString("pt-BR") : "",
-                  lastSeen ? new Date(lastSeen).toLocaleString("pt-BR") : "",
-                ]);
+                  u.created_at ? new Date(u.created_at).toLocaleDateString("pt-BR") : "—",
+                  lastSeen ? new Date(lastSeen).toLocaleString("pt-BR") : "—",
+                ];
               });
-              const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(";")).join("\r\n");
-              const blob = new Blob(["\ufeff" + "sep=;\r\n" + csv], { type: "text/csv;charset=utf-8;" });
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement("a");
-              a.href = url;
-              a.download = `leads-${new Date().toISOString().slice(0, 10)}.csv`;
-              a.click();
-              URL.revokeObjectURL(url);
+
+              autoTable(doc, {
+                startY: 75,
+                head: [["Nome", "Email", "Telefone", "Plano", "Cadastro", "Último login"]],
+                body,
+                styles: { font: "helvetica", fontSize: 9, cellPadding: 5, overflow: "linebreak" },
+                headStyles: { fillColor: [30, 30, 30], textColor: 255, fontStyle: "bold" },
+                alternateRowStyles: { fillColor: [245, 245, 247] },
+                columnStyles: {
+                  0: { cellWidth: 130 },
+                  1: { cellWidth: 200 },
+                  2: { cellWidth: 95 },
+                  3: { cellWidth: 70, halign: "center" },
+                  4: { cellWidth: 75, halign: "center" },
+                  5: { cellWidth: 110, halign: "center" },
+                },
+                didParseCell: (data) => {
+                  if (data.section === "body" && data.column.index === 3) {
+                    const v = String(data.cell.raw).toLowerCase();
+                    if (v === "premium") data.cell.styles.textColor = [201, 168, 76];
+                    else if (v === "cortesia") data.cell.styles.textColor = [79, 70, 229];
+                    else data.cell.styles.textColor = [100, 100, 100];
+                    data.cell.styles.fontStyle = "bold";
+                  }
+                },
+                didDrawPage: (data) => {
+                  const pageCount = doc.getNumberOfPages();
+                  const pageSize = doc.internal.pageSize;
+                  doc.setFontSize(8);
+                  doc.setTextColor(150);
+                  doc.text(
+                    `Página ${data.pageNumber} de ${pageCount}`,
+                    pageSize.getWidth() - 40,
+                    pageSize.getHeight() - 20,
+                    { align: "right" }
+                  );
+                },
+              });
+
+              doc.save(`leads-${now.toISOString().slice(0, 10)}.pdf`);
             }}
           >
             <Download className="h-4 w-4" />Exportar leads
