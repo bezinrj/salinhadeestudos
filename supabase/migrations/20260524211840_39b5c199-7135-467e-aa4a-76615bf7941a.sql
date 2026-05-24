@@ -1,0 +1,1 @@
+REVOKE SELECT (phone) ON public.profiles FROM anon, authenticated;
