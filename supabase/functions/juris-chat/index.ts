@@ -67,7 +67,6 @@ serve(async (req) => {
       .from("juris_julgados")
       .select("*")
       .eq("id", julgadoId)
-      .eq("published", true)
       .maybeSingle();
     if (jErr || !julgado) {
       return new Response(JSON.stringify({ error: "Julgado não encontrado." }), {
