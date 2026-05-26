@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -7,11 +7,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { ArrowLeft, Sparkles, Loader2, Save, Trash2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ArrowLeft, Sparkles, Loader2, Save, Trash2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useIsModerator } from "@/hooks/useIsModerator";
 import { EMPTY_JULGADO, type JurisJulgado } from "@/types/juris";
+import { useJurisMaterias, useJurisAssuntos, useInvalidateTaxonomy } from "@/hooks/useJurisTaxonomy";
+import { JurisTaxonomyManager } from "@/components/juris/JurisTaxonomyManager";
 
 type Form = Omit<JurisJulgado, "id" | "created_at" | "updated_at" | "created_by"> & { published: boolean };
 
@@ -143,7 +146,8 @@ export default function JurisAdmin() {
             <div><Label className="text-xs">Relator</Label><Input value={form.relator} onChange={(e) => set("relator", e.target.value)} /></div>
             <div><Label className="text-xs">Data</Label><Input value={form.data} onChange={(e) => set("data", e.target.value)} /></div>
             <div><Label className="text-xs">Informativo</Label><Input value={form.info} onChange={(e) => set("info", e.target.value)} /></div>
-            <div className="md:col-span-2"><Label className="text-xs">Área do Direito</Label><Input value={form.area} onChange={(e) => set("area", e.target.value)} /></div>
+            <MateriaPicker value={form.area} onChange={(v) => set("area", v)} />
+            <AssuntoPicker materia={form.area} value={form.assunto} onChange={(v) => set("assunto", v)} />
           </div>
 
           <div className="border-t border-border pt-4">
@@ -190,6 +194,110 @@ export default function JurisAdmin() {
           </div>
         </CardContent>
       </Card>
+
+      {!editing && (
+        <div className="mt-6">
+          <JurisTaxonomyManager />
+        </div>
+      )}
     </div>
   );
 }
+
+function MateriaPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const { data: materias = [] } = useJurisMaterias();
+  const invalidate = useInvalidateTaxonomy();
+  const [adding, setAdding] = useState(false);
+  const [novo, setNovo] = useState("");
+  const options = useMemo(() => {
+    const set = new Set(materias.map((m) => m.nome));
+    if (value) set.add(value);
+    return Array.from(set).sort();
+  }, [materias, value]);
+
+  async function addAndSelect() {
+    const nome = novo.trim();
+    if (!nome) return;
+    const { error } = await supabase.from("juris_materias" as any).insert({ nome });
+    if (error && !error.message.includes("duplicate")) { toast.error(error.message); return; }
+    invalidate();
+    onChange(nome);
+    setNovo(""); setAdding(false);
+    toast.success("Matéria adicionada");
+  }
+
+  return (
+    <div>
+      <Label className="text-xs">Matéria</Label>
+      {adding ? (
+        <div className="flex gap-2">
+          <Input autoFocus value={novo} onChange={(e) => setNovo(e.target.value)} placeholder="Nova matéria" onKeyDown={(e) => e.key === "Enter" && addAndSelect()} />
+          <Button type="button" size="icon" onClick={addAndSelect}><Plus className="h-4 w-4" /></Button>
+          <Button type="button" size="icon" variant="ghost" onClick={() => setAdding(false)}>×</Button>
+        </div>
+      ) : (
+        <div className="flex gap-2">
+          <Select value={value || undefined} onValueChange={onChange}>
+            <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+            <SelectContent>
+              {options.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Button type="button" size="icon" variant="outline" onClick={() => setAdding(true)} title="Nova matéria"><Plus className="h-4 w-4" /></Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AssuntoPicker({ materia, value, onChange }: { materia: string; value: string; onChange: (v: string) => void }) {
+  const { data: materias = [] } = useJurisMaterias();
+  const { data: assuntos = [] } = useJurisAssuntos();
+  const invalidate = useInvalidateTaxonomy();
+  const [adding, setAdding] = useState(false);
+  const [novo, setNovo] = useState("");
+
+  const materiaId = materias.find((m) => m.nome === materia)?.id;
+  const lista = assuntos.filter((a) => a.materia_id === materiaId).map((a) => a.nome);
+  const options = useMemo(() => {
+    const set = new Set(lista);
+    if (value) set.add(value);
+    return Array.from(set).sort();
+  }, [lista, value]);
+
+  async function addAndSelect() {
+    const nome = novo.trim();
+    if (!nome) return;
+    if (!materiaId) { toast.error("Escolha a matéria primeiro"); return; }
+    const { error } = await supabase.from("juris_assuntos" as any).insert({ nome, materia_id: materiaId });
+    if (error && !error.message.includes("duplicate")) { toast.error(error.message); return; }
+    invalidate();
+    onChange(nome);
+    setNovo(""); setAdding(false);
+    toast.success("Assunto adicionado");
+  }
+
+  return (
+    <div>
+      <Label className="text-xs">Assunto</Label>
+      {adding ? (
+        <div className="flex gap-2">
+          <Input autoFocus value={novo} onChange={(e) => setNovo(e.target.value)} placeholder="Novo assunto" onKeyDown={(e) => e.key === "Enter" && addAndSelect()} />
+          <Button type="button" size="icon" onClick={addAndSelect}><Plus className="h-4 w-4" /></Button>
+          <Button type="button" size="icon" variant="ghost" onClick={() => setAdding(false)}>×</Button>
+        </div>
+      ) : (
+        <div className="flex gap-2">
+          <Select value={value || undefined} onValueChange={onChange} disabled={!materia}>
+            <SelectTrigger><SelectValue placeholder={materia ? "Selecione..." : "Escolha a matéria"} /></SelectTrigger>
+            <SelectContent>
+              {options.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Button type="button" size="icon" variant="outline" onClick={() => setAdding(true)} disabled={!materia} title="Novo assunto"><Plus className="h-4 w-4" /></Button>
+        </div>
+      )}
+    </div>
+  );
+}
+

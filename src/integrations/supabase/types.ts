@@ -512,6 +512,35 @@ export type Database = {
         }
         Relationships: []
       }
+      juris_assuntos: {
+        Row: {
+          created_at: string
+          id: string
+          materia_id: string
+          nome: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          materia_id: string
+          nome: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          materia_id?: string
+          nome?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "juris_assuntos_materia_id_fkey"
+            columns: ["materia_id"]
+            isOneToOne: false
+            referencedRelation: "juris_materias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       juris_chat_usage: {
         Row: {
           count: number
@@ -544,6 +573,7 @@ export type Database = {
           abertura: string | null
           antes: string | null
           area: string | null
+          assunto: string | null
           conceitual: string | null
           conclusoes: string | null
           created_at: string
@@ -572,6 +602,7 @@ export type Database = {
           abertura?: string | null
           antes?: string | null
           area?: string | null
+          assunto?: string | null
           conceitual?: string | null
           conclusoes?: string | null
           created_at?: string
@@ -600,6 +631,7 @@ export type Database = {
           abertura?: string | null
           antes?: string | null
           area?: string | null
+          assunto?: string | null
           conceitual?: string | null
           conclusoes?: string | null
           created_at?: string
@@ -623,6 +655,24 @@ export type Database = {
           titulo?: string
           tribunal?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      juris_materias: {
+        Row: {
+          created_at: string
+          id: string
+          nome: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome?: string
         }
         Relationships: []
       }
