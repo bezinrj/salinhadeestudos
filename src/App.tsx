@@ -67,6 +67,9 @@ const App = () => (
               <Route path="/turmas" element={<Turmas />} />
               <Route path="/turmas/:id" element={<TurmaDetail />} />
               <Route path="/turmas/:albumId/questao/:questionId" element={<TurmaQuestaoDetail />} />
+              <Route path="/juris" element={<Juris />} />
+              <Route path="/juris/admin" element={<JurisAdmin />} />
+              <Route path="/juris/:id" element={<JurisDetail />} />
               <Route path="/admin" element={<Admin />} />
             </Route>
             <Route path="*" element={<NotFound />} />
