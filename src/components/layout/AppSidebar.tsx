@@ -93,6 +93,14 @@ export function AppSidebar() {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={location.pathname.startsWith("/juris/admin")}>
+                      <NavLink to="/juris/admin" className="hover:bg-secondary/50" activeClassName="bg-secondary text-primary font-medium">
+                        <Gavel className="mr-2 h-4 w-4" />
+                        {!collapsed && <span>Juris Admin</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
                     <SidebarMenuButton asChild isActive={isActive("/admin")}>
                       <NavLink to="/admin" className="hover:bg-secondary/50" activeClassName="bg-secondary text-primary font-medium">
                         <Shield className="mr-2 h-4 w-4" />
