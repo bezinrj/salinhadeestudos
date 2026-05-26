@@ -64,7 +64,7 @@ export default function JurisDetail() {
           <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
         </Button>
         {canManage && (
-          <Button variant="outline" size="sm" onClick={() => navigate(`/juris/${j.id}/editar`)}>
+          <Button variant="outline" size="sm" onClick={() => navigate(`/juris/admin/${j.id}`)}>
             <Pencil className="mr-2 h-4 w-4" /> Editar
           </Button>
         )}
@@ -75,6 +75,7 @@ export default function JurisDetail() {
         <div className="mb-3 flex flex-wrap gap-1.5">
           {j.tribunal && <Badge className="bg-primary/15 text-primary hover:bg-primary/20">{j.tribunal}</Badge>}
           {j.area && <Badge variant="secondary">{j.area}</Badge>}
+          {j.assunto && <Badge variant="outline" className="border-primary/40 text-primary">{j.assunto}</Badge>}
           {j.info && <Badge variant="outline" className="border-gold/40 text-gold">{j.info}</Badge>}
           {j.data && <Badge variant="outline">{j.data}</Badge>}
           {!j.published && <Badge variant="destructive">Rascunho</Badge>}

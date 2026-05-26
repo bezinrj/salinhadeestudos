@@ -18,7 +18,8 @@ const TOOL_SCHEMA = {
     relator: { type: "string" },
     data: { type: "string", description: "Data do julgamento (DD/MM/AAAA quando possível)" },
     info: { type: "string", description: "Informativo (ex: Info 1214)" },
-    area: { type: "string", description: "Área do Direito (ex: Direito Penal)" },
+    area: { type: "string", description: "Matéria do Direito (ex: Direito Penal, Direito Administrativo)" },
+    assunto: { type: "string", description: "Assunto específico dentro da matéria, curto (2-5 palavras). Ex: 'Improbidade administrativa', 'Prescrição penal'." },
     nocoes: {
       type: "object",
       properties: {
@@ -45,7 +46,7 @@ const TOOL_SCHEMA = {
     integra_ref: { type: "string", description: "Referência completa: Tribunal. Órgão. Processo. Relator. Data. Informativo." },
   },
   required: [
-    "titulo", "tribunal", "numero", "relator", "data", "info", "area",
+    "titulo", "tribunal", "numero", "relator", "data", "info", "area", "assunto",
     "nocoes", "conceitual", "problema", "solucao", "antes", "depois",
     "conclusoes", "principios", "doutrina", "jurisprudencia",
     "abertura", "tese", "integra_texto", "integra_ref",
