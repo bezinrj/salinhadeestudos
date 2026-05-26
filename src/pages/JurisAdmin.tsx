@@ -146,7 +146,8 @@ export default function JurisAdmin() {
             <div><Label className="text-xs">Relator</Label><Input value={form.relator} onChange={(e) => set("relator", e.target.value)} /></div>
             <div><Label className="text-xs">Data</Label><Input value={form.data} onChange={(e) => set("data", e.target.value)} /></div>
             <div><Label className="text-xs">Informativo</Label><Input value={form.info} onChange={(e) => set("info", e.target.value)} /></div>
-            <div className="md:col-span-2"><Label className="text-xs">Área do Direito</Label><Input value={form.area} onChange={(e) => set("area", e.target.value)} /></div>
+            <MateriaPicker value={form.area} onChange={(v) => set("area", v)} />
+            <AssuntoPicker materia={form.area} value={form.assunto} onChange={(v) => set("assunto", v)} />
           </div>
 
           <div className="border-t border-border pt-4">
