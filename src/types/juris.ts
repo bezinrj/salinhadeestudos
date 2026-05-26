@@ -48,7 +48,6 @@ export const EMPTY_JULGADO: Omit<JurisJulgado, "id" | "created_at" | "updated_at
   problema: "",
   solucao: "",
   antes: "",
-  antes: "",
   depois: "",
   casos_concretos: [],
   conclusoes: "",
