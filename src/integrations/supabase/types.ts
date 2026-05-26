@@ -512,6 +512,120 @@ export type Database = {
         }
         Relationships: []
       }
+      juris_chat_usage: {
+        Row: {
+          count: number
+          created_at: string
+          date: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          count?: number
+          created_at?: string
+          date?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          count?: number
+          created_at?: string
+          date?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      juris_julgados: {
+        Row: {
+          abertura: string | null
+          antes: string | null
+          area: string | null
+          conceitual: string | null
+          conclusoes: string | null
+          created_at: string
+          created_by: string | null
+          data: string | null
+          depois: string | null
+          doutrina: string | null
+          id: string
+          info: string | null
+          integra_ref: string | null
+          integra_texto: string | null
+          jurisprudencia: string | null
+          nocoes: Json
+          numero: string | null
+          principios: string | null
+          problema: string | null
+          published: boolean
+          relator: string | null
+          solucao: string | null
+          tese: string | null
+          titulo: string
+          tribunal: string | null
+          updated_at: string
+        }
+        Insert: {
+          abertura?: string | null
+          antes?: string | null
+          area?: string | null
+          conceitual?: string | null
+          conclusoes?: string | null
+          created_at?: string
+          created_by?: string | null
+          data?: string | null
+          depois?: string | null
+          doutrina?: string | null
+          id?: string
+          info?: string | null
+          integra_ref?: string | null
+          integra_texto?: string | null
+          jurisprudencia?: string | null
+          nocoes?: Json
+          numero?: string | null
+          principios?: string | null
+          problema?: string | null
+          published?: boolean
+          relator?: string | null
+          solucao?: string | null
+          tese?: string | null
+          titulo: string
+          tribunal?: string | null
+          updated_at?: string
+        }
+        Update: {
+          abertura?: string | null
+          antes?: string | null
+          area?: string | null
+          conceitual?: string | null
+          conclusoes?: string | null
+          created_at?: string
+          created_by?: string | null
+          data?: string | null
+          depois?: string | null
+          doutrina?: string | null
+          id?: string
+          info?: string | null
+          integra_ref?: string | null
+          integra_texto?: string | null
+          jurisprudencia?: string | null
+          nocoes?: Json
+          numero?: string | null
+          principios?: string | null
+          problema?: string | null
+          published?: boolean
+          relator?: string | null
+          solucao?: string | null
+          tese?: string | null
+          titulo?: string
+          tribunal?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       manual_subscriptions: {
         Row: {
           created_at: string | null
