@@ -24,7 +24,8 @@ export default function Juris() {
 
   const [search, setSearch] = useState("");
   const [tribunal, setTribunal] = useState<string>("all");
-  const [area, setArea] = useState<string>("all");
+  const [materia, setMateria] = useState<string>("all");
+  const [assunto, setAssunto] = useState<string>("all");
 
   const { data: julgados, isLoading } = useQuery({
     queryKey: ["juris-julgados-list"],
@@ -44,25 +45,36 @@ export default function Juris() {
     return Array.from(s).sort();
   }, [julgados]);
 
-  const areas = useMemo(() => {
+  const materias = useMemo(() => {
     const s = new Set<string>();
     julgados?.forEach((j) => j.area && s.add(j.area));
     return Array.from(s).sort();
   }, [julgados]);
 
+  const assuntos = useMemo(() => {
+    const s = new Set<string>();
+    julgados?.forEach((j) => {
+      if (!j.assunto) return;
+      if (materia !== "all" && j.area !== materia) return;
+      s.add(j.assunto);
+    });
+    return Array.from(s).sort();
+  }, [julgados, materia]);
+
   const filtered = useMemo(() => {
     return (julgados ?? []).filter((j) => {
       if (!j.published && !canManage) return false;
       if (tribunal !== "all" && j.tribunal !== tribunal) return false;
-      if (area !== "all" && j.area !== area) return false;
+      if (materia !== "all" && j.area !== materia) return false;
+      if (assunto !== "all" && j.assunto !== assunto) return false;
       if (search.trim()) {
         const q = search.toLowerCase();
-        const hay = `${j.titulo} ${j.tribunal} ${j.numero} ${j.area} ${j.nocoes?.frase ?? ""}`.toLowerCase();
+        const hay = `${j.titulo} ${j.tribunal} ${j.numero} ${j.area} ${j.assunto ?? ""} ${j.nocoes?.frase ?? ""}`.toLowerCase();
         if (!hay.includes(q)) return false;
       }
       return true;
     });
-  }, [julgados, tribunal, area, search, canManage]);
+  }, [julgados, tribunal, materia, assunto, search, canManage]);
 
   return (
     <div className="container mx-auto max-w-6xl px-4 py-8 pb-24 md:pb-12">
@@ -112,17 +124,24 @@ export default function Juris() {
           />
         </div>
         <Select value={tribunal} onValueChange={setTribunal}>
-          <SelectTrigger className="md:w-[180px]"><SelectValue placeholder="Tribunal" /></SelectTrigger>
+          <SelectTrigger className="md:w-[160px]"><SelectValue placeholder="Tribunal" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos tribunais</SelectItem>
             {tribunais.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
           </SelectContent>
         </Select>
-        <Select value={area} onValueChange={setArea}>
-          <SelectTrigger className="md:w-[200px]"><SelectValue placeholder="Área" /></SelectTrigger>
+        <Select value={materia} onValueChange={(v) => { setMateria(v); setAssunto("all"); }}>
+          <SelectTrigger className="md:w-[180px]"><SelectValue placeholder="Matéria" /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Todas as áreas</SelectItem>
-            {areas.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}
+            <SelectItem value="all">Todas as matérias</SelectItem>
+            {materias.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={assunto} onValueChange={setAssunto}>
+          <SelectTrigger className="md:w-[180px]"><SelectValue placeholder="Assunto" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os assuntos</SelectItem>
+            {assuntos.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>
@@ -153,6 +172,7 @@ export default function Juris() {
                 <CardContent className="flex h-full flex-col p-5">
                   <div className="mb-3 flex flex-wrap items-center gap-1.5">
                     {j.tribunal && <Badge variant="secondary" className="bg-primary/15 text-primary">{j.tribunal}</Badge>}
+                    {j.assunto && <Badge variant="outline" className="border-primary/40 text-primary">{j.assunto}</Badge>}
                     {j.info && <Badge variant="outline" className="border-gold/40 text-gold">{j.info}</Badge>}
                     {!j.published && <Badge variant="destructive">Rascunho</Badge>}
                   </div>
