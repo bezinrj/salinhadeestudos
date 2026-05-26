@@ -19,6 +19,7 @@ export interface JurisJulgado {
   solucao: string;
   antes: string;
   depois: string;
+  casos_concretos: Array<{ antes: string; depois: string }>;
   conclusoes: string;
   principios: string;
   doutrina: string;
@@ -48,6 +49,7 @@ export const EMPTY_JULGADO: Omit<JurisJulgado, "id" | "created_at" | "updated_at
   solucao: "",
   antes: "",
   depois: "",
+  casos_concretos: [],
   conclusoes: "",
   principios: "",
   doutrina: "",

@@ -172,6 +172,40 @@ export default function JurisAdmin() {
               <TF k="antes" label="Antes (um por linha)" rows={4} />
               <TF k="depois" label="Depois (um por linha)" rows={4} />
             </div>
+
+            <div className="rounded-lg border border-border bg-secondary/20 p-4">
+              <div className="mb-3 flex items-center justify-between">
+                <Label className="text-sm font-semibold text-primary">📌 Casos concretos</Label>
+                <Button type="button" size="sm" variant="outline" onClick={() => set("casos_concretos", [...(form.casos_concretos || []), { antes: "", depois: "" }])}>
+                  <Plus className="mr-1 h-3.5 w-3.5" /> Adicionar caso
+                </Button>
+              </div>
+              {(form.casos_concretos || []).length === 0 && (
+                <p className="text-xs text-muted-foreground">Nenhum caso adicionado. Use 2–3 exemplos práticos.</p>
+              )}
+              <div className="space-y-3">
+                {(form.casos_concretos || []).map((c, idx) => (
+                  <div key={idx} className="rounded-md border border-border bg-card p-3">
+                    <div className="mb-2 flex items-center justify-between">
+                      <span className="text-xs font-semibold">Caso {idx + 1}</span>
+                      <Button type="button" size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => set("casos_concretos", form.casos_concretos.filter((_, i) => i !== idx))}>
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                    <div className="grid gap-2 md:grid-cols-2">
+                      <div>
+                        <Label className="text-[10px] uppercase text-destructive">Antes</Label>
+                        <Textarea rows={3} value={c.antes} onChange={(e) => set("casos_concretos", form.casos_concretos.map((x, i) => i === idx ? { ...x, antes: e.target.value } : x))} />
+                      </div>
+                      <div>
+                        <Label className="text-[10px] uppercase text-green-600">Depois</Label>
+                        <Textarea rows={3} value={c.depois} onChange={(e) => set("casos_concretos", form.casos_concretos.map((x, i) => i === idx ? { ...x, depois: e.target.value } : x))} />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
             <TF k="conclusoes" label="Conclusões numeradas (uma por linha)" rows={4} />
             <TF k="principios" label="Princípios (NOME — descrição)" rows={3} />
             <TF k="doutrina" label="Doutrina (AUTOR — posição)" rows={3} />

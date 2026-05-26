@@ -36,6 +36,19 @@ const TOOL_SCHEMA = {
     solucao: { type: "string", description: "Como o tribunal resolveu" },
     antes: { type: "string", description: "Situação anterior — um ponto por linha" },
     depois: { type: "string", description: "Situação após a decisão — um ponto por linha" },
+    casos_concretos: {
+      type: "array",
+      description: "2 a 3 exemplos práticos hipotéticos mas realistas que mostram a aplicação da tese. Cada item tem 'antes' (cenário sob a regra antiga) e 'depois' (mesmo cenário sob a nova tese). Se não houver elementos suficientes para gerar exemplos fiéis, retorne array vazio.",
+      items: {
+        type: "object",
+        properties: {
+          antes: { type: "string", description: "Cenário concreto sob a regra anterior, 1-3 frases." },
+          depois: { type: "string", description: "Mesmo cenário após a decisão, 1-3 frases." },
+        },
+        required: ["antes", "depois"],
+        additionalProperties: false,
+      },
+    },
     conclusoes: { type: "string", description: "Conclusões numeradas, uma por linha (ex: 1. ...)" },
     principios: { type: "string", description: "NOME — descrição, um por linha" },
     doutrina: { type: "string", description: "AUTOR — posição, um por linha" },
@@ -47,7 +60,7 @@ const TOOL_SCHEMA = {
   },
   required: [
     "titulo", "tribunal", "numero", "relator", "data", "info", "area", "assunto",
-    "nocoes", "conceitual", "problema", "solucao", "antes", "depois",
+    "nocoes", "conceitual", "problema", "solucao", "antes", "depois", "casos_concretos",
     "conclusoes", "principios", "doutrina", "jurisprudencia",
     "abertura", "tese", "integra_texto", "integra_ref",
   ],

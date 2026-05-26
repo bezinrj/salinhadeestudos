@@ -1,0 +1,1 @@
+ALTER TABLE public.juris_julgados ADD COLUMN IF NOT EXISTS casos_concretos jsonb NOT NULL DEFAULT '[]'::jsonb;
