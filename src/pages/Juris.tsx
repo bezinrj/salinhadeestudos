@@ -87,7 +87,7 @@ export default function Juris() {
             </div>
           </div>
           {canManage && (
-            <Button onClick={() => navigate("/juris/novo")} className="bg-primary text-primary-foreground">
+            <Button onClick={() => navigate("/juris/admin")} className="bg-primary text-primary-foreground">
               + Novo julgado
             </Button>
           )}
