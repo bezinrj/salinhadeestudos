@@ -102,7 +102,7 @@ serve(async (req) => {
     const { data: roles } = await supabaseAdmin
       .from("user_roles")
       .select("role")
-      .eq("user_id", userData.user.id);
+      .eq("user_id", userId);
     const allowed = (roles ?? []).some((r: any) => r.role === "admin" || r.role === "moderator");
     if (!allowed) {
       return new Response(JSON.stringify({ error: "Forbidden" }), {
