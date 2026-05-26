@@ -574,6 +574,7 @@ export type Database = {
           antes: string | null
           area: string | null
           assunto: string | null
+          casos_concretos: Json
           conceitual: string | null
           conclusoes: string | null
           created_at: string
@@ -603,6 +604,7 @@ export type Database = {
           antes?: string | null
           area?: string | null
           assunto?: string | null
+          casos_concretos?: Json
           conceitual?: string | null
           conclusoes?: string | null
           created_at?: string
@@ -632,6 +634,7 @@ export type Database = {
           antes?: string | null
           area?: string | null
           assunto?: string | null
+          casos_concretos?: Json
           conceitual?: string | null
           conclusoes?: string | null
           created_at?: string
