@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -7,11 +7,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { ArrowLeft, Sparkles, Loader2, Save, Trash2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ArrowLeft, Sparkles, Loader2, Save, Trash2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useIsModerator } from "@/hooks/useIsModerator";
 import { EMPTY_JULGADO, type JurisJulgado } from "@/types/juris";
+import { useJurisMaterias, useJurisAssuntos, useInvalidateTaxonomy } from "@/hooks/useJurisTaxonomy";
+import { JurisTaxonomyManager } from "@/components/juris/JurisTaxonomyManager";
 
 type Form = Omit<JurisJulgado, "id" | "created_at" | "updated_at" | "created_by"> & { published: boolean };
 
