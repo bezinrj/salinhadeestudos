@@ -19,6 +19,7 @@ export interface JurisJulgado {
   solucao: string;
   antes: string;
   depois: string;
+  casos_concretos: Array<{ antes: string; depois: string }>;
   conclusoes: string;
   principios: string;
   doutrina: string;
