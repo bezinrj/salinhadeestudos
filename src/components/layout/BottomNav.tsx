@@ -79,7 +79,12 @@ export function BottomNav() {
   const isActive = (path: string) => location.pathname.startsWith(path);
 
   const adminItems =
-    isAdmin || isModerator ? [{ path: "/admin", icon: Shield, label: "Admin" }] : [];
+    isAdmin || isModerator
+      ? [
+          { path: "/juris/admin", icon: Gavel, label: "Juris Admin" },
+          { path: "/admin", icon: Shield, label: "Admin" },
+        ]
+      : [];
 
   const allExtraItems = [...extraNavItems, ...adminItems];
 
