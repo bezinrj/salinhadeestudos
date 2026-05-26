@@ -13,6 +13,7 @@ import {
   Menu,
   X,
   GraduationCap,
+  Gavel,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -31,6 +32,7 @@ const extraNavItems = [
   { path: "/perfil", icon: User, label: "Perfil" },
   { path: "/cronometro", icon: Timer, label: "Cronômetro" },
   { path: "/turmas", icon: GraduationCap, label: "Minhas Turmas" },
+  { path: "/juris", icon: Gavel, label: "Salinha Juris" },
   { path: "/cronograma", icon: CalendarRange, label: "Cronograma" },
   { path: "/meu-plano", icon: CreditCard, label: "Meu Plano" },
 ];
@@ -77,7 +79,12 @@ export function BottomNav() {
   const isActive = (path: string) => location.pathname.startsWith(path);
 
   const adminItems =
-    isAdmin || isModerator ? [{ path: "/admin", icon: Shield, label: "Admin" }] : [];
+    isAdmin || isModerator
+      ? [
+          { path: "/juris/admin", icon: Gavel, label: "Juris Admin" },
+          { path: "/admin", icon: Shield, label: "Admin" },
+        ]
+      : [];
 
   const allExtraItems = [...extraNavItems, ...adminItems];
 

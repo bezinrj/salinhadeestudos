@@ -1,4 +1,4 @@
-import { Scale, FileText, Timer, Trophy, User, Calendar, LayoutDashboard, LogOut, CreditCard, Shield, CalendarRange, BookOpen, MessageCircle } from "lucide-react";
+import { Scale, FileText, Timer, Trophy, User, Calendar, LayoutDashboard, LogOut, CreditCard, Shield, CalendarRange, BookOpen, MessageCircle, Gavel } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { NavLink } from "@/components/NavLink";
@@ -25,6 +25,7 @@ const mainItems = [
   { title: "Discursivas", url: "/discursivas", icon: FileText },
   { title: "Questões da Semana", url: "/semanal", icon: Calendar },
   { title: "Minhas Turmas", url: "/turmas", icon: BookOpen },
+  { title: "Salinha Juris", url: "/juris", icon: Gavel },
   { title: "Ranking", url: "/ranking", icon: Trophy },
   { title: "Cronômetro", url: "/cronometro", icon: Timer },
   { title: "Meu Plano", url: "/meu-plano", icon: CreditCard },
@@ -88,6 +89,14 @@ export function AppSidebar() {
                       <NavLink to="/cronograma" className="hover:bg-secondary/50" activeClassName="bg-secondary text-primary font-medium">
                         <CalendarRange className="mr-2 h-4 w-4" />
                         {!collapsed && <span>Cronograma</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={location.pathname.startsWith("/juris/admin")}>
+                      <NavLink to="/juris/admin" className="hover:bg-secondary/50" activeClassName="bg-secondary text-primary font-medium">
+                        <Gavel className="mr-2 h-4 w-4" />
+                        {!collapsed && <span>Juris Admin</span>}
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
