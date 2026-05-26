@@ -185,6 +185,32 @@ export default function JurisDetail() {
                       </div>
                     </CardContent></Card>
                   </div>
+
+                  {Array.isArray(j.casos_concretos) && j.casos_concretos.length > 0 && (
+                    <Card className="border-primary/30">
+                      <CardContent className="space-y-4 p-5">
+                        <div className="text-xs font-semibold uppercase tracking-wider text-primary">📌 Casos concretos</div>
+                        <div className="space-y-4">
+                          {j.casos_concretos.map((c, i) => (
+                            <div key={i} className="rounded-lg border border-border bg-secondary/30 p-4">
+                              <div className="mb-3 text-sm font-semibold text-foreground">Caso {i + 1}</div>
+                              <div className="grid gap-3 md:grid-cols-2">
+                                <div className="rounded-md border border-destructive/20 bg-destructive/5 p-3">
+                                  <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-destructive">Antes</div>
+                                  <p className="text-sm leading-relaxed">{c.antes}</p>
+                                </div>
+                                <div className="rounded-md border border-green-500/20 bg-green-500/5 p-3">
+                                  <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-green-500">Depois</div>
+                                  <p className="text-sm leading-relaxed">{c.depois}</p>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
                   <IntegraBox texto={j.integra_texto} refText={j.integra_ref} />
                 </TabsContent>
 
