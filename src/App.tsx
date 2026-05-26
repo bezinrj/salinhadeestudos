@@ -25,6 +25,9 @@ import TurmaDetail from "./pages/TurmaDetail";
 import TurmaQuestaoDetail from "./pages/TurmaQuestaoDetail";
 import NotFound from "./pages/NotFound";
 import ResetPassword from "./pages/ResetPassword";
+import Juris from "./pages/Juris";
+import JurisDetail from "./pages/JurisDetail";
+import JurisAdmin from "./pages/JurisAdmin";
 
 const queryClient = new QueryClient();
 
