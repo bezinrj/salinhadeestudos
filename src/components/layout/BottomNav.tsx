@@ -32,6 +32,7 @@ const extraNavItems = [
   { path: "/perfil", icon: User, label: "Perfil" },
   { path: "/cronometro", icon: Timer, label: "Cronômetro" },
   { path: "/turmas", icon: GraduationCap, label: "Minhas Turmas" },
+  { path: "/juris", icon: Gavel, label: "Salinha Juris" },
   { path: "/cronograma", icon: CalendarRange, label: "Cronograma" },
   { path: "/meu-plano", icon: CreditCard, label: "Meu Plano" },
 ];
