@@ -102,7 +102,12 @@ Deno.serve(async (req) => {
 
     // Enfileira no pgmq (mesma infra do auth-email-hook)
     const messageId = crypto.randomUUID();
-    const unsubscribeToken = crypto.randomUUID();
+    // 32 bytes of CSPRNG entropy, hex-encoded (64 chars). Stronger than UUIDv4.
+    const unsubscribeTokenBytes = new Uint8Array(32);
+    crypto.getRandomValues(unsubscribeTokenBytes);
+    const unsubscribeToken = Array.from(unsubscribeTokenBytes)
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
 
     const { error: unsubscribeTokenError } = await adminClient
       .from("email_unsubscribe_tokens")
