@@ -27,3 +27,7 @@ project_id = "lwadfvkaywbdebvwdfgb"
     verify_jwt = false
   [functions.hotmart-webhook]
     verify_jwt = false
+  [functions.juris-generate]
+    verify_jwt = false
+  [functions.juris-chat]
+    verify_jwt = false
