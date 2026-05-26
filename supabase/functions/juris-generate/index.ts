@@ -60,7 +60,7 @@ const TOOL_SCHEMA = {
   },
   required: [
     "titulo", "tribunal", "numero", "relator", "data", "info", "area", "assunto",
-    "nocoes", "conceitual", "problema", "solucao", "antes", "depois",
+    "nocoes", "conceitual", "problema", "solucao", "antes", "depois", "casos_concretos",
     "conclusoes", "principios", "doutrina", "jurisprudencia",
     "abertura", "tese", "integra_texto", "integra_ref",
   ],
