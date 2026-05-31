@@ -1,53 +1,65 @@
-# Salinha Juris — Assunto, filtros editáveis e edição
+# Módulo Vade Mecum — Plano de implementação
 
-## O que muda
+## Contexto e adaptações ao projeto atual
 
-1. **Novo campo `Assunto`** em cada julgado (além da `Matéria`, que hoje é o campo "Área do Direito").
-2. **Taxonomia editável** por admin/moderador: listas de Matérias e Assuntos cadastradas no banco, usadas em selects (com possibilidade de criar na hora).
-3. **Filtros na lista `/juris`**: por Matéria e por Assunto, além da busca por texto que já existe.
-4. **Aba de gestão** dentro de `/juris/admin` para CRUD das Matérias e Assuntos.
-5. **Editar julgado**: garantir que admin/moderador acessem `/juris/admin/:id` (o admin já existe, só falta a rota com id e o botão "Editar" no detalhe).
+A plataforma já tem auth (AuthContext) e RBAC (user_roles + has_role). Não vou criar UserContext separado nem `perfis` — vou reusar:
 
-## Banco (1 migração)
+- **Usuário**: `useAuth()` (user.id, profile.name, profile.username)
+- **Role**: `useIsAdmin()` + `useIsModerator()` (já existem)
+- **Cargo concurso**: já existe `profiles.target_career` — reusar
+- **RLS**: usar `auth.uid()` direto (padrão do projeto), não `current_setting('app.user_id')`. O spec foi escrito para um app standalone — adapto para o padrão Supabase Auth desta plataforma.
 
-- `juris_julgados`: adicionar coluna `assunto text default ''` e renomear semanticamente: continuamos usando `area` como **Matéria** (sem rename para não quebrar nada; só ajustamos rótulos na UI).
-- Criar `juris_materias (id, nome unique, created_at)` e `juris_assuntos (id, materia_id fk, nome, created_at, unique(materia_id, nome))`.
-- GRANTS + RLS:
-  - SELECT autenticado;
-  - INSERT/UPDATE/DELETE apenas admin/moderador (`has_role`).
-- Pré-popular `juris_materias` com os valores distintos hoje presentes em `juris_julgados.area`.
+Isso evita duplicação e mantém consistência com o resto do projeto (Juris, Discursivas, Turmas etc.).
 
-## Frontend
+## Entrega em 4 fases
 
-### `src/pages/JurisAdmin.tsx`
-- Trocar o input de "Área do Direito" por **Select de Matéria** (lista vinda de `juris_materias`, com opção "+ Nova matéria" abrindo prompt para criar).
-- Adicionar **Select de Assunto** (filtrado pela matéria escolhida, com "+ Novo assunto").
-- Salvar `area` (matéria) e `assunto` no julgado.
+Dado o tamanho, sugiro entregar em fases. **Esta plano cobre apenas a Fase 1**; faremos as próximas após validar.
 
-### `src/pages/Juris.tsx`
-- Adicionar dois selects no topo: **Matéria** e **Assunto** (assunto filtra pela matéria escolhida).
-- Aplicar filtro client-side sobre a lista carregada (mesma estratégia da busca atual).
-- Exibir chip do `assunto` no card além da matéria.
+### Fase 1 — Fundação + Leitura (esta entrega)
+1. Migração com 8 tabelas + RLS + GRANTs:
+   - `vm_leis`, `vm_artigos`, `vm_paragrafos`, `vm_incidencias`, `vm_remissoes`
+   - `vm_comentarios`, `vm_notas`, `vm_highlights`, `vm_progresso`
+   - (prefixo `vm_` para não colidir com `juris_*` e demais)
+2. Seed dos dados iniciais (CP, CPP, CF/88 + comentário professor)
+3. Rotas `/vademecum` e `/vademecum/:leiId` adicionadas ao `App.tsx` dentro do `AppLayout` protegido
+4. Item de menu "Vade Mecum" no sidebar/bottom nav
+5. Tela de leitura (3 colunas): sidebar de leis + área central com artigos + drawer de marcados
+6. Componentes: `LeiSidebar`, `ArticleCard`, `ArticleText` (com highlights + remissões inline), `IncidenciaBadge`, `ProgressBar`, `ArticleFilters`, `MarkedArticlesDrawer`, `RemissaoDrawer`
+7. Funcionalidades: marcar lido, marcar favorito, filtros (status + cargo), progresso
+8. Hooks: `useVmLeis`, `useVmLei`, `useVmProgresso`
+9. Store Zustand `vademecumStore` (filtros, drawers, modo highlight)
 
-### `src/pages/JurisDetail.tsx`
-- Mostrar o `assunto` no cabeçalho.
-- Botão "Editar" visível para admin/moderador → navega para `/juris/admin/:id`.
+### Fase 2 — Anotações privadas
+- Notas post-it (modal + CRUD) com `useVmNotas`
+- Highlights/marca-texto (toolbar flutuante, cálculo de offsets, renderização com `<mark>`) com `useVmHighlights`
 
-### `src/App.tsx`
-- Adicionar rota `/juris/admin/:id` apontando para `JurisAdmin` (a página já trata `useParams().id`).
+### Fase 3 — Comentários e moderação
+- Seção de comentários no card (aluno + professor com visual diferenciado)
+- Upvotes, editar/excluir próprio comentário
+- Rota `/vademecum/moderacao` para moderador/admin
+- Modal "Publicar Comentário do Professor"
 
-### Novo: `src/components/juris/JurisTaxonomyManager.tsx`
-- Tabelinha simples para CRUD de Matérias e Assuntos.
-- Renderizada como uma nova aba/seção dentro de `/juris/admin` quando NÃO há `:id` (modo "novo + gestão").
+### Fase 4 — Painel Admin
+- `/vademecum/admin` com sub-rotas (leis, artigos, usuários)
+- CRUD completo de leis/artigos/parágrafos/incidências/remissões
+- Drag-and-drop com `@dnd-kit/sortable` (já no projeto? verificar; adicionar se não)
+- Gestão de roles para Vade Mecum reusa user_roles existente
 
-### `src/types/juris.ts`
-- Adicionar `assunto: string` em `JurisJulgado` e `EMPTY_JULGADO`.
+## Detalhes técnicos importantes
 
-## Edge function `juris-generate`
-- Pedir à IA que também extraia um `assunto` curto (substantivo do tema, ex.: "Improbidade administrativa"). Incluir no JSON de retorno e no preenchimento do formulário.
+- **Naming**: prefixo `vm_` em todas as tabelas para isolar do resto
+- **Cargo**: usar valores em PT como no spec (`magistratura`, `defensoria`, `mp`, `delegado`)
+- **Permissões**: `has_role(auth.uid(), 'admin')` e `has_role(auth.uid(), 'moderator')` direto nas policies
+- **Fontes Lora + Inter**: adicionar via Google Fonts no `index.html`
+- **Design tokens**: estender `index.css` com tokens específicos do Vade Mecum (papel `#FAFAF8`, etc.) em vez de cores hardcoded
+- **Zustand**: já está no projeto? Se não, adiciono
 
-## Fora de escopo
-- Não muda fluxo do chat IA, nem RLS de `juris_julgados` (já permite edição por admin/mod).
-- Não muda preview/Premium lock.
+## O que NÃO está incluído na Fase 1
 
-Confirma para eu implementar?
+- Notas/highlights/comentários (Fase 2/3)
+- Painel admin e moderação (Fase 3/4)
+- Modo leitura fullscreen, autosave de rascunho, mobile bottom-sheet refinado (polish posterior)
+
+## Pergunta antes de começar
+
+Posso prosseguir com a **Fase 1** como descrita, usando o auth/roles existentes (em vez do `UserContext` standalone do spec) e prefixo `vm_` nas tabelas?

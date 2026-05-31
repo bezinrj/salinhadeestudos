@@ -28,6 +28,7 @@ import ResetPassword from "./pages/ResetPassword";
 import Juris from "./pages/Juris";
 import JurisDetail from "./pages/JurisDetail";
 import JurisAdmin from "./pages/JurisAdmin";
+import Vademecum from "./pages/Vademecum";
 
 const queryClient = new QueryClient();
 
@@ -71,6 +72,8 @@ const App = () => (
               <Route path="/juris/admin" element={<JurisAdmin />} />
               <Route path="/juris/admin/:id" element={<JurisAdmin />} />
               <Route path="/juris/:id" element={<JurisDetail />} />
+              <Route path="/vademecum" element={<Vademecum />} />
+              <Route path="/vademecum/:leiId" element={<Vademecum />} />
               <Route path="/admin" element={<Admin />} />
             </Route>
             <Route path="*" element={<NotFound />} />

@@ -1879,6 +1879,359 @@ export type Database = {
           },
         ]
       }
+      vm_artigos: {
+        Row: {
+          atualizado_em: string
+          criado_em: string
+          id: string
+          lei_id: string
+          numero: string
+          ordem: number
+          rotulo: string
+          texto: string
+        }
+        Insert: {
+          atualizado_em?: string
+          criado_em?: string
+          id?: string
+          lei_id: string
+          numero: string
+          ordem?: number
+          rotulo?: string
+          texto: string
+        }
+        Update: {
+          atualizado_em?: string
+          criado_em?: string
+          id?: string
+          lei_id?: string
+          numero?: string
+          ordem?: number
+          rotulo?: string
+          texto?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vm_artigos_lei_id_fkey"
+            columns: ["lei_id"]
+            isOneToOne: false
+            referencedRelation: "vm_leis"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vm_comentarios: {
+        Row: {
+          artigo_id: string
+          autor_cargo: string | null
+          autor_nome: string
+          criado_em: string
+          fixado: boolean
+          id: string
+          moderado_por: string | null
+          texto: string
+          tipo: string
+          upvotes: number
+          user_id: string
+          visivel: boolean
+        }
+        Insert: {
+          artigo_id: string
+          autor_cargo?: string | null
+          autor_nome: string
+          criado_em?: string
+          fixado?: boolean
+          id?: string
+          moderado_por?: string | null
+          texto: string
+          tipo?: string
+          upvotes?: number
+          user_id: string
+          visivel?: boolean
+        }
+        Update: {
+          artigo_id?: string
+          autor_cargo?: string | null
+          autor_nome?: string
+          criado_em?: string
+          fixado?: boolean
+          id?: string
+          moderado_por?: string | null
+          texto?: string
+          tipo?: string
+          upvotes?: number
+          user_id?: string
+          visivel?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vm_comentarios_artigo_id_fkey"
+            columns: ["artigo_id"]
+            isOneToOne: false
+            referencedRelation: "vm_artigos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vm_highlights: {
+        Row: {
+          artigo_id: string
+          cor: string
+          criado_em: string
+          id: string
+          offset_fim: number
+          offset_inicio: number
+          trecho: string
+          user_id: string
+        }
+        Insert: {
+          artigo_id: string
+          cor?: string
+          criado_em?: string
+          id?: string
+          offset_fim: number
+          offset_inicio: number
+          trecho: string
+          user_id: string
+        }
+        Update: {
+          artigo_id?: string
+          cor?: string
+          criado_em?: string
+          id?: string
+          offset_fim?: number
+          offset_inicio?: number
+          trecho?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vm_highlights_artigo_id_fkey"
+            columns: ["artigo_id"]
+            isOneToOne: false
+            referencedRelation: "vm_artigos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vm_incidencias: {
+        Row: {
+          artigo_id: string
+          cargo: string
+          concursos: string[]
+          id: string
+          quantidade: number
+        }
+        Insert: {
+          artigo_id: string
+          cargo: string
+          concursos?: string[]
+          id?: string
+          quantidade?: number
+        }
+        Update: {
+          artigo_id?: string
+          cargo?: string
+          concursos?: string[]
+          id?: string
+          quantidade?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vm_incidencias_artigo_id_fkey"
+            columns: ["artigo_id"]
+            isOneToOne: false
+            referencedRelation: "vm_artigos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vm_leis: {
+        Row: {
+          atualizado_em: string
+          categoria: string
+          criado_em: string
+          criado_por: string | null
+          descricao: string | null
+          id: string
+          nome: string
+          ordem: number
+          publicada: boolean
+          sigla: string
+        }
+        Insert: {
+          atualizado_em?: string
+          categoria: string
+          criado_em?: string
+          criado_por?: string | null
+          descricao?: string | null
+          id?: string
+          nome: string
+          ordem?: number
+          publicada?: boolean
+          sigla: string
+        }
+        Update: {
+          atualizado_em?: string
+          categoria?: string
+          criado_em?: string
+          criado_por?: string | null
+          descricao?: string | null
+          id?: string
+          nome?: string
+          ordem?: number
+          publicada?: boolean
+          sigla?: string
+        }
+        Relationships: []
+      }
+      vm_notas: {
+        Row: {
+          artigo_id: string
+          atualizado_em: string
+          conteudo: string
+          cor: string
+          criado_em: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          artigo_id: string
+          atualizado_em?: string
+          conteudo: string
+          cor?: string
+          criado_em?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          artigo_id?: string
+          atualizado_em?: string
+          conteudo?: string
+          cor?: string
+          criado_em?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vm_notas_artigo_id_fkey"
+            columns: ["artigo_id"]
+            isOneToOne: false
+            referencedRelation: "vm_artigos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vm_paragrafos: {
+        Row: {
+          artigo_id: string
+          id: string
+          ordem: number
+          rotulo: string
+          texto: string
+          tipo: string
+        }
+        Insert: {
+          artigo_id: string
+          id?: string
+          ordem?: number
+          rotulo?: string
+          texto: string
+          tipo: string
+        }
+        Update: {
+          artigo_id?: string
+          id?: string
+          ordem?: number
+          rotulo?: string
+          texto?: string
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vm_paragrafos_artigo_id_fkey"
+            columns: ["artigo_id"]
+            isOneToOne: false
+            referencedRelation: "vm_artigos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vm_progresso: {
+        Row: {
+          artigo_id: string
+          data_leitura: string | null
+          id: string
+          lido: boolean
+          marcado: boolean
+          user_id: string
+        }
+        Insert: {
+          artigo_id: string
+          data_leitura?: string | null
+          id?: string
+          lido?: boolean
+          marcado?: boolean
+          user_id: string
+        }
+        Update: {
+          artigo_id?: string
+          data_leitura?: string | null
+          id?: string
+          lido?: boolean
+          marcado?: boolean
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vm_progresso_artigo_id_fkey"
+            columns: ["artigo_id"]
+            isOneToOne: false
+            referencedRelation: "vm_artigos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vm_remissoes: {
+        Row: {
+          artigo_destino_id: string
+          artigo_origem_id: string
+          criado_em: string
+          id: string
+          texto_exibido: string
+        }
+        Insert: {
+          artigo_destino_id: string
+          artigo_origem_id: string
+          criado_em?: string
+          id?: string
+          texto_exibido: string
+        }
+        Update: {
+          artigo_destino_id?: string
+          artigo_origem_id?: string
+          criado_em?: string
+          id?: string
+          texto_exibido?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vm_remissoes_artigo_destino_id_fkey"
+            columns: ["artigo_destino_id"]
+            isOneToOne: false
+            referencedRelation: "vm_artigos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vm_remissoes_artigo_origem_id_fkey"
+            columns: ["artigo_origem_id"]
+            isOneToOne: false
+            referencedRelation: "vm_artigos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       weekly_answers: {
         Row: {
           answer_text: string
