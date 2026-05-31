@@ -1,0 +1,134 @@
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { toast } from "sonner";
+import { Progress } from "@/components/ui/progress";
+import { useVmLei, useVmLeis, useVmProgresso } from "@/hooks/useVademecum";
+import { LeiSidebar } from "@/components/vademecum/LeiSidebar";
+import { ArticleCard } from "@/components/vademecum/ArticleCard";
+import { ArticleFilters } from "@/components/vademecum/ArticleFilters";
+import { MarkedArticlesDrawer } from "@/components/vademecum/MarkedArticlesDrawer";
+import { RemissaoDrawer } from "@/components/vademecum/RemissaoDrawer";
+import type { VmFiltroCargo, VmFiltroStatus } from "@/types/vademecum";
+
+export default function Vademecum() {
+  const { leiId } = useParams<{ leiId?: string }>();
+  const navigate = useNavigate();
+  const { data: leis = [], isLoading: leisLoading } = useVmLeis();
+
+  // Auto-redirect to first lei if none selected
+  useEffect(() => {
+    if (!leiId && leis.length > 0) {
+      navigate(`/vademecum/${leis[0].id}`, { replace: true });
+    }
+  }, [leiId, leis, navigate]);
+
+  const { data, isLoading } = useVmLei(leiId);
+  const { progressoMap, toggle } = useVmProgresso(leiId);
+
+  const [status, setStatus] = useState<VmFiltroStatus>("todos");
+  const [cargo, setCargo] = useState<VmFiltroCargo>("todos");
+  const [marcadosOpen, setMarcadosOpen] = useState(false);
+  const [remissaoDestinoId, setRemissaoDestinoId] = useState<string | null>(null);
+
+  const artigos = data?.artigos ?? [];
+
+  const filtered = useMemo(() => {
+    return artigos.filter((a) => {
+      const p = progressoMap.get(a.id);
+      if (status === "lidos" && !p?.lido) return false;
+      if (status === "nao_lidos" && p?.lido) return false;
+      if (status === "marcados" && !p?.marcado) return false;
+      if (cargo !== "todos") {
+        const inc = a.incidencias.find((i) => i.cargo === cargo);
+        if (!inc || inc.quantidade === 0) return false;
+      }
+      return true;
+    });
+  }, [artigos, progressoMap, status, cargo]);
+
+  const totalLidos = artigos.filter((a) => progressoMap.get(a.id)?.lido).length;
+  const progressPct = artigos.length ? Math.round((totalLidos / artigos.length) * 100) : 0;
+
+  const handleToggle = (artigoId: string, field: "lido" | "marcado", value: boolean) => {
+    toggle({ artigoId, field, value });
+    if (field === "lido" && value) toast.success("Marcado como lido");
+    if (field === "marcado" && value) toast.success("Artigo marcado");
+  };
+
+  return (
+    <div className="flex h-[calc(100vh-4rem)] overflow-hidden">
+      <LeiSidebar leis={leis} activeLeiId={leiId} />
+
+      <main className="flex-1 overflow-y-auto">
+        <div className="mx-auto max-w-3xl px-4 py-6 lg:px-8">
+          {isLoading || leisLoading ? (
+            <p className="text-sm text-muted-foreground">Carregando...</p>
+          ) : !data ? (
+            <p className="text-sm text-muted-foreground">Selecione uma lei na barra lateral.</p>
+          ) : (
+            <>
+              <header className="mb-4">
+                <h1 className="font-display text-2xl font-bold text-foreground">
+                  {data.lei.nome} <span className="text-muted-foreground">({data.lei.sigla})</span>
+                </h1>
+                {data.lei.descricao && (
+                  <p className="mt-1 text-sm text-muted-foreground">{data.lei.descricao}</p>
+                )}
+                <div className="mt-3 flex items-center gap-3">
+                  <Progress value={progressPct} className="h-2 flex-1" />
+                  <span className="whitespace-nowrap text-xs text-muted-foreground">
+                    {totalLidos}/{artigos.length} lidos
+                  </span>
+                </div>
+              </header>
+
+              <ArticleFilters
+                status={status}
+                setStatus={setStatus}
+                cargo={cargo}
+                setCargo={setCargo}
+                onAbrirMarcados={() => setMarcadosOpen(true)}
+              />
+
+              <div className="mt-4 space-y-4">
+                {filtered.length === 0 ? (
+                  <p className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
+                    Nenhum artigo corresponde ao filtro selecionado.
+                  </p>
+                ) : (
+                  filtered.map((a) => (
+                    <ArticleCard
+                      key={a.id}
+                      artigo={a}
+                      progresso={progressoMap.get(a.id)}
+                      filtroCargo={cargo}
+                      onToggleLido={(id, v) => handleToggle(id, "lido", v)}
+                      onToggleMarcado={(id, v) => handleToggle(id, "marcado", v)}
+                      onRemissaoClick={(rem) => setRemissaoDestinoId(rem.artigo_destino_id)}
+                    />
+                  ))
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      </main>
+
+      {data && (
+        <MarkedArticlesDrawer
+          open={marcadosOpen}
+          onOpenChange={setMarcadosOpen}
+          leiNome={data.lei.sigla}
+          artigos={artigos}
+          progressoMap={progressoMap}
+        />
+      )}
+
+      <RemissaoDrawer
+        open={!!remissaoDestinoId}
+        onOpenChange={(v) => !v && setRemissaoDestinoId(null)}
+        artigoDestinoId={remissaoDestinoId}
+      />
+    </div>
+  );
+}
