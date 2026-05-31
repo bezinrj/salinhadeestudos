@@ -14,6 +14,7 @@ import {
   X,
   GraduationCap,
   Gavel,
+  Library,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -33,6 +34,7 @@ const extraNavItems = [
   { path: "/cronometro", icon: Timer, label: "Cronômetro" },
   { path: "/turmas", icon: GraduationCap, label: "Minhas Turmas" },
   { path: "/juris", icon: Gavel, label: "Salinha Juris" },
+  { path: "/vademecum", icon: Library, label: "Vade Mecum" },
   { path: "/cronograma", icon: CalendarRange, label: "Cronograma" },
   { path: "/meu-plano", icon: CreditCard, label: "Meu Plano" },
 ];

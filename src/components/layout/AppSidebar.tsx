@@ -1,4 +1,4 @@
-import { Scale, FileText, Timer, Trophy, User, Calendar, LayoutDashboard, LogOut, CreditCard, Shield, CalendarRange, BookOpen, MessageCircle, Gavel } from "lucide-react";
+import { Scale, FileText, Timer, Trophy, User, Calendar, LayoutDashboard, LogOut, CreditCard, Shield, CalendarRange, BookOpen, MessageCircle, Gavel, Library } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { NavLink } from "@/components/NavLink";
@@ -26,6 +26,7 @@ const mainItems = [
   { title: "Questões da Semana", url: "/semanal", icon: Calendar },
   { title: "Minhas Turmas", url: "/turmas", icon: BookOpen },
   { title: "Salinha Juris", url: "/juris", icon: Gavel },
+  { title: "Vade Mecum", url: "/vademecum", icon: Library },
   { title: "Ranking", url: "/ranking", icon: Trophy },
   { title: "Cronômetro", url: "/cronometro", icon: Timer },
   { title: "Meu Plano", url: "/meu-plano", icon: CreditCard },
