@@ -22,14 +22,24 @@ export function useVmComentarios(artigoId: string | undefined) {
     queryFn: async () => {
       const { data, error } = await sb
         .from("vm_comentarios")
-        .select("*, profiles(name, username, avatar_url)")
+        .select("*")
         .eq("artigo_id", artigoId)
         .order("created_at", { ascending: true });
       if (error) throw error;
-      return ((data ?? []) as any[]).map((c) => ({
+      const rows = (data ?? []) as any[];
+      const userIds = Array.from(new Set(rows.map((r) => r.user_id)));
+      let profMap = new Map<string, { name?: string; username?: string; avatar_url?: string | null }>();
+      if (userIds.length > 0) {
+        const { data: profs } = await sb
+          .from("profiles")
+          .select("id, name, username, avatar_url")
+          .in("id", userIds);
+        (profs ?? []).forEach((p: any) => profMap.set(p.id, p));
+      }
+      return rows.map((c) => ({
         ...c,
-        autor_nome: c.profiles?.name || c.profiles?.username || "Aluno",
-        autor_avatar: c.profiles?.avatar_url ?? null,
+        autor_nome: profMap.get(c.user_id)?.name || profMap.get(c.user_id)?.username || "Aluno",
+        autor_avatar: profMap.get(c.user_id)?.avatar_url ?? null,
       })) as VmComentario[];
     },
   });
