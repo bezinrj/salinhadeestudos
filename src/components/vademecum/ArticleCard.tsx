@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, Bookmark, BookmarkCheck, StickyNote } from "lucide-react";
+import { Check, Bookmark, BookmarkCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { IncidenciaBadge, CARGO_BORDER } from "./IncidenciaBadge";
