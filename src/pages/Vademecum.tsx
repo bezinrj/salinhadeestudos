@@ -1,8 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, Link } from "react-router-dom";
 import { toast } from "sonner";
+import { Settings } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useVmLei, useVmLeis, useVmProgresso } from "@/hooks/useVademecum";
+import {
+  useVmMarcacoes,
+  useVmNotasProfessor,
+  useVmNotasPrivadas,
+} from "@/hooks/useVademecumExtras";
+import { useAuth } from "@/contexts/AuthContext";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { useIsModerator } from "@/hooks/useIsModerator";
 import { LeiSidebar } from "@/components/vademecum/LeiSidebar";
 import { ArticleCard } from "@/components/vademecum/ArticleCard";
 import { ArticleFilters } from "@/components/vademecum/ArticleFilters";
@@ -13,9 +23,13 @@ import type { VmFiltroCargo, VmFiltroStatus } from "@/types/vademecum";
 export default function Vademecum() {
   const { leiId } = useParams<{ leiId?: string }>();
   const navigate = useNavigate();
+  const { user, profile } = useAuth();
+  const { isAdmin } = useIsAdmin();
+  const { isModerator } = useIsModerator();
+  const canEdit = isAdmin || isModerator;
+
   const { data: leis = [], isLoading: leisLoading } = useVmLeis();
 
-  // Auto-redirect to first lei if none selected
   useEffect(() => {
     if (!leiId && leis.length > 0) {
       navigate(`/vademecum/${leis[0].id}`, { replace: true });
@@ -25,12 +39,16 @@ export default function Vademecum() {
   const { data, isLoading } = useVmLei(leiId);
   const { progressoMap, toggle } = useVmProgresso(leiId);
 
+  const artigos = data?.artigos ?? [];
+  const artigoIds = useMemo(() => artigos.map((a) => a.id), [artigos]);
+  const marc = useVmMarcacoes(artigoIds);
+  const notasProf = useVmNotasProfessor(artigoIds);
+  const notasPriv = useVmNotasPrivadas(artigoIds);
+
   const [status, setStatus] = useState<VmFiltroStatus>("todos");
   const [cargo, setCargo] = useState<VmFiltroCargo>("todos");
   const [marcadosOpen, setMarcadosOpen] = useState(false);
   const [remissaoDestinoId, setRemissaoDestinoId] = useState<string | null>(null);
-
-  const artigos = data?.artigos ?? [];
 
   const filtered = useMemo(() => {
     return artigos.filter((a) => {
@@ -68,12 +86,21 @@ export default function Vademecum() {
           ) : (
             <>
               <header className="mb-4">
-                <h1 className="font-display text-2xl font-bold text-foreground">
-                  {data.lei.nome} <span className="text-muted-foreground">({data.lei.sigla})</span>
-                </h1>
-                {data.lei.descricao && (
-                  <p className="mt-1 text-sm text-muted-foreground">{data.lei.descricao}</p>
-                )}
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h1 className="font-display text-2xl font-bold text-foreground">
+                      {data.lei.nome} <span className="text-muted-foreground">({data.lei.sigla})</span>
+                    </h1>
+                    {data.lei.descricao && (
+                      <p className="mt-1 text-sm text-muted-foreground">{data.lei.descricao}</p>
+                    )}
+                  </div>
+                  {canEdit && (
+                    <Button asChild size="sm" variant="outline">
+                      <Link to="/vademecum/admin"><Settings className="mr-1 h-4 w-4" /> Gerenciar</Link>
+                    </Button>
+                  )}
+                </div>
                 <div className="mt-3 flex items-center gap-3">
                   <Progress value={progressPct} className="h-2 flex-1" />
                   <span className="whitespace-nowrap text-xs text-muted-foreground">
@@ -102,9 +129,30 @@ export default function Vademecum() {
                       artigo={a}
                       progresso={progressoMap.get(a.id)}
                       filtroCargo={cargo}
+                      marcacoesByBlock={marc.byBlock}
+                      notasProf={notasProf.byArtigo.get(a.id) ?? []}
+                      notaPriv={notasPriv.byArtigo.get(a.id)}
+                      canAddProfNote={canEdit}
+                      autorId={user?.id}
+                      autorNome={profile?.name || profile?.username || "Professor"}
                       onToggleLido={(id, v) => handleToggle(id, "lido", v)}
                       onToggleMarcado={(id, v) => handleToggle(id, "marcado", v)}
                       onRemissaoClick={(rem) => setRemissaoDestinoId(rem.artigo_destino_id)}
+                      onCreateMarcacao={(p) => marc.create.mutate(p)}
+                      onRemoveMarcacao={(id) => marc.remove.mutate(id)}
+                      onCreateProfNote={(artigoId, conteudo) =>
+                        notasProf.create.mutateAsync({
+                          artigo_id: artigoId,
+                          autor_id: user!.id,
+                          autor_nome: profile?.name || profile?.username || "Professor",
+                          conteudo,
+                        })
+                      }
+                      onRemoveProfNote={(id) => notasProf.remove.mutate(id)}
+                      onSavePrivNote={(artigoId, conteudo) =>
+                        notasPriv.upsert.mutateAsync({ artigo_id: artigoId, conteudo })
+                      }
+                      onRemovePrivNote={(id) => notasPriv.remove.mutateAsync(id)}
                     />
                   ))
                 )}

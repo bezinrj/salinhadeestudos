@@ -29,6 +29,7 @@ import Juris from "./pages/Juris";
 import JurisDetail from "./pages/JurisDetail";
 import JurisAdmin from "./pages/JurisAdmin";
 import Vademecum from "./pages/Vademecum";
+import VademecumAdmin from "./pages/VademecumAdmin";
 
 const queryClient = new QueryClient();
 
@@ -73,6 +74,7 @@ const App = () => (
               <Route path="/juris/admin/:id" element={<JurisAdmin />} />
               <Route path="/juris/:id" element={<JurisDetail />} />
               <Route path="/vademecum" element={<Vademecum />} />
+              <Route path="/vademecum/admin" element={<VademecumAdmin />} />
               <Route path="/vademecum/:leiId" element={<Vademecum />} />
               <Route path="/admin" element={<Admin />} />
             </Route>
