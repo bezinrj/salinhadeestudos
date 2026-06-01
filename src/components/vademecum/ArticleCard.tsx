@@ -181,12 +181,6 @@ export function ArticleCard(props: Props) {
           {marcado ? <BookmarkCheck className="mr-1 h-4 w-4" /> : <Bookmark className="mr-1 h-4 w-4" />}
           {marcado ? "Marcado" : "Marcar"}
         </Button>
-        {!notaPriv && (
-          <Button size="sm" variant="ghost" className="text-pink-300" onClick={() => onSavePrivNote(artigo.id, "")}>
-            <StickyNote className="mr-1 h-4 w-4" /> Nota
-          </Button>
-        )}
-      </footer>
 
       <ArticleComments artigoId={artigo.id} />
     </article>
