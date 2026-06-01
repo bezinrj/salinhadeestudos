@@ -2085,6 +2085,57 @@ export type Database = {
         }
         Relationships: []
       }
+      vm_marcacoes: {
+        Row: {
+          artigo_id: string
+          cor: string
+          created_at: string
+          id: string
+          offset_fim: number
+          offset_inicio: number
+          paragrafo_id: string | null
+          trecho: string
+          user_id: string
+        }
+        Insert: {
+          artigo_id: string
+          cor?: string
+          created_at?: string
+          id?: string
+          offset_fim: number
+          offset_inicio: number
+          paragrafo_id?: string | null
+          trecho: string
+          user_id: string
+        }
+        Update: {
+          artigo_id?: string
+          cor?: string
+          created_at?: string
+          id?: string
+          offset_fim?: number
+          offset_inicio?: number
+          paragrafo_id?: string | null
+          trecho?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vm_marcacoes_artigo_id_fkey"
+            columns: ["artigo_id"]
+            isOneToOne: false
+            referencedRelation: "vm_artigos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vm_marcacoes_paragrafo_id_fkey"
+            columns: ["paragrafo_id"]
+            isOneToOne: false
+            referencedRelation: "vm_paragrafos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vm_notas: {
         Row: {
           artigo_id: string
@@ -2116,6 +2167,79 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "vm_notas_artigo_id_fkey"
+            columns: ["artigo_id"]
+            isOneToOne: false
+            referencedRelation: "vm_artigos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vm_notas_privadas: {
+        Row: {
+          artigo_id: string
+          conteudo: string
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          artigo_id: string
+          conteudo: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          artigo_id?: string
+          conteudo?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vm_notas_privadas_artigo_id_fkey"
+            columns: ["artigo_id"]
+            isOneToOne: false
+            referencedRelation: "vm_artigos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vm_notas_professor: {
+        Row: {
+          artigo_id: string
+          autor_id: string
+          autor_nome: string
+          conteudo: string
+          created_at: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          artigo_id: string
+          autor_id: string
+          autor_nome: string
+          conteudo: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          artigo_id?: string
+          autor_id?: string
+          autor_nome?: string
+          conteudo?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vm_notas_professor_artigo_id_fkey"
             columns: ["artigo_id"]
             isOneToOne: false
             referencedRelation: "vm_artigos"
