@@ -1,8 +1,20 @@
-import type { VmArtigo } from "@/types/vademecum";
+import { useMemo } from "react";
+import type { VmArtigo, VmMarcacao, VmHighlightCor } from "@/types/vademecum";
 import { cn } from "@/lib/utils";
+import { HighlightableText } from "./HighlightableText";
 
 interface Props {
   artigo: VmArtigo;
+  marcacoesByBlock: Map<string, VmMarcacao[]>;
+  onCreateMarcacao: (payload: {
+    artigo_id: string;
+    paragrafo_id: string | null;
+    trecho: string;
+    offset_inicio: number;
+    offset_fim: number;
+    cor: VmHighlightCor;
+  }) => void;
+  onRemoveMarcacao: (id: string) => void;
   onRemissaoClick?: (remissao: VmArtigo["remissoes"][number]) => void;
 }
 
@@ -13,45 +25,51 @@ const TIPO_INDENT: Record<string, string> = {
   alinea: "pl-12",
 };
 
-export function ArticleText({ artigo, onRemissaoClick }: Props) {
-  const renderTextWithRemissoes = (text: string) => {
-    if (!artigo.remissoes || artigo.remissoes.length === 0) return text;
-    // Replace literal occurrences of remission display text inside the article body
-    // (best-effort; for richer matching the admin would mark them up explicitly).
-    let nodes: (string | JSX.Element)[] = [text];
-    artigo.remissoes.forEach((rem, idx) => {
-      const next: (string | JSX.Element)[] = [];
-      nodes.forEach((node, ni) => {
-        if (typeof node !== "string") return next.push(node);
-        const i = node.indexOf(rem.texto_exibido);
-        if (i === -1) return next.push(node);
-        next.push(node.slice(0, i));
-        next.push(
-          <button
-            key={`rem-${idx}-${ni}`}
-            type="button"
-            onClick={() => onRemissaoClick?.(rem)}
-            className="text-sky-400 underline decoration-dotted underline-offset-2 hover:text-sky-300"
-          >
-            {rem.texto_exibido}
-          </button>,
-        );
-        next.push(node.slice(i + rem.texto_exibido.length));
-      });
-      nodes = next;
-    });
-    return <>{nodes}</>;
-  };
+export function ArticleText({ artigo, marcacoesByBlock, onCreateMarcacao, onRemoveMarcacao, onRemissaoClick }: Props) {
+  const artigoMarc = marcacoesByBlock.get(artigo.id) ?? [];
 
   return (
     <div className="font-serif text-[16px] leading-[1.85] text-foreground/90">
-      <p>{renderTextWithRemissoes(artigo.texto)}</p>
-      {artigo.paragrafos.map((p) => (
-        <p key={p.id} className={cn("mt-3", TIPO_INDENT[p.tipo] ?? "pl-4")}>
-          {p.rotulo && <strong className="mr-1 text-foreground">{p.rotulo}</strong>}
-          {renderTextWithRemissoes(p.texto)}
-        </p>
-      ))}
+      <p>
+        <HighlightableText
+          text={artigo.texto}
+          marcacoes={artigoMarc}
+          onCreate={(r) =>
+            onCreateMarcacao({
+              artigo_id: artigo.id,
+              paragrafo_id: null,
+              trecho: r.trecho,
+              offset_inicio: r.start,
+              offset_fim: r.end,
+              cor: r.cor,
+            })
+          }
+          onRemove={onRemoveMarcacao}
+        />
+      </p>
+      {artigo.paragrafos.map((p) => {
+        const marc = marcacoesByBlock.get(p.id) ?? [];
+        return (
+          <p key={p.id} className={cn("mt-3", TIPO_INDENT[p.tipo] ?? "pl-4")}>
+            <HighlightableText
+              text={p.texto}
+              marcacoes={marc}
+              prefix={p.rotulo ? <strong className="mr-1 text-foreground">{p.rotulo}</strong> : null}
+              onCreate={(r) =>
+                onCreateMarcacao({
+                  artigo_id: artigo.id,
+                  paragrafo_id: p.id,
+                  trecho: r.trecho,
+                  offset_inicio: r.start,
+                  offset_fim: r.end,
+                  cor: r.cor,
+                })
+              }
+              onRemove={onRemoveMarcacao}
+            />
+          </p>
+        );
+      })}
 
       {artigo.remissoes && artigo.remissoes.length > 0 && (
         <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-border/50 pt-3 text-xs">
