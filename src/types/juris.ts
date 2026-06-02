@@ -8,6 +8,8 @@ export interface JurisJulgado {
   info: string;
   area: string;
   assunto: string;
+  areas: string[];
+  assuntos: string[];
   nocoes: {
     frase?: string;
     contexto?: string;
@@ -43,6 +45,8 @@ export const EMPTY_JULGADO: Omit<JurisJulgado, "id" | "created_at" | "updated_at
   info: "",
   area: "",
   assunto: "",
+  areas: [],
+  assuntos: [],
   nocoes: { frase: "", contexto: "", ok: "", ko: "" },
   conceitual: "",
   problema: "",

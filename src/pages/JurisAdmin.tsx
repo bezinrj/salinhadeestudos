@@ -146,8 +146,16 @@ export default function JurisAdmin() {
             <div><Label className="text-xs">Relator</Label><Input value={form.relator} onChange={(e) => set("relator", e.target.value)} /></div>
             <div><Label className="text-xs">Data</Label><Input value={form.data} onChange={(e) => set("data", e.target.value)} /></div>
             <div><Label className="text-xs">Informativo</Label><Input value={form.info} onChange={(e) => set("info", e.target.value)} /></div>
-            <MateriaPicker value={form.area} onChange={(v) => set("area", v)} />
-            <AssuntoPicker materia={form.area} value={form.assunto} onChange={(v) => set("assunto", v)} />
+            <MateriasMultiPicker
+              values={form.areas?.length ? form.areas : (form.area ? [form.area] : [])}
+              onChange={(arr) => setForm((f) => ({ ...f, areas: arr, area: arr[0] || "" }))}
+            />
+            <AssuntosMultiPicker
+              materias={form.areas?.length ? form.areas : (form.area ? [form.area] : [])}
+              values={form.assuntos?.length ? form.assuntos : (form.assunto ? [form.assunto] : [])}
+              onChange={(arr) => setForm((f) => ({ ...f, assuntos: arr, assunto: arr[0] || "" }))}
+            />
+
           </div>
 
           <div className="border-t border-border pt-4">
@@ -329,6 +337,147 @@ function AssuntoPicker({ materia, value, onChange }: { materia: string; value: s
             </SelectContent>
           </Select>
           <Button type="button" size="icon" variant="outline" onClick={() => setAdding(true)} disabled={!materia} title="Novo assunto"><Plus className="h-4 w-4" /></Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Chip({ label, onRemove }: { label: string; onRemove: () => void }) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-md border border-primary/40 bg-primary/10 px-2 py-0.5 text-xs text-primary">
+      {label}
+      <button type="button" onClick={onRemove} className="text-primary/70 hover:text-destructive">×</button>
+    </span>
+  );
+}
+
+function MateriasMultiPicker({ values, onChange }: { values: string[]; onChange: (v: string[]) => void }) {
+  const { data: materias = [] } = useJurisMaterias();
+  const invalidate = useInvalidateTaxonomy();
+  const [adding, setAdding] = useState(false);
+  const [novo, setNovo] = useState("");
+
+  const options = useMemo(() => {
+    const set = new Set(materias.map((m) => m.nome));
+    values.forEach((v) => v && set.add(v));
+    return Array.from(set).sort().filter((o) => !values.includes(o));
+  }, [materias, values]);
+
+  function add(nome: string) {
+    if (!nome || values.includes(nome)) return;
+    onChange([...values, nome]);
+  }
+  function remove(nome: string) {
+    onChange(values.filter((v) => v !== nome));
+  }
+  async function addNew() {
+    const nome = novo.trim();
+    if (!nome) return;
+    const { error } = await supabase.from("juris_materias" as any).insert({ nome });
+    if (error && !error.message.includes("duplicate")) { toast.error(error.message); return; }
+    invalidate();
+    add(nome);
+    setNovo(""); setAdding(false);
+    toast.success("Matéria adicionada");
+  }
+
+  return (
+    <div className="md:col-span-2">
+      <Label className="text-xs">Matérias</Label>
+      <div className="mb-2 flex flex-wrap gap-1.5">
+        {values.length === 0 && <span className="text-xs text-muted-foreground">Nenhuma matéria selecionada.</span>}
+        {values.map((v) => <Chip key={v} label={v} onRemove={() => remove(v)} />)}
+      </div>
+      {adding ? (
+        <div className="flex gap-2">
+          <Input autoFocus value={novo} onChange={(e) => setNovo(e.target.value)} placeholder="Nova matéria" onKeyDown={(e) => e.key === "Enter" && addNew()} />
+          <Button type="button" size="icon" onClick={addNew}><Plus className="h-4 w-4" /></Button>
+          <Button type="button" size="icon" variant="ghost" onClick={() => setAdding(false)}>×</Button>
+        </div>
+      ) : (
+        <div className="flex gap-2">
+          <Select value="" onValueChange={(v) => add(v)}>
+            <SelectTrigger><SelectValue placeholder="Adicionar matéria..." /></SelectTrigger>
+            <SelectContent>
+              {options.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Button type="button" size="icon" variant="outline" onClick={() => setAdding(true)} title="Nova matéria"><Plus className="h-4 w-4" /></Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AssuntosMultiPicker({ materias: selMaterias, values, onChange }: { materias: string[]; values: string[]; onChange: (v: string[]) => void }) {
+  const { data: materias = [] } = useJurisMaterias();
+  const { data: assuntos = [] } = useJurisAssuntos();
+  const invalidate = useInvalidateTaxonomy();
+  const [adding, setAdding] = useState(false);
+  const [novo, setNovo] = useState("");
+  const [materiaAlvo, setMateriaAlvo] = useState<string>("");
+
+  const materiaIds = materias.filter((m) => selMaterias.includes(m.nome)).map((m) => m.id);
+  const lista = assuntos.filter((a) => materiaIds.includes(a.materia_id)).map((a) => a.nome);
+  const options = useMemo(() => {
+    const set = new Set(lista);
+    values.forEach((v) => v && set.add(v));
+    return Array.from(set).sort().filter((o) => !values.includes(o));
+  }, [lista, values]);
+
+  function add(nome: string) {
+    if (!nome || values.includes(nome)) return;
+    onChange([...values, nome]);
+  }
+  function remove(nome: string) {
+    onChange(values.filter((v) => v !== nome));
+  }
+  async function addNew() {
+    const nome = novo.trim();
+    if (!nome) return;
+    const alvo = materiaAlvo || selMaterias[0];
+    const materiaId = materias.find((m) => m.nome === alvo)?.id;
+    if (!materiaId) { toast.error("Escolha a matéria primeiro"); return; }
+    const { error } = await supabase.from("juris_assuntos" as any).insert({ nome, materia_id: materiaId });
+    if (error && !error.message.includes("duplicate")) { toast.error(error.message); return; }
+    invalidate();
+    add(nome);
+    setNovo(""); setAdding(false); setMateriaAlvo("");
+    toast.success("Assunto adicionado");
+  }
+
+  const disabled = selMaterias.length === 0;
+  return (
+    <div className="md:col-span-2">
+      <Label className="text-xs">Assuntos</Label>
+      <div className="mb-2 flex flex-wrap gap-1.5">
+        {values.length === 0 && <span className="text-xs text-muted-foreground">{disabled ? "Escolha ao menos uma matéria." : "Nenhum assunto selecionado."}</span>}
+        {values.map((v) => <Chip key={v} label={v} onRemove={() => remove(v)} />)}
+      </div>
+      {adding ? (
+        <div className="flex flex-col gap-2 md:flex-row">
+          {selMaterias.length > 1 && (
+            <Select value={materiaAlvo} onValueChange={setMateriaAlvo}>
+              <SelectTrigger className="md:w-48"><SelectValue placeholder="Matéria-alvo" /></SelectTrigger>
+              <SelectContent>
+                {selMaterias.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          )}
+          <Input autoFocus value={novo} onChange={(e) => setNovo(e.target.value)} placeholder="Novo assunto" onKeyDown={(e) => e.key === "Enter" && addNew()} />
+          <Button type="button" size="icon" onClick={addNew}><Plus className="h-4 w-4" /></Button>
+          <Button type="button" size="icon" variant="ghost" onClick={() => setAdding(false)}>×</Button>
+        </div>
+      ) : (
+        <div className="flex gap-2">
+          <Select value="" onValueChange={(v) => add(v)} disabled={disabled}>
+            <SelectTrigger><SelectValue placeholder={disabled ? "Escolha a matéria" : "Adicionar assunto..."} /></SelectTrigger>
+            <SelectContent>
+              {options.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Button type="button" size="icon" variant="outline" onClick={() => setAdding(true)} disabled={disabled} title="Novo assunto"><Plus className="h-4 w-4" /></Button>
         </div>
       )}
     </div>

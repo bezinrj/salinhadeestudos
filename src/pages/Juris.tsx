@@ -48,16 +48,18 @@ export default function Juris() {
 
   const materias = useMemo(() => {
     const s = new Set<string>();
-    julgados?.forEach((j) => j.area && s.add(j.area));
+    julgados?.forEach((j) => {
+      (j.areas?.length ? j.areas : (j.area ? [j.area] : [])).forEach((x) => x && s.add(x));
+    });
     return Array.from(s).sort();
   }, [julgados]);
 
   const assuntos = useMemo(() => {
     const s = new Set<string>();
     julgados?.forEach((j) => {
-      if (!j.assunto) return;
-      if (materia !== "all" && j.area !== materia) return;
-      s.add(j.assunto);
+      const jAreas = j.areas?.length ? j.areas : (j.area ? [j.area] : []);
+      if (materia !== "all" && !jAreas.includes(materia)) return;
+      (j.assuntos?.length ? j.assuntos : (j.assunto ? [j.assunto] : [])).forEach((x) => x && s.add(x));
     });
     return Array.from(s).sort();
   }, [julgados, materia]);
@@ -88,18 +90,21 @@ export default function Juris() {
   const filtered = useMemo(() => {
     return (julgados ?? []).filter((j) => {
       if (!j.published && !canManage) return false;
+      const jAreas = j.areas?.length ? j.areas : (j.area ? [j.area] : []);
+      const jAssuntos = j.assuntos?.length ? j.assuntos : (j.assunto ? [j.assunto] : []);
       if (tribunal !== "all" && j.tribunal !== tribunal) return false;
-      if (materia !== "all" && j.area !== materia) return false;
-      if (assunto !== "all" && j.assunto !== assunto) return false;
+      if (materia !== "all" && !jAreas.includes(materia)) return false;
+      if (assunto !== "all" && !jAssuntos.includes(assunto)) return false;
       if (info !== "all" && String(j.info) !== info) return false;
       if (search.trim()) {
         const q = search.toLowerCase();
-        const hay = `${j.titulo} ${j.tribunal} ${j.numero} ${j.area} ${j.assunto ?? ""} ${j.nocoes?.frase ?? ""}`.toLowerCase();
+        const hay = `${j.titulo} ${j.tribunal} ${j.numero} ${jAreas.join(" ")} ${jAssuntos.join(" ")} ${j.nocoes?.frase ?? ""}`.toLowerCase();
         if (!hay.includes(q)) return false;
       }
       return true;
     });
   }, [julgados, tribunal, materia, assunto, info, search, canManage]);
+
 
   return (
     <div className="container mx-auto max-w-6xl px-4 py-8 pb-24 md:pb-12">
@@ -247,18 +252,28 @@ export default function Juris() {
                 onClick={() => navigate(`/juris/${j.id}`)}
               >
                 <CardContent className="flex h-full flex-col p-5">
-                  <div className="mb-3 flex flex-wrap items-center gap-1.5">
-                    {j.tribunal && <Badge variant="secondary" className="bg-primary/15 text-primary">{j.tribunal}</Badge>}
-                    {j.assunto && <Badge variant="outline" className="border-primary/40 text-primary">{j.assunto}</Badge>}
-                    {j.info && <Badge variant="outline" className="border-gold/40 text-gold">{j.info}</Badge>}
-                    {!j.published && <Badge variant="destructive">Rascunho</Badge>}
-                  </div>
-                  <h3 className="mb-2 line-clamp-2 font-display text-lg font-semibold leading-snug">
-                    {j.titulo || "(sem título)"}
-                  </h3>
-                  <div className="mb-3 text-xs text-muted-foreground">
-                    {[j.area, j.data, j.numero].filter(Boolean).join(" · ")}
-                  </div>
+                  {(() => {
+                    const jAssuntos = j.assuntos?.length ? j.assuntos : (j.assunto ? [j.assunto] : []);
+                    const jAreas = j.areas?.length ? j.areas : (j.area ? [j.area] : []);
+                    return (
+                      <>
+                        <div className="mb-3 flex flex-wrap items-center gap-1.5">
+                          {j.tribunal && <Badge variant="secondary" className="bg-primary/15 text-primary">{j.tribunal}</Badge>}
+                          {jAssuntos.map((a) => (
+                            <Badge key={a} variant="outline" className="border-primary/40 text-primary">{a}</Badge>
+                          ))}
+                          {j.info && <Badge variant="outline" className="border-gold/40 text-gold">{j.info}</Badge>}
+                          {!j.published && <Badge variant="destructive">Rascunho</Badge>}
+                        </div>
+                        <h3 className="mb-2 line-clamp-2 font-display text-lg font-semibold leading-snug">
+                          {j.titulo || "(sem título)"}
+                        </h3>
+                        <div className="mb-3 text-xs text-muted-foreground">
+                          {[jAreas.join(" / "), j.data, j.numero].filter(Boolean).join(" · ")}
+                        </div>
+                      </>
+                    );
+                  })()}
                   <p className="mb-4 line-clamp-3 flex-1 text-sm text-muted-foreground">
                     {j.nocoes?.frase || "Sem resumo."}
                   </p>
