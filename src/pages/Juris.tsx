@@ -26,6 +26,7 @@ export default function Juris() {
   const [tribunal, setTribunal] = useState<string>("all");
   const [materia, setMateria] = useState<string>("all");
   const [assunto, setAssunto] = useState<string>("all");
+  const [info, setInfo] = useState<string>("all");
 
   const { data: julgados, isLoading } = useQuery({
     queryKey: ["juris-julgados-list"],
@@ -61,12 +62,36 @@ export default function Juris() {
     return Array.from(s).sort();
   }, [julgados, materia]);
 
+  const informativosPorTribunal = useMemo(() => {
+    const map: Record<string, Set<string>> = { STJ: new Set(), STF: new Set() };
+    julgados?.forEach((j) => {
+      if (!j.info) return;
+      const trib = (j.tribunal || "").toUpperCase();
+      if (trib !== "STJ" && trib !== "STF") return;
+      map[trib].add(String(j.info));
+    });
+    const sortDesc = (arr: string[]) =>
+      arr.sort((a, b) => {
+        const na = parseInt(a.replace(/\D/g, ""), 10);
+        const nb = parseInt(b.replace(/\D/g, ""), 10);
+        if (isNaN(na) && isNaN(nb)) return b.localeCompare(a);
+        if (isNaN(na)) return 1;
+        if (isNaN(nb)) return -1;
+        return nb - na;
+      });
+    return {
+      STJ: sortDesc(Array.from(map.STJ)),
+      STF: sortDesc(Array.from(map.STF)),
+    };
+  }, [julgados]);
+
   const filtered = useMemo(() => {
     return (julgados ?? []).filter((j) => {
       if (!j.published && !canManage) return false;
       if (tribunal !== "all" && j.tribunal !== tribunal) return false;
       if (materia !== "all" && j.area !== materia) return false;
       if (assunto !== "all" && j.assunto !== assunto) return false;
+      if (info !== "all" && String(j.info) !== info) return false;
       if (search.trim()) {
         const q = search.toLowerCase();
         const hay = `${j.titulo} ${j.tribunal} ${j.numero} ${j.area} ${j.assunto ?? ""} ${j.nocoes?.frase ?? ""}`.toLowerCase();
@@ -74,7 +99,7 @@ export default function Juris() {
       }
       return true;
     });
-  }, [julgados, tribunal, materia, assunto, search, canManage]);
+  }, [julgados, tribunal, materia, assunto, info, search, canManage]);
 
   return (
     <div className="container mx-auto max-w-6xl px-4 py-8 pb-24 md:pb-12">
@@ -145,6 +170,58 @@ export default function Juris() {
           </SelectContent>
         </Select>
       </div>
+
+      {/* Informativos STJ / STF */}
+      {(informativosPorTribunal.STJ.length > 0 || informativosPorTribunal.STF.length > 0) && (
+        <div className="mb-6 grid gap-3 md:grid-cols-2">
+          {(["STJ", "STF"] as const).map((trib) => {
+            const items = informativosPorTribunal[trib];
+            if (items.length === 0) return null;
+            return (
+              <div
+                key={trib}
+                className="rounded-2xl border border-border bg-card/50 p-4"
+              >
+                <div className="mb-3 flex items-center justify-between">
+                  <h3 className="font-display text-sm font-semibold text-foreground">
+                    Informativos <span className="text-primary">{trib}</span>
+                  </h3>
+                  {info !== "all" && (
+                    <button
+                      onClick={() => setInfo("all")}
+                      className="text-xs text-muted-foreground hover:text-primary"
+                    >
+                      Limpar
+                    </button>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {items.map((n) => {
+                    const active = info === n;
+                    return (
+                      <button
+                        key={n}
+                        onClick={() => {
+                          setInfo(active ? "all" : n);
+                          setTribunal(active ? "all" : trib);
+                        }}
+                        className={`rounded-md border px-2.5 py-1 text-xs font-medium transition-colors ${
+                          active
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "border-border bg-secondary/40 text-muted-foreground hover:border-primary/50 hover:text-primary"
+                        }`}
+                      >
+                        {n}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
 
       {/* Grid */}
       {isLoading ? (
