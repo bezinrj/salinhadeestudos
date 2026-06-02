@@ -573,7 +573,9 @@ export type Database = {
           abertura: string | null
           antes: string | null
           area: string | null
+          areas: string[]
           assunto: string | null
+          assuntos: string[]
           casos_concretos: Json
           conceitual: string | null
           conclusoes: string | null
@@ -603,7 +605,9 @@ export type Database = {
           abertura?: string | null
           antes?: string | null
           area?: string | null
+          areas?: string[]
           assunto?: string | null
+          assuntos?: string[]
           casos_concretos?: Json
           conceitual?: string | null
           conclusoes?: string | null
@@ -633,7 +637,9 @@ export type Database = {
           abertura?: string | null
           antes?: string | null
           area?: string | null
+          areas?: string[]
           assunto?: string | null
+          assuntos?: string[]
           casos_concretos?: Json
           conceitual?: string | null
           conclusoes?: string | null
