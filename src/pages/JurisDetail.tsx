@@ -74,8 +74,12 @@ export default function JurisDetail() {
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
         <div className="mb-3 flex flex-wrap gap-1.5">
           {j.tribunal && <Badge className="bg-primary/15 text-primary hover:bg-primary/20">{j.tribunal}</Badge>}
-          {j.area && <Badge variant="secondary">{j.area}</Badge>}
-          {j.assunto && <Badge variant="outline" className="border-primary/40 text-primary">{j.assunto}</Badge>}
+          {(j.areas?.length ? j.areas : (j.area ? [j.area] : [])).map((a) => (
+            <Badge key={`a-${a}`} variant="secondary">{a}</Badge>
+          ))}
+          {(j.assuntos?.length ? j.assuntos : (j.assunto ? [j.assunto] : [])).map((s) => (
+            <Badge key={`s-${s}`} variant="outline" className="border-primary/40 text-primary">{s}</Badge>
+          ))}
           {j.info && <Badge variant="outline" className="border-gold/40 text-gold">{j.info}</Badge>}
           {j.data && <Badge variant="outline">{j.data}</Badge>}
           {!j.published && <Badge variant="destructive">Rascunho</Badge>}
