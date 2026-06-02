@@ -62,12 +62,36 @@ export default function Juris() {
     return Array.from(s).sort();
   }, [julgados, materia]);
 
+  const informativosPorTribunal = useMemo(() => {
+    const map: Record<string, Set<string>> = { STJ: new Set(), STF: new Set() };
+    julgados?.forEach((j) => {
+      if (!j.info) return;
+      const trib = (j.tribunal || "").toUpperCase();
+      if (trib !== "STJ" && trib !== "STF") return;
+      map[trib].add(String(j.info));
+    });
+    const sortDesc = (arr: string[]) =>
+      arr.sort((a, b) => {
+        const na = parseInt(a.replace(/\D/g, ""), 10);
+        const nb = parseInt(b.replace(/\D/g, ""), 10);
+        if (isNaN(na) && isNaN(nb)) return b.localeCompare(a);
+        if (isNaN(na)) return 1;
+        if (isNaN(nb)) return -1;
+        return nb - na;
+      });
+    return {
+      STJ: sortDesc(Array.from(map.STJ)),
+      STF: sortDesc(Array.from(map.STF)),
+    };
+  }, [julgados]);
+
   const filtered = useMemo(() => {
     return (julgados ?? []).filter((j) => {
       if (!j.published && !canManage) return false;
       if (tribunal !== "all" && j.tribunal !== tribunal) return false;
       if (materia !== "all" && j.area !== materia) return false;
       if (assunto !== "all" && j.assunto !== assunto) return false;
+      if (info !== "all" && String(j.info) !== info) return false;
       if (search.trim()) {
         const q = search.toLowerCase();
         const hay = `${j.titulo} ${j.tribunal} ${j.numero} ${j.area} ${j.assunto ?? ""} ${j.nocoes?.frase ?? ""}`.toLowerCase();
@@ -75,7 +99,7 @@ export default function Juris() {
       }
       return true;
     });
-  }, [julgados, tribunal, materia, assunto, search, canManage]);
+  }, [julgados, tribunal, materia, assunto, info, search, canManage]);
 
   return (
     <div className="container mx-auto max-w-6xl px-4 py-8 pb-24 md:pb-12">
