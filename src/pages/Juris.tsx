@@ -252,18 +252,28 @@ export default function Juris() {
                 onClick={() => navigate(`/juris/${j.id}`)}
               >
                 <CardContent className="flex h-full flex-col p-5">
-                  <div className="mb-3 flex flex-wrap items-center gap-1.5">
-                    {j.tribunal && <Badge variant="secondary" className="bg-primary/15 text-primary">{j.tribunal}</Badge>}
-                    {j.assunto && <Badge variant="outline" className="border-primary/40 text-primary">{j.assunto}</Badge>}
-                    {j.info && <Badge variant="outline" className="border-gold/40 text-gold">{j.info}</Badge>}
-                    {!j.published && <Badge variant="destructive">Rascunho</Badge>}
-                  </div>
-                  <h3 className="mb-2 line-clamp-2 font-display text-lg font-semibold leading-snug">
-                    {j.titulo || "(sem título)"}
-                  </h3>
-                  <div className="mb-3 text-xs text-muted-foreground">
-                    {[j.area, j.data, j.numero].filter(Boolean).join(" · ")}
-                  </div>
+                  {(() => {
+                    const jAssuntos = j.assuntos?.length ? j.assuntos : (j.assunto ? [j.assunto] : []);
+                    const jAreas = j.areas?.length ? j.areas : (j.area ? [j.area] : []);
+                    return (
+                      <>
+                        <div className="mb-3 flex flex-wrap items-center gap-1.5">
+                          {j.tribunal && <Badge variant="secondary" className="bg-primary/15 text-primary">{j.tribunal}</Badge>}
+                          {jAssuntos.map((a) => (
+                            <Badge key={a} variant="outline" className="border-primary/40 text-primary">{a}</Badge>
+                          ))}
+                          {j.info && <Badge variant="outline" className="border-gold/40 text-gold">{j.info}</Badge>}
+                          {!j.published && <Badge variant="destructive">Rascunho</Badge>}
+                        </div>
+                        <h3 className="mb-2 line-clamp-2 font-display text-lg font-semibold leading-snug">
+                          {j.titulo || "(sem título)"}
+                        </h3>
+                        <div className="mb-3 text-xs text-muted-foreground">
+                          {[jAreas.join(" / "), j.data, j.numero].filter(Boolean).join(" · ")}
+                        </div>
+                      </>
+                    );
+                  })()}
                   <p className="mb-4 line-clamp-3 flex-1 text-sm text-muted-foreground">
                     {j.nocoes?.frase || "Sem resumo."}
                   </p>
