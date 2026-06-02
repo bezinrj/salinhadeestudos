@@ -48,16 +48,18 @@ export default function Juris() {
 
   const materias = useMemo(() => {
     const s = new Set<string>();
-    julgados?.forEach((j) => j.area && s.add(j.area));
+    julgados?.forEach((j) => {
+      (j.areas?.length ? j.areas : (j.area ? [j.area] : [])).forEach((x) => x && s.add(x));
+    });
     return Array.from(s).sort();
   }, [julgados]);
 
   const assuntos = useMemo(() => {
     const s = new Set<string>();
     julgados?.forEach((j) => {
-      if (!j.assunto) return;
-      if (materia !== "all" && j.area !== materia) return;
-      s.add(j.assunto);
+      const jAreas = j.areas?.length ? j.areas : (j.area ? [j.area] : []);
+      if (materia !== "all" && !jAreas.includes(materia)) return;
+      (j.assuntos?.length ? j.assuntos : (j.assunto ? [j.assunto] : [])).forEach((x) => x && s.add(x));
     });
     return Array.from(s).sort();
   }, [julgados, materia]);
