@@ -90,18 +90,21 @@ export default function Juris() {
   const filtered = useMemo(() => {
     return (julgados ?? []).filter((j) => {
       if (!j.published && !canManage) return false;
+      const jAreas = j.areas?.length ? j.areas : (j.area ? [j.area] : []);
+      const jAssuntos = j.assuntos?.length ? j.assuntos : (j.assunto ? [j.assunto] : []);
       if (tribunal !== "all" && j.tribunal !== tribunal) return false;
-      if (materia !== "all" && j.area !== materia) return false;
-      if (assunto !== "all" && j.assunto !== assunto) return false;
+      if (materia !== "all" && !jAreas.includes(materia)) return false;
+      if (assunto !== "all" && !jAssuntos.includes(assunto)) return false;
       if (info !== "all" && String(j.info) !== info) return false;
       if (search.trim()) {
         const q = search.toLowerCase();
-        const hay = `${j.titulo} ${j.tribunal} ${j.numero} ${j.area} ${j.assunto ?? ""} ${j.nocoes?.frase ?? ""}`.toLowerCase();
+        const hay = `${j.titulo} ${j.tribunal} ${j.numero} ${jAreas.join(" ")} ${jAssuntos.join(" ")} ${j.nocoes?.frase ?? ""}`.toLowerCase();
         if (!hay.includes(q)) return false;
       }
       return true;
     });
   }, [julgados, tribunal, materia, assunto, info, search, canManage]);
+
 
   return (
     <div className="container mx-auto max-w-6xl px-4 py-8 pb-24 md:pb-12">
