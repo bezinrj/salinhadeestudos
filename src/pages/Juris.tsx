@@ -26,6 +26,7 @@ export default function Juris() {
   const [tribunal, setTribunal] = useState<string>("all");
   const [materia, setMateria] = useState<string>("all");
   const [assunto, setAssunto] = useState<string>("all");
+  const [info, setInfo] = useState<string>("all");
 
   const { data: julgados, isLoading } = useQuery({
     queryKey: ["juris-julgados-list"],
