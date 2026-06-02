@@ -8,6 +8,8 @@ export interface JurisJulgado {
   info: string;
   area: string;
   assunto: string;
+  areas: string[];
+  assuntos: string[];
   nocoes: {
     frase?: string;
     contexto?: string;
