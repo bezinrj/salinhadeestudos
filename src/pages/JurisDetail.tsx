@@ -74,11 +74,17 @@ export default function JurisDetail() {
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
         <div className="mb-3 flex flex-wrap gap-1.5">
           {j.tribunal && <Badge className="bg-primary/15 text-primary hover:bg-primary/20">{j.tribunal}</Badge>}
-          {(j.areas?.length ? j.areas : (j.area ? [j.area] : [])).map((a) => (
-            <Badge key={`a-${a}`} variant="secondary">{a}</Badge>
-          ))}
-          {(j.assuntos?.length ? j.assuntos : (j.assunto ? [j.assunto] : [])).map((s) => (
-            <Badge key={`s-${s}`} variant="outline" className="border-primary/40 text-primary">{s}</Badge>
+          {(j.topicos?.length
+            ? j.topicos
+            : (j.areas?.length ? j.areas : (j.area ? [j.area] : [])).map((m) => ({
+                materia: m,
+                assunto: "",
+              }))
+          ).map((t, i) => (
+            <Badge key={`t-${i}`} variant="outline" className="border-primary/40 text-primary">
+              <span className="font-semibold">{t.materia}</span>
+              {t.assunto && <span className="ml-1 opacity-70">› {t.assunto}</span>}
+            </Badge>
           ))}
           {j.info && <Badge variant="outline" className="border-gold/40 text-gold">{j.info}</Badge>}
           {j.data && <Badge variant="outline">{j.data}</Badge>}

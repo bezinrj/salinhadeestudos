@@ -598,6 +598,7 @@ export type Database = {
           solucao: string | null
           tese: string | null
           titulo: string
+          topicos: Json
           tribunal: string | null
           updated_at: string
         }
@@ -630,6 +631,7 @@ export type Database = {
           solucao?: string | null
           tese?: string | null
           titulo: string
+          topicos?: Json
           tribunal?: string | null
           updated_at?: string
         }
@@ -662,6 +664,7 @@ export type Database = {
           solucao?: string | null
           tese?: string | null
           titulo?: string
+          topicos?: Json
           tribunal?: string | null
           updated_at?: string
         }

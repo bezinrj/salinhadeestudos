@@ -253,15 +253,23 @@ export default function Juris() {
               >
                 <CardContent className="flex h-full flex-col p-5">
                   {(() => {
-                    const jAssuntos = j.assuntos?.length ? j.assuntos : (j.assunto ? [j.assunto] : []);
                     const jAreas = j.areas?.length ? j.areas : (j.area ? [j.area] : []);
+                    const jTopicos = j.topicos ?? [];
+                    const primeiraMateria = jTopicos[0]?.materia || jAreas[0] || "";
+                    const extrasCount = Math.max(
+                      (jTopicos.length || jAreas.length) - 1,
+                      0
+                    );
                     return (
                       <>
                         <div className="mb-3 flex flex-wrap items-center gap-1.5">
                           {j.tribunal && <Badge variant="secondary" className="bg-primary/15 text-primary">{j.tribunal}</Badge>}
-                          {jAssuntos.map((a) => (
-                            <Badge key={a} variant="outline" className="border-primary/40 text-primary">{a}</Badge>
-                          ))}
+                          {primeiraMateria && (
+                            <Badge variant="outline" className="border-primary/40 text-primary">{primeiraMateria}</Badge>
+                          )}
+                          {extrasCount > 0 && (
+                            <Badge variant="outline" className="border-border text-muted-foreground">+{extrasCount}</Badge>
+                          )}
                           {j.info && <Badge variant="outline" className="border-gold/40 text-gold">{j.info}</Badge>}
                           {!j.published && <Badge variant="destructive">Rascunho</Badge>}
                         </div>
@@ -269,7 +277,7 @@ export default function Juris() {
                           {j.titulo || "(sem título)"}
                         </h3>
                         <div className="mb-3 text-xs text-muted-foreground">
-                          {[jAreas.join(" / "), j.data, j.numero].filter(Boolean).join(" · ")}
+                          {[j.data, j.numero].filter(Boolean).join(" · ")}
                         </div>
                       </>
                     );

@@ -146,14 +146,18 @@ export default function JurisAdmin() {
             <div><Label className="text-xs">Relator</Label><Input value={form.relator} onChange={(e) => set("relator", e.target.value)} /></div>
             <div><Label className="text-xs">Data</Label><Input value={form.data} onChange={(e) => set("data", e.target.value)} /></div>
             <div><Label className="text-xs">Informativo</Label><Input value={form.info} onChange={(e) => set("info", e.target.value)} /></div>
-            <MateriasMultiPicker
-              values={form.areas?.length ? form.areas : (form.area ? [form.area] : [])}
-              onChange={(arr) => setForm((f) => ({ ...f, areas: arr, area: arr[0] || "" }))}
-            />
-            <AssuntosMultiPicker
-              materias={form.areas?.length ? form.areas : (form.area ? [form.area] : [])}
-              values={form.assuntos?.length ? form.assuntos : (form.assunto ? [form.assunto] : [])}
-              onChange={(arr) => setForm((f) => ({ ...f, assuntos: arr, assunto: arr[0] || "" }))}
+            <TopicosEditor
+              values={form.topicos || []}
+              onChange={(pares) =>
+                setForm((f) => ({
+                  ...f,
+                  topicos: pares,
+                  areas: Array.from(new Set(pares.map((p) => p.materia).filter(Boolean))),
+                  assuntos: Array.from(new Set(pares.map((p) => p.assunto).filter(Boolean))),
+                  area: pares[0]?.materia || "",
+                  assunto: pares[0]?.assunto || "",
+                }))
+              }
             />
 
           </div>
@@ -352,135 +356,139 @@ function Chip({ label, onRemove }: { label: string; onRemove: () => void }) {
   );
 }
 
-function MateriasMultiPicker({ values, onChange }: { values: string[]; onChange: (v: string[]) => void }) {
+type Topico = { materia: string; assunto: string };
+
+function TopicosEditor({ values, onChange }: { values: Topico[]; onChange: (v: Topico[]) => void }) {
   const { data: materias = [] } = useJurisMaterias();
+  const { data: assuntos = [] } = useJurisAssuntos();
   const invalidate = useInvalidateTaxonomy();
-  const [adding, setAdding] = useState(false);
-  const [novo, setNovo] = useState("");
 
-  const options = useMemo(() => {
-    const set = new Set(materias.map((m) => m.nome));
-    values.forEach((v) => v && set.add(v));
-    return Array.from(set).sort().filter((o) => !values.includes(o));
-  }, [materias, values]);
+  const [materia, setMateria] = useState("");
+  const [assunto, setAssunto] = useState("");
+  const [novaMateria, setNovaMateria] = useState("");
+  const [novoAssunto, setNovoAssunto] = useState("");
+  const [addingMateria, setAddingMateria] = useState(false);
+  const [addingAssunto, setAddingAssunto] = useState(false);
 
-  function add(nome: string) {
-    if (!nome || values.includes(nome)) return;
-    onChange([...values, nome]);
+  const materiasOptions = useMemo(
+    () => Array.from(new Set(materias.map((m) => m.nome))).sort(),
+    [materias]
+  );
+  const materiaId = materias.find((m) => m.nome === materia)?.id;
+  const assuntosOptions = useMemo(
+    () => assuntos.filter((a) => a.materia_id === materiaId).map((a) => a.nome).sort(),
+    [assuntos, materiaId]
+  );
+
+  function add() {
+    if (!materia) { toast.error("Escolha uma matéria"); return; }
+    if (!assunto) { toast.error("Escolha um assunto"); return; }
+    if (values.some((p) => p.materia === materia && p.assunto === assunto)) {
+      toast.error("Esse par já foi adicionado");
+      return;
+    }
+    onChange([...values, { materia, assunto }]);
+    setAssunto("");
   }
-  function remove(nome: string) {
-    onChange(values.filter((v) => v !== nome));
+  function remove(idx: number) {
+    onChange(values.filter((_, i) => i !== idx));
   }
-  async function addNew() {
-    const nome = novo.trim();
+  async function criarMateria() {
+    const nome = novaMateria.trim();
     if (!nome) return;
     const { error } = await supabase.from("juris_materias" as any).insert({ nome });
     if (error && !error.message.includes("duplicate")) { toast.error(error.message); return; }
     invalidate();
-    add(nome);
-    setNovo(""); setAdding(false);
-    toast.success("Matéria adicionada");
+    setMateria(nome); setAssunto("");
+    setNovaMateria(""); setAddingMateria(false);
+    toast.success("Matéria criada");
   }
-
-  return (
-    <div className="md:col-span-2">
-      <Label className="text-xs">Matérias</Label>
-      <div className="mb-2 flex flex-wrap gap-1.5">
-        {values.length === 0 && <span className="text-xs text-muted-foreground">Nenhuma matéria selecionada.</span>}
-        {values.map((v) => <Chip key={v} label={v} onRemove={() => remove(v)} />)}
-      </div>
-      {adding ? (
-        <div className="flex gap-2">
-          <Input autoFocus value={novo} onChange={(e) => setNovo(e.target.value)} placeholder="Nova matéria" onKeyDown={(e) => e.key === "Enter" && addNew()} />
-          <Button type="button" size="icon" onClick={addNew}><Plus className="h-4 w-4" /></Button>
-          <Button type="button" size="icon" variant="ghost" onClick={() => setAdding(false)}>×</Button>
-        </div>
-      ) : (
-        <div className="flex gap-2">
-          <Select value="" onValueChange={(v) => add(v)}>
-            <SelectTrigger><SelectValue placeholder="Adicionar matéria..." /></SelectTrigger>
-            <SelectContent>
-              {options.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <Button type="button" size="icon" variant="outline" onClick={() => setAdding(true)} title="Nova matéria"><Plus className="h-4 w-4" /></Button>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function AssuntosMultiPicker({ materias: selMaterias, values, onChange }: { materias: string[]; values: string[]; onChange: (v: string[]) => void }) {
-  const { data: materias = [] } = useJurisMaterias();
-  const { data: assuntos = [] } = useJurisAssuntos();
-  const invalidate = useInvalidateTaxonomy();
-  const [adding, setAdding] = useState(false);
-  const [novo, setNovo] = useState("");
-  const [materiaAlvo, setMateriaAlvo] = useState<string>("");
-
-  const materiaIds = materias.filter((m) => selMaterias.includes(m.nome)).map((m) => m.id);
-  const lista = assuntos.filter((a) => materiaIds.includes(a.materia_id)).map((a) => a.nome);
-  const options = useMemo(() => {
-    const set = new Set(lista);
-    values.forEach((v) => v && set.add(v));
-    return Array.from(set).sort().filter((o) => !values.includes(o));
-  }, [lista, values]);
-
-  function add(nome: string) {
-    if (!nome || values.includes(nome)) return;
-    onChange([...values, nome]);
-  }
-  function remove(nome: string) {
-    onChange(values.filter((v) => v !== nome));
-  }
-  async function addNew() {
-    const nome = novo.trim();
+  async function criarAssunto() {
+    const nome = novoAssunto.trim();
     if (!nome) return;
-    const alvo = materiaAlvo || selMaterias[0];
-    const materiaId = materias.find((m) => m.nome === alvo)?.id;
     if (!materiaId) { toast.error("Escolha a matéria primeiro"); return; }
     const { error } = await supabase.from("juris_assuntos" as any).insert({ nome, materia_id: materiaId });
     if (error && !error.message.includes("duplicate")) { toast.error(error.message); return; }
     invalidate();
-    add(nome);
-    setNovo(""); setAdding(false); setMateriaAlvo("");
-    toast.success("Assunto adicionado");
+    setAssunto(nome);
+    setNovoAssunto(""); setAddingAssunto(false);
+    toast.success("Assunto criado");
   }
 
-  const disabled = selMaterias.length === 0;
   return (
-    <div className="md:col-span-2">
-      <Label className="text-xs">Assuntos</Label>
-      <div className="mb-2 flex flex-wrap gap-1.5">
-        {values.length === 0 && <span className="text-xs text-muted-foreground">{disabled ? "Escolha ao menos uma matéria." : "Nenhum assunto selecionado."}</span>}
-        {values.map((v) => <Chip key={v} label={v} onRemove={() => remove(v)} />)}
+    <div className="md:col-span-2 space-y-3 rounded-lg border border-border bg-secondary/20 p-3">
+      <div>
+        <Label className="text-xs font-semibold text-primary">Tópicos (matéria + assunto)</Label>
+        <p className="mt-0.5 text-[11px] text-muted-foreground">
+          Adicione pares. A mesma matéria pode aparecer várias vezes com assuntos diferentes. No card aparecerá apenas a primeira matéria; os demais ficam visíveis ao abrir o julgado.
+        </p>
       </div>
-      {adding ? (
-        <div className="flex flex-col gap-2 md:flex-row">
-          {selMaterias.length > 1 && (
-            <Select value={materiaAlvo} onValueChange={setMateriaAlvo}>
-              <SelectTrigger className="md:w-48"><SelectValue placeholder="Matéria-alvo" /></SelectTrigger>
-              <SelectContent>
-                {selMaterias.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
-              </SelectContent>
-            </Select>
+
+      <div className="flex flex-wrap gap-1.5">
+        {values.length === 0 && <span className="text-xs text-muted-foreground">Nenhum tópico adicionado.</span>}
+        {values.map((p, i) => (
+          <span key={i} className="inline-flex items-center gap-1.5 rounded-md border border-primary/40 bg-primary/10 px-2 py-1 text-xs text-primary">
+            <strong className="font-semibold">{p.materia}</strong>
+            <span className="text-primary/60">›</span>
+            <span>{p.assunto}</span>
+            <button type="button" onClick={() => remove(i)} className="ml-1 text-primary/70 hover:text-destructive">×</button>
+          </span>
+        ))}
+      </div>
+
+      <div className="grid gap-2 md:grid-cols-[1fr_1fr_auto]">
+        {/* Matéria */}
+        <div>
+          <Label className="text-[11px]">Matéria</Label>
+          {addingMateria ? (
+            <div className="flex gap-1">
+              <Input autoFocus value={novaMateria} onChange={(e) => setNovaMateria(e.target.value)} placeholder="Nova matéria" onKeyDown={(e) => e.key === "Enter" && criarMateria()} />
+              <Button type="button" size="icon" onClick={criarMateria}><Plus className="h-4 w-4" /></Button>
+              <Button type="button" size="icon" variant="ghost" onClick={() => setAddingMateria(false)}>×</Button>
+            </div>
+          ) : (
+            <div className="flex gap-1">
+              <Select value={materia || undefined} onValueChange={(v) => { setMateria(v); setAssunto(""); }}>
+                <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                <SelectContent>
+                  {materiasOptions.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Button type="button" size="icon" variant="outline" onClick={() => setAddingMateria(true)} title="Nova matéria"><Plus className="h-4 w-4" /></Button>
+            </div>
           )}
-          <Input autoFocus value={novo} onChange={(e) => setNovo(e.target.value)} placeholder="Novo assunto" onKeyDown={(e) => e.key === "Enter" && addNew()} />
-          <Button type="button" size="icon" onClick={addNew}><Plus className="h-4 w-4" /></Button>
-          <Button type="button" size="icon" variant="ghost" onClick={() => setAdding(false)}>×</Button>
         </div>
-      ) : (
-        <div className="flex gap-2">
-          <Select value="" onValueChange={(v) => add(v)} disabled={disabled}>
-            <SelectTrigger><SelectValue placeholder={disabled ? "Escolha a matéria" : "Adicionar assunto..."} /></SelectTrigger>
-            <SelectContent>
-              {options.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <Button type="button" size="icon" variant="outline" onClick={() => setAdding(true)} disabled={disabled} title="Novo assunto"><Plus className="h-4 w-4" /></Button>
+
+        {/* Assunto */}
+        <div>
+          <Label className="text-[11px]">Assunto</Label>
+          {addingAssunto ? (
+            <div className="flex gap-1">
+              <Input autoFocus value={novoAssunto} onChange={(e) => setNovoAssunto(e.target.value)} placeholder="Novo assunto" onKeyDown={(e) => e.key === "Enter" && criarAssunto()} />
+              <Button type="button" size="icon" onClick={criarAssunto}><Plus className="h-4 w-4" /></Button>
+              <Button type="button" size="icon" variant="ghost" onClick={() => setAddingAssunto(false)}>×</Button>
+            </div>
+          ) : (
+            <div className="flex gap-1">
+              <Select value={assunto || undefined} onValueChange={setAssunto} disabled={!materia}>
+                <SelectTrigger><SelectValue placeholder={materia ? "Selecione..." : "Escolha a matéria"} /></SelectTrigger>
+                <SelectContent>
+                  {assuntosOptions.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Button type="button" size="icon" variant="outline" onClick={() => setAddingAssunto(true)} disabled={!materia} title="Novo assunto"><Plus className="h-4 w-4" /></Button>
+            </div>
+          )}
         </div>
-      )}
+
+        <div className="flex items-end">
+          <Button type="button" onClick={add} className="w-full md:w-auto">
+            <Plus className="mr-1 h-4 w-4" /> Adicionar
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }
+
 
