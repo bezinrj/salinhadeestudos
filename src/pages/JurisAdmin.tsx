@@ -146,14 +146,18 @@ export default function JurisAdmin() {
             <div><Label className="text-xs">Relator</Label><Input value={form.relator} onChange={(e) => set("relator", e.target.value)} /></div>
             <div><Label className="text-xs">Data</Label><Input value={form.data} onChange={(e) => set("data", e.target.value)} /></div>
             <div><Label className="text-xs">Informativo</Label><Input value={form.info} onChange={(e) => set("info", e.target.value)} /></div>
-            <MateriasMultiPicker
-              values={form.areas?.length ? form.areas : (form.area ? [form.area] : [])}
-              onChange={(arr) => setForm((f) => ({ ...f, areas: arr, area: arr[0] || "" }))}
-            />
-            <AssuntosMultiPicker
-              materias={form.areas?.length ? form.areas : (form.area ? [form.area] : [])}
-              values={form.assuntos?.length ? form.assuntos : (form.assunto ? [form.assunto] : [])}
-              onChange={(arr) => setForm((f) => ({ ...f, assuntos: arr, assunto: arr[0] || "" }))}
+            <TopicosEditor
+              values={form.topicos || []}
+              onChange={(pares) =>
+                setForm((f) => ({
+                  ...f,
+                  topicos: pares,
+                  areas: Array.from(new Set(pares.map((p) => p.materia).filter(Boolean))),
+                  assuntos: Array.from(new Set(pares.map((p) => p.assunto).filter(Boolean))),
+                  area: pares[0]?.materia || "",
+                  assunto: pares[0]?.assunto || "",
+                }))
+              }
             />
 
           </div>
