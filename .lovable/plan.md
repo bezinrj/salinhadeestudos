@@ -1,65 +1,41 @@
-# Módulo Vade Mecum — Plano de implementação
+## Diagnóstico
 
-## Contexto e adaptações ao projeto atual
+A compra `pi_3TefqoQ4whpSK2DU1JM9sdcJ` (cus_UdhBDKwVk0aVMQ, R$ 79,90) foi paga com sucesso na Stripe, mas o aluno não recebeu o acesso.
 
-A plataforma já tem auth (AuthContext) e RBAC (user_roles + has_role). Não vou criar UserContext separado nem `perfis` — vou reusar:
+Investigando:
+- A função `stripe-turma-webhook` **não tem nenhum log** desde sempre — ela nunca foi chamada pela Stripe (endpoint provavelmente não cadastrado / `STRIPE_TURMA_WEBHOOK_SECRET` desalinhado).
+- **Todas** as linhas de `turmas_assinaturas` estão com `status = pending` e `stripe_payment_intent_id = NULL`. Ou seja, nenhuma compra de Turma jamais foi liberada automaticamente — só funcionou quando foi liberada manualmente.
+- A página `/checkout-success` hoje só exibe "Assinatura confirmada", sem verificar nada no backend.
 
-- **Usuário**: `useAuth()` (user.id, profile.name, profile.username)
-- **Role**: `useIsAdmin()` + `useIsModerator()` (já existem)
-- **Cargo concurso**: já existe `profiles.target_career` — reusar
-- **RLS**: usar `auth.uid()` direto (padrão do projeto), não `current_setting('app.user_id')`. O spec foi escrito para um app standalone — adapto para o padrão Supabase Auth desta plataforma.
+Conclusão: o sistema depende exclusivamente do webhook, que está silenciosamente quebrado. Precisamos remover essa dependência única.
 
-Isso evita duplicação e mantém consistência com o resto do projeto (Juris, Discursivas, Turmas etc.).
+## Solução
 
-## Entrega em 4 fases
+Adicionar um **caminho de verificação no retorno do checkout** (padrão polling no success page) que confere o pagamento direto na Stripe e libera o acesso. O webhook continua existindo como reforço, mas o success-page passa a ser a fonte primária e confiável.
 
-Dado o tamanho, sugiro entregar em fases. **Esta plano cobre apenas a Fase 1**; faremos as próximas após validar.
+### 1. Nova Edge Function `verify-turma-checkout`
+- Recebe `{ session_id }` do usuário autenticado.
+- Busca a `checkout.sessions.retrieve(session_id)` na Stripe.
+- Valida que `payment_status === "paid"` e que o `metadata.user_id` bate com o usuário autenticado (segurança).
+- Executa exatamente a mesma lógica de liberação do webhook (em uma função compartilhada copiada para o arquivo): atualiza `turmas_assinaturas` → `active`, cria `turmas_acessos` para cada `album_id` do plano e estende `profiles.banco_geral_expires_at`.
+- É **idempotente** (usa `upsert` em `turmas_acessos` por `user_id,album_id` e checa status atual antes de estender o banco geral). Pode ser chamada várias vezes sem efeito colateral.
+- Retorna `{ granted: true, album_ids: [...] }` quando ok, `{ granted: false, reason: "pending" }` quando o pagamento ainda não foi confirmado.
 
-### Fase 1 — Fundação + Leitura (esta entrega)
-1. Migração com 8 tabelas + RLS + GRANTs:
-   - `vm_leis`, `vm_artigos`, `vm_paragrafos`, `vm_incidencias`, `vm_remissoes`
-   - `vm_comentarios`, `vm_notas`, `vm_highlights`, `vm_progresso`
-   - (prefixo `vm_` para não colidir com `juris_*` e demais)
-2. Seed dos dados iniciais (CP, CPP, CF/88 + comentário professor)
-3. Rotas `/vademecum` e `/vademecum/:leiId` adicionadas ao `App.tsx` dentro do `AppLayout` protegido
-4. Item de menu "Vade Mecum" no sidebar/bottom nav
-5. Tela de leitura (3 colunas): sidebar de leis + área central com artigos + drawer de marcados
-6. Componentes: `LeiSidebar`, `ArticleCard`, `ArticleText` (com highlights + remissões inline), `IncidenciaBadge`, `ProgressBar`, `ArticleFilters`, `MarkedArticlesDrawer`, `RemissaoDrawer`
-7. Funcionalidades: marcar lido, marcar favorito, filtros (status + cargo), progresso
-8. Hooks: `useVmLeis`, `useVmLei`, `useVmProgresso`
-9. Store Zustand `vademecumStore` (filtros, drawers, modo highlight)
+### 2. Atualizar `src/pages/CheckoutSuccess.tsx`
+- Ler `session_id` da query string.
+- Estado inicial "Confirmando seu pagamento..." com spinner.
+- Polling: chama `verify-turma-checkout` a cada 2 s, até 10 tentativas.
+- Sucesso → mostra "Assinatura confirmada!" e botão "Ir para Minhas Turmas".
+- Falha após tentativas → mensagem "Pagamento ainda processando. Atualize a página em alguns minutos ou fale com o suporte." (sem alarme falso — a próxima visita re-tenta).
 
-### Fase 2 — Anotações privadas
-- Notas post-it (modal + CRUD) com `useVmNotas`
-- Highlights/marca-texto (toolbar flutuante, cálculo de offsets, renderização com `<mark>`) com `useVmHighlights`
+### 3. Regularizar a compra perdida
+- Aplicar manualmente, via insert tool, o acesso para `user_id = c6d74687-ba56-4f42-80f8-316f147a6d1a` ao plano `d9db1d62-1842-4a54-87db-54c9ef44d00b`: marcar a `turmas_assinaturas` mais recente como `active` com o `pi_3TefqoQ4whpSK2DU1JM9sdcJ`, inserir `turmas_acessos` para cada álbum do plano, e estender o `banco_geral_expires_at` do perfil conforme `meses_banco_geral`.
 
-### Fase 3 — Comentários e moderação
-- Seção de comentários no card (aluno + professor com visual diferenciado)
-- Upvotes, editar/excluir próprio comentário
-- Rota `/vademecum/moderacao` para moderador/admin
-- Modal "Publicar Comentário do Professor"
+### 4. Webhook
+- Não mexer no `stripe-turma-webhook` (continua como reforço). Ao final, recomendarei verificar no painel da Stripe se o endpoint `…/functions/v1/stripe-turma-webhook` está cadastrado e se o `STRIPE_TURMA_WEBHOOK_SECRET` bate — mas o sistema deixa de depender disso.
 
-### Fase 4 — Painel Admin
-- `/vademecum/admin` com sub-rotas (leis, artigos, usuários)
-- CRUD completo de leis/artigos/parágrafos/incidências/remissões
-- Drag-and-drop com `@dnd-kit/sortable` (já no projeto? verificar; adicionar se não)
-- Gestão de roles para Vade Mecum reusa user_roles existente
+## Arquivos
 
-## Detalhes técnicos importantes
-
-- **Naming**: prefixo `vm_` em todas as tabelas para isolar do resto
-- **Cargo**: usar valores em PT como no spec (`magistratura`, `defensoria`, `mp`, `delegado`)
-- **Permissões**: `has_role(auth.uid(), 'admin')` e `has_role(auth.uid(), 'moderator')` direto nas policies
-- **Fontes Lora + Inter**: adicionar via Google Fonts no `index.html`
-- **Design tokens**: estender `index.css` com tokens específicos do Vade Mecum (papel `#FAFAF8`, etc.) em vez de cores hardcoded
-- **Zustand**: já está no projeto? Se não, adiciono
-
-## O que NÃO está incluído na Fase 1
-
-- Notas/highlights/comentários (Fase 2/3)
-- Painel admin e moderação (Fase 3/4)
-- Modo leitura fullscreen, autosave de rascunho, mobile bottom-sheet refinado (polish posterior)
-
-## Pergunta antes de começar
-
-Posso prosseguir com a **Fase 1** como descrita, usando o auth/roles existentes (em vez do `UserContext` standalone do spec) e prefixo `vm_` nas tabelas?
+- **Criar:** `supabase/functions/verify-turma-checkout/index.ts`
+- **Editar:** `src/pages/CheckoutSuccess.tsx`
+- **Insert tool:** liberar manualmente a compra do aluno c6d74687.
