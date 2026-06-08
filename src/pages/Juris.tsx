@@ -100,6 +100,9 @@ export default function Juris() {
       if (materia !== "all" && !jAreas.includes(materia)) return false;
       if (assunto !== "all" && !jAssuntos.includes(assunto)) return false;
       if (info !== "all" && String(j.info) !== info) return false;
+      if (marcacao === "lidos" && !isLido(j.id)) return false;
+      if (marcacao === "nao_lidos" && isLido(j.id)) return false;
+      if (marcacao === "favoritos" && !isFavorito(j.id)) return false;
       if (search.trim()) {
         const q = search.toLowerCase();
         const hay = `${j.titulo} ${j.tribunal} ${j.numero} ${jAreas.join(" ")} ${jAssuntos.join(" ")} ${j.nocoes?.frase ?? ""}`.toLowerCase();
@@ -107,7 +110,7 @@ export default function Juris() {
       }
       return true;
     });
-  }, [julgados, tribunal, materia, assunto, info, search, canManage]);
+  }, [julgados, tribunal, materia, assunto, info, search, canManage, marcacao, isLido, isFavorito]);
 
 
   return (
