@@ -181,6 +181,15 @@ export default function Juris() {
             {assuntos.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}
           </SelectContent>
         </Select>
+        <Select value={marcacao} onValueChange={(v) => setMarcacao(v as typeof marcacao)}>
+          <SelectTrigger className="md:w-[170px]"><SelectValue placeholder="Marcação" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos</SelectItem>
+            <SelectItem value="lidos">Lidos</SelectItem>
+            <SelectItem value="nao_lidos">Não lidos</SelectItem>
+            <SelectItem value="favoritos">⭐ Favoritos</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Informativos STJ / STF */}
