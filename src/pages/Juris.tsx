@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Scale, Search, ArrowRight, Crown } from "lucide-react";
+import { Scale, Search, ArrowRight, Crown, Star, Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
@@ -13,6 +13,8 @@ import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useIsModerator } from "@/hooks/useIsModerator";
+import { useJurisMarks } from "@/hooks/useJurisMarks";
+import { cn } from "@/lib/utils";
 import type { JurisJulgado } from "@/types/juris";
 
 export default function Juris() {
