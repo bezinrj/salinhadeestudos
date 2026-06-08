@@ -120,29 +120,48 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-pro",
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: `Analise o julgado abaixo e extraia todos os campos.\n\nTEXTO:\n${text.substring(0, 18000)}` },
-        ],
-        tools: [{
-          type: "function",
-          function: {
-            name: "salvar_julgado_estruturado",
-            description: "Retorna o julgado decomposto nos campos estruturados.",
-            parameters: TOOL_SCHEMA,
-          },
-        }],
-        tool_choice: { type: "function", function: { name: "salvar_julgado_estruturado" } },
-      }),
-    });
+    // Abort if AI gateway demora demais (client invoke costuma cair em ~60s)
+    const aiController = new AbortController();
+    const aiTimeout = setTimeout(() => aiController.abort(), 110_000);
+
+    let aiRes: Response;
+    try {
+      aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        signal: aiController.signal,
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          // Flash é ~5-10x mais rápido e barato que o pro, mantendo tool-calling estruturado.
+          model: "google/gemini-2.5-flash",
+          messages: [
+            { role: "system", content: SYSTEM_PROMPT },
+            { role: "user", content: `Analise o julgado abaixo e extraia todos os campos.\n\nTEXTO:\n${text.substring(0, 12000)}` },
+          ],
+          tools: [{
+            type: "function",
+            function: {
+              name: "salvar_julgado_estruturado",
+              description: "Retorna o julgado decomposto nos campos estruturados.",
+              parameters: TOOL_SCHEMA,
+            },
+          }],
+          tool_choice: { type: "function", function: { name: "salvar_julgado_estruturado" } },
+          max_completion_tokens: 6000,
+        }),
+      });
+    } catch (e) {
+      clearTimeout(aiTimeout);
+      if ((e as any)?.name === "AbortError") {
+        return new Response(JSON.stringify({ error: "A IA demorou demais para responder. Tente novamente com um texto menor." }), {
+          status: 504, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      throw e;
+    }
+    clearTimeout(aiTimeout);
 
     if (!aiRes.ok) {
       const errText = await aiRes.text();
