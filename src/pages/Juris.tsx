@@ -23,12 +23,14 @@ export default function Juris() {
   const { isAdmin } = useIsAdmin();
   const { isModerator } = useIsModerator();
   const canManage = isAdmin || isModerator;
+  const { isLido, isFavorito, toggleLido, toggleFavorito } = useJurisMarks();
 
   const [search, setSearch] = useState("");
   const [tribunal, setTribunal] = useState<string>("all");
   const [materia, setMateria] = useState<string>("all");
   const [assunto, setAssunto] = useState<string>("all");
   const [info, setInfo] = useState<string>("all");
+  const [marcacao, setMarcacao] = useState<"all" | "lidos" | "nao_lidos" | "favoritos">("all");
 
   const { data: julgados, isLoading } = useQuery({
     queryKey: ["juris-julgados-list"],
