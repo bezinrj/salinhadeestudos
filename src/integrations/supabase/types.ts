@@ -688,6 +688,44 @@ export type Database = {
         }
         Relationships: []
       }
+      juris_user_marks: {
+        Row: {
+          created_at: string
+          favorito: boolean
+          id: string
+          julgado_id: string
+          lido: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          favorito?: boolean
+          id?: string
+          julgado_id: string
+          lido?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          favorito?: boolean
+          id?: string
+          julgado_id?: string
+          lido?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "juris_user_marks_julgado_id_fkey"
+            columns: ["julgado_id"]
+            isOneToOne: false
+            referencedRelation: "juris_julgados"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       manual_subscriptions: {
         Row: {
           created_at: string | null
