@@ -267,6 +267,32 @@ export default function Juris() {
                 className="group relative h-full cursor-pointer border-border bg-card transition-colors hover:border-primary/50"
                 onClick={() => navigate(`/juris/${j.id}`)}
               >
+                <div className="absolute right-2 top-2 z-10 flex gap-1">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); toggleFavorito(j.id); }}
+                    title={isFavorito(j.id) ? "Remover dos favoritos" : "Marcar como favorito"}
+                    className={cn(
+                      "flex h-8 w-8 items-center justify-center rounded-full border transition-colors",
+                      isFavorito(j.id)
+                        ? "border-gold/50 bg-gold/10 text-gold"
+                        : "border-border bg-card/80 text-muted-foreground hover:text-gold hover:border-gold/40"
+                    )}
+                  >
+                    <Star className={cn("h-4 w-4", isFavorito(j.id) && "fill-current")} />
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); toggleLido(j.id); }}
+                    title={isLido(j.id) ? "Marcar como não lido" : "Marcar como lido"}
+                    className={cn(
+                      "flex h-8 w-8 items-center justify-center rounded-full border transition-colors",
+                      isLido(j.id)
+                        ? "border-primary/50 bg-primary/15 text-primary"
+                        : "border-border bg-card/80 text-muted-foreground hover:text-primary hover:border-primary/40"
+                    )}
+                  >
+                    <Check className="h-4 w-4" />
+                  </button>
+                </div>
                 <CardContent className="flex h-full flex-col p-5">
                   {(() => {
                     const jAreas = j.areas?.length ? j.areas : (j.area ? [j.area] : []);
