@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Scale, Search, ArrowRight, Crown } from "lucide-react";
+import { Scale, Search, ArrowRight, Crown, Star, Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
@@ -13,6 +13,8 @@ import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useIsModerator } from "@/hooks/useIsModerator";
+import { useJurisMarks } from "@/hooks/useJurisMarks";
+import { cn } from "@/lib/utils";
 import type { JurisJulgado } from "@/types/juris";
 
 export default function Juris() {
@@ -21,12 +23,14 @@ export default function Juris() {
   const { isAdmin } = useIsAdmin();
   const { isModerator } = useIsModerator();
   const canManage = isAdmin || isModerator;
+  const { isLido, isFavorito, toggleLido, toggleFavorito } = useJurisMarks();
 
   const [search, setSearch] = useState("");
   const [tribunal, setTribunal] = useState<string>("all");
   const [materia, setMateria] = useState<string>("all");
   const [assunto, setAssunto] = useState<string>("all");
   const [info, setInfo] = useState<string>("all");
+  const [marcacao, setMarcacao] = useState<"all" | "lidos" | "nao_lidos" | "favoritos">("all");
 
   const { data: julgados, isLoading } = useQuery({
     queryKey: ["juris-julgados-list"],
@@ -96,6 +100,9 @@ export default function Juris() {
       if (materia !== "all" && !jAreas.includes(materia)) return false;
       if (assunto !== "all" && !jAssuntos.includes(assunto)) return false;
       if (info !== "all" && String(j.info) !== info) return false;
+      if (marcacao === "lidos" && !isLido(j.id)) return false;
+      if (marcacao === "nao_lidos" && isLido(j.id)) return false;
+      if (marcacao === "favoritos" && !isFavorito(j.id)) return false;
       if (search.trim()) {
         const q = search.toLowerCase();
         const hay = `${j.titulo} ${j.tribunal} ${j.numero} ${jAreas.join(" ")} ${jAssuntos.join(" ")} ${j.nocoes?.frase ?? ""}`.toLowerCase();
@@ -103,7 +110,7 @@ export default function Juris() {
       }
       return true;
     });
-  }, [julgados, tribunal, materia, assunto, info, search, canManage]);
+  }, [julgados, tribunal, materia, assunto, info, search, canManage, marcacao, isLido, isFavorito]);
 
 
   return (
@@ -172,6 +179,15 @@ export default function Juris() {
           <SelectContent>
             <SelectItem value="all">Todos os assuntos</SelectItem>
             {assuntos.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={marcacao} onValueChange={(v) => setMarcacao(v as typeof marcacao)}>
+          <SelectTrigger className="md:w-[170px]"><SelectValue placeholder="Marcação" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos</SelectItem>
+            <SelectItem value="lidos">Lidos</SelectItem>
+            <SelectItem value="nao_lidos">Não lidos</SelectItem>
+            <SelectItem value="favoritos">⭐ Favoritos</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -251,6 +267,32 @@ export default function Juris() {
                 className="group relative h-full cursor-pointer border-border bg-card transition-colors hover:border-primary/50"
                 onClick={() => navigate(`/juris/${j.id}`)}
               >
+                <div className="absolute right-2 top-2 z-10 flex gap-1">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); toggleFavorito(j.id); }}
+                    title={isFavorito(j.id) ? "Remover dos favoritos" : "Marcar como favorito"}
+                    className={cn(
+                      "flex h-8 w-8 items-center justify-center rounded-full border transition-colors",
+                      isFavorito(j.id)
+                        ? "border-gold/50 bg-gold/10 text-gold"
+                        : "border-border bg-card/80 text-muted-foreground hover:text-gold hover:border-gold/40"
+                    )}
+                  >
+                    <Star className={cn("h-4 w-4", isFavorito(j.id) && "fill-current")} />
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); toggleLido(j.id); }}
+                    title={isLido(j.id) ? "Marcar como não lido" : "Marcar como lido"}
+                    className={cn(
+                      "flex h-8 w-8 items-center justify-center rounded-full border transition-colors",
+                      isLido(j.id)
+                        ? "border-primary/50 bg-primary/15 text-primary"
+                        : "border-border bg-card/80 text-muted-foreground hover:text-primary hover:border-primary/40"
+                    )}
+                  >
+                    <Check className="h-4 w-4" />
+                  </button>
+                </div>
                 <CardContent className="flex h-full flex-col p-5">
                   {(() => {
                     const jAreas = j.areas?.length ? j.areas : (j.area ? [j.area] : []);
