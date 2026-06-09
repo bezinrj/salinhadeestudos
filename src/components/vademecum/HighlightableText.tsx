@@ -85,7 +85,7 @@ export function HighlightableText({ text, marcacoes, onCreate, onRemove, classNa
 
   return (
     <>
-      <span ref={containerRef} className={className} onMouseUp={handleMouseUp}>
+      <span ref={containerRef} className={cn("whitespace-pre-wrap", className)} onMouseUp={handleMouseUp}>
         {prefix}
         {nodes}
       </span>

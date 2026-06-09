@@ -50,14 +50,6 @@ serve(async (req) => {
     }
     const userId = userData.user.id;
 
-    // Admin-only check
-    const { data: isAdmin } = await supabaseAdmin.rpc("has_role", { _user_id: userId, _role: "admin" });
-    if (!isAdmin) {
-      return new Response(JSON.stringify({ error: "MAINTENANCE", message: "O assistente IA está em manutenção. Volte em breve!" }), {
-        status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     const { julgadoId, messages } = await req.json();
     if (!julgadoId || !Array.isArray(messages) || messages.length === 0) {
       return new Response(JSON.stringify({ error: "julgadoId e messages são obrigatórios." }), {

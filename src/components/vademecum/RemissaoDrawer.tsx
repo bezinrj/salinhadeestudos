@@ -40,7 +40,7 @@ export function RemissaoDrawer({ open, onOpenChange, artigoDestinoId }: Props) {
         {data ? (
           <div className="mt-4 space-y-3">
             <p className="text-xs text-muted-foreground">{data.lei?.nome}</p>
-            <div className="font-serif text-[15px] leading-relaxed text-foreground/90">
+            <div className="font-serif text-[15px] leading-relaxed text-foreground/90 whitespace-pre-wrap">
               <p>{data.artigo.texto}</p>
               {data.paragrafos.map((p: any) => (
                 <p key={p.id} className="mt-2 pl-4">

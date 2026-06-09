@@ -304,19 +304,7 @@ export default function JurisDetail() {
                 </TabsContent>
 
                 <TabsContent value="chat" className="m-0">
-                  {isAdmin ? (
-                    <JurisChatPanel julgado={j} />
-                  ) : (
-                    <Card className="border-dashed border-muted-foreground/30 bg-secondary/20">
-                      <CardContent className="flex flex-col items-center justify-center gap-3 py-16 text-center">
-                        <MessageCircle className="h-10 w-10 text-muted-foreground/50" />
-                        <div className="text-lg font-semibold text-foreground">Em manutenção</div>
-                        <p className="max-w-sm text-sm text-muted-foreground">
-                          O assistente IA dos julgados está temporariamente indisponível. Volte em breve!
-                        </p>
-                      </CardContent>
-                    </Card>
-                  )}
+                  <JurisChatPanel julgado={j} />
                 </TabsContent>
               </>
             )}

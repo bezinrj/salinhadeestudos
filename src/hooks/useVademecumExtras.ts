@@ -96,6 +96,8 @@ export function useVmMarcacoes(artigoIds: string[]) {
     byBlock.get(key)!.push(m);
   });
 
+  const queryKey = ["vm-marcacoes", user?.id, ids];
+
   const create = useMutation({
     mutationFn: async (payload: {
       artigo_id: string;
@@ -106,10 +108,38 @@ export function useVmMarcacoes(artigoIds: string[]) {
       cor: VmHighlightCor;
     }) => {
       if (!user?.id) throw new Error("no user");
-      const { error } = await sb.from("vm_marcacoes").insert({ ...payload, user_id: user.id });
+      const { data, error } = await sb
+        .from("vm_marcacoes")
+        .insert({ ...payload, user_id: user.id })
+        .select()
+        .single();
       if (error) throw error;
+      return data as VmMarcacao;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["vm-marcacoes", user?.id] }),
+    // Atualização otimista: mostra o realce imediatamente antes do banco confirmar
+    onMutate: async (payload) => {
+      await queryClient.cancelQueries({ queryKey });
+      const prev = queryClient.getQueryData<VmMarcacao[]>(queryKey);
+      const optimistic: VmMarcacao = {
+        id: `optimistic-${Date.now()}`,
+        user_id: user?.id ?? "",
+        artigo_id: payload.artigo_id,
+        paragrafo_id: payload.paragrafo_id,
+        trecho: payload.trecho,
+        offset_inicio: payload.offset_inicio,
+        offset_fim: payload.offset_fim,
+        cor: payload.cor,
+        created_at: new Date().toISOString(),
+      };
+      queryClient.setQueryData<VmMarcacao[]>(queryKey, (old) => [...(old ?? []), optimistic]);
+      return { prev };
+    },
+    // Se falhar, reverte para o estado anterior
+    onError: (_err, _payload, ctx) => {
+      if (ctx?.prev !== undefined) queryClient.setQueryData(queryKey, ctx.prev);
+    },
+    // Sempre re-sincroniza com o banco ao final para substituir ID temporário pelo real
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ["vm-marcacoes", user?.id] }),
   });
 
   const remove = useMutation({
@@ -117,7 +147,18 @@ export function useVmMarcacoes(artigoIds: string[]) {
       const { error } = await sb.from("vm_marcacoes").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["vm-marcacoes", user?.id] }),
+    // Atualização otimista: remove o realce imediatamente antes do banco confirmar
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey });
+      const prev = queryClient.getQueryData<VmMarcacao[]>(queryKey);
+      queryClient.setQueryData<VmMarcacao[]>(queryKey, (old) => (old ?? []).filter((m) => m.id !== id));
+      return { prev };
+    },
+    // Se falhar, reverte para o estado anterior
+    onError: (_err, _id, ctx) => {
+      if (ctx?.prev !== undefined) queryClient.setQueryData(queryKey, ctx.prev);
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ["vm-marcacoes", user?.id] }),
   });
 
   return { byBlock, create, remove, isLoading: query.isLoading };

@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Navigate, Link } from "react-router-dom";
-import { ArrowLeft, Plus, Trash2, Save, Pencil } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Save, Pencil, GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +13,9 @@ import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useIsModerator } from "@/hooks/useIsModerator";
 import { CARGO_LABEL, type VmCargo, type VmLei, type VmArtigo, type VmIncidencia } from "@/types/vademecum";
 import { toast } from "sonner";
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
+import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 const sb = supabase as any;
 
@@ -157,27 +160,34 @@ function ArtigosTab() {
     },
   });
 
+  // Estado local para reordenação otimista via drag-and-drop
+  const [ordered, setOrdered] = useState<(VmArtigo & { vm_incidencias: VmIncidencia[] })[]>([]);
+  useEffect(() => { setOrdered(artigos); }, [artigos]);
+
+  // Formulário exclusivo para criação de novos artigos
   const [form, setForm] = useState<Partial<VmArtigo>>({ numero: "", rotulo: "", texto: "", ordem: 0 });
-  const [editId, setEditId] = useState<string | null>(null);
-  const [bulkOpen, setBulkOpen] = useState(false);
-  const [bulkText, setBulkText] = useState("");
-  const [bulkReplace, setBulkReplace] = useState(false);
-  const [bulkLoading, setBulkLoading] = useState(false);
+
+  const sensors = useSensors(useSensor(PointerSensor));
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = ordered.findIndex((a) => a.id === active.id);
+    const newIndex = ordered.findIndex((a) => a.id === over.id);
+    const reordered = arrayMove(ordered, oldIndex, newIndex);
+    setOrdered(reordered);
+    // Persiste nova ordem no banco em lote
+    await Promise.all(reordered.map((a, i) => sb.from("vm_artigos").update({ ordem: i + 1 }).eq("id", a.id)));
+    qc.invalidateQueries({ queryKey: ["vm-lei"] });
+  };
 
   const save = async () => {
     if (!leiId || !form.texto || !form.numero) return toast.error("Número e texto obrigatórios");
     try {
-      const payload = { ...form, lei_id: leiId };
-      if (editId) {
-        const { error } = await sb.from("vm_artigos").update(payload).eq("id", editId);
-        if (error) throw error;
-      } else {
-        const { error } = await sb.from("vm_artigos").insert(payload);
-        if (error) throw error;
-      }
-      toast.success("Artigo salvo");
+      const { error } = await sb.from("vm_artigos").insert({ ...form, lei_id: leiId });
+      if (error) throw error;
+      toast.success("Artigo criado");
       setForm({ numero: "", rotulo: "", texto: "", ordem: 0 });
-      setEditId(null);
       refetch();
       qc.invalidateQueries({ queryKey: ["vm-lei"] });
     } catch (e: any) { toast.error(e.message); }
@@ -192,64 +202,6 @@ function ArtigosTab() {
     qc.invalidateQueries({ queryKey: ["vm-lei"] });
   };
 
-  const parseBulk = (raw: string): Partial<VmArtigo>[] => {
-    const t = raw.trim();
-    if (!t) return [];
-    if (t.startsWith("[") || t.startsWith("{")) {
-      const arr = JSON.parse(t);
-      const list = Array.isArray(arr) ? arr : [arr];
-      return list.map((x: any, i: number) => ({
-        numero: String(x.numero ?? x.num ?? "").trim(),
-        rotulo: x.rotulo ?? x.label ?? "",
-        texto: String(x.texto ?? x.text ?? "").trim(),
-        ordem: Number.isFinite(x.ordem) ? x.ordem : i + 1,
-      }));
-    }
-    const blocks = t.split(/\n\s*---+\s*\n/);
-    return blocks.map((b, i) => {
-      const lines = b.trim().split("\n");
-      const header = lines[0] ?? "";
-      const rest = lines.slice(1).join("\n").trim();
-      const m = header.match(/^(?:Art\.?\s*)?([\w°ºª\.-]+)\s*[—\-|:]\s*(.*)$/i);
-      let numero = "", rotulo = "", texto = rest || header;
-      if (m) { numero = m[1].trim(); rotulo = m[2].trim(); }
-      else {
-        const m2 = header.match(/^(?:Art\.?\s*)?([\w°ºª\.-]+)\s*(.*)$/i);
-        if (m2) { numero = m2[1].trim(); rotulo = m2[2].trim(); }
-      }
-      if (!rest) texto = rotulo || header;
-      return { numero, rotulo: rotulo || "", texto, ordem: i + 1 };
-    });
-  };
-
-  const bulkImport = async () => {
-    if (!leiId) return toast.error("Selecione uma lei");
-    let parsed: Partial<VmArtigo>[] = [];
-    try { parsed = parseBulk(bulkText); }
-    catch (e: any) { return toast.error("JSON inválido: " + e.message); }
-    const valid = parsed.filter((p) => p.numero && p.texto);
-    if (!valid.length) return toast.error("Nenhum artigo válido encontrado");
-    if (!confirm(`Importar ${valid.length} artigo(s)?${bulkReplace ? " Substituindo todos os existentes." : ""}`)) return;
-    setBulkLoading(true);
-    try {
-      if (bulkReplace) {
-        const { error: delErr } = await sb.from("vm_artigos").delete().eq("lei_id", leiId);
-        if (delErr) throw delErr;
-      }
-      const payload = valid.map((p) => ({ ...p, lei_id: leiId }));
-      for (let i = 0; i < payload.length; i += 200) {
-        const { error } = await sb.from("vm_artigos").insert(payload.slice(i, i + 200));
-        if (error) throw error;
-      }
-      toast.success(`${valid.length} artigo(s) importado(s)`);
-      setBulkText("");
-      setBulkOpen(false);
-      refetch();
-      qc.invalidateQueries({ queryKey: ["vm-lei"] });
-    } catch (e: any) { toast.error(e.message); }
-    finally { setBulkLoading(false); }
-  };
-
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
@@ -260,41 +212,11 @@ function ArtigosTab() {
             {leis.map((l) => <SelectItem key={l.id} value={l.id}>{l.sigla} — {l.nome}</SelectItem>)}
           </SelectContent>
         </Select>
-        <Button size="sm" variant="outline" className="ml-auto" onClick={() => setBulkOpen((o) => !o)}>
-          <Plus className="mr-1 h-4 w-4" /> Importar em lote
-        </Button>
       </div>
 
-      {bulkOpen && (
-        <div className="space-y-3 rounded-lg border border-border bg-card p-4">
-          <div className="flex items-center justify-between">
-            <h3 className="font-semibold">Importar artigos em lote</h3>
-            <Label className="flex items-center gap-2 text-xs">
-              <input type="checkbox" checked={bulkReplace} onChange={(e) => setBulkReplace(e.target.checked)} />
-              Substituir todos os artigos desta lei
-            </Label>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Cole um <strong>JSON</strong> <code>{`[{"numero","rotulo","texto","ordem"}]`}</code> ou <strong>texto</strong> com blocos separados por <code>---</code> (1ª linha: <code>Art. 1º — Rótulo</code>; demais linhas: texto).
-          </p>
-          <Textarea
-            rows={10}
-            value={bulkText}
-            onChange={(e) => setBulkText(e.target.value)}
-            placeholder={`Art. 1º — Disposições iniciais\nTexto do artigo...\n---\nArt. 2º — Outro\nTexto...`}
-            className="font-mono text-xs"
-          />
-          <div className="flex gap-2">
-            <Button onClick={bulkImport} disabled={bulkLoading}>
-              <Save className="mr-1 h-4 w-4" /> {bulkLoading ? "Importando..." : "Importar"}
-            </Button>
-            <Button variant="ghost" onClick={() => { setBulkOpen(false); setBulkText(""); }}>Cancelar</Button>
-          </div>
-        </div>
-      )}
-
+      {/* Formulário exclusivo para criação */}
       <div className="rounded-lg border border-border bg-card p-4">
-        <h3 className="mb-3 font-semibold">{editId ? "Editar artigo" : "Novo artigo"}</h3>
+        <h3 className="mb-3 font-semibold">Novo artigo</h3>
         <div className="space-y-3">
           <div className="grid grid-cols-4 gap-2">
             <div><Label>Número</Label><Input value={form.numero ?? ""} onChange={(e) => setForm({ ...form, numero: e.target.value })} placeholder="121" /></div>
@@ -304,32 +226,67 @@ function ArtigosTab() {
           <div><Label>Texto</Label><Textarea rows={5} value={form.texto ?? ""} onChange={(e) => setForm({ ...form, texto: e.target.value })} /></div>
           <div className="flex gap-2">
             <Button onClick={save}><Save className="mr-1 h-4 w-4" /> Salvar</Button>
-            {editId && <Button variant="ghost" onClick={() => { setEditId(null); setForm({ numero: "", rotulo: "", texto: "", ordem: 0 }); }}>Cancelar</Button>}
           </div>
         </div>
       </div>
 
-      <div className="space-y-2">
-        {artigos.map((a) => (
-          <ArtigoRow
-            key={a.id}
-            artigo={a}
-            onEdit={() => { setEditId(a.id); setForm({ numero: a.numero, rotulo: a.rotulo, texto: a.texto, ordem: a.ordem }); }}
-            onRemove={() => remove(a.id)}
-            onIncidenciasChanged={() => { refetch(); qc.invalidateQueries({ queryKey: ["vm-lei"] }); }}
-          />
-        ))}
-      </div>
+      {/* Lista de artigos com drag-and-drop */}
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={ordered.map((a) => a.id)} strategy={verticalListSortingStrategy}>
+          <div className="space-y-2">
+            {ordered.map((a) => (
+              <ArtigoRow
+                key={a.id}
+                artigo={a}
+                onRemove={() => remove(a.id)}
+                onSaved={() => { refetch(); qc.invalidateQueries({ queryKey: ["vm-lei"] }); }}
+                onIncidenciasChanged={() => { refetch(); qc.invalidateQueries({ queryKey: ["vm-lei"] }); }}
+              />
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
     </div>
   );
 }
 
-function ArtigoRow({ artigo, onEdit, onRemove, onIncidenciasChanged }: { artigo: VmArtigo & { vm_incidencias: VmIncidencia[] }; onEdit: () => void; onRemove: () => void; onIncidenciasChanged: () => void; }) {
+function ArtigoRow({ artigo, onRemove, onSaved, onIncidenciasChanged }: {
+  artigo: VmArtigo & { vm_incidencias: VmIncidencia[] };
+  onRemove: () => void;
+  onSaved: () => void;
+  onIncidenciasChanged: () => void;
+}) {
+  // Drag and drop
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: artigo.id });
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+
+  // Edição inline
+  const [editing, setEditing] = useState(false);
+  const [editForm, setEditForm] = useState({
+    numero: artigo.numero,
+    rotulo: artigo.rotulo ?? "",
+    texto: artigo.texto,
+    ordem: artigo.ordem,
+  });
+
+  // Incidências
   const [open, setOpen] = useState(false);
   const [cargo, setCargo] = useState<VmCargo>("magistratura");
   const [qtd, setQtd] = useState(1);
-
   const incs = artigo.vm_incidencias ?? [];
+
+  const saveEdit = async () => {
+    const { error } = await sb.from("vm_artigos").update(editForm).eq("id", artigo.id);
+    if (error) return toast.error(error.message);
+    toast.success("Artigo salvo");
+    setEditing(false);
+    onSaved();
+  };
+
+  const cancelEdit = () => {
+    setEditForm({ numero: artigo.numero, rotulo: artigo.rotulo ?? "", texto: artigo.texto, ordem: artigo.ordem });
+    setEditing(false);
+  };
 
   const addInc = async () => {
     const existing = incs.find((i) => i.cargo === cargo);
@@ -351,33 +308,72 @@ function ArtigoRow({ artigo, onEdit, onRemove, onIncidenciasChanged }: { artigo:
   };
 
   return (
-    <div className="rounded-lg border border-border bg-card p-3">
-      <div className="flex items-start gap-2">
-        <div className="min-w-0 flex-1">
-          <div className="font-semibold">{artigo.rotulo || `Art. ${artigo.numero}`}</div>
-          <p className="line-clamp-2 text-sm text-muted-foreground">{artigo.texto}</p>
-          <div className="mt-1 flex flex-wrap gap-1 text-[11px]">
-            {incs.map((i) => (
-              <span key={i.id} className="flex items-center gap-1 rounded border border-border bg-secondary/40 px-1.5 py-0.5">
-                {CARGO_LABEL[i.cargo]}: {i.quantidade}×
-                <button onClick={() => delInc(i.id)} className="text-destructive hover:underline">×</button>
-              </span>
-            ))}
+    <div ref={setNodeRef} style={style} className="rounded-lg border border-border bg-card p-3">
+      {editing ? (
+        // ── Modo de edição inline ──
+        <div className="space-y-3">
+          <p className="text-xs font-semibold text-muted-foreground">
+            Editando: <span className="text-foreground">{artigo.rotulo || `Art. ${artigo.numero}`}</span>
+          </p>
+          <div className="grid grid-cols-4 gap-2">
+            <div><Label>Número</Label><Input value={editForm.numero} onChange={(e) => setEditForm({ ...editForm, numero: e.target.value })} /></div>
+            <div className="col-span-2"><Label>Rótulo (opcional)</Label><Input value={editForm.rotulo} onChange={(e) => setEditForm({ ...editForm, rotulo: e.target.value })} /></div>
+            <div><Label>Ordem</Label><Input type="number" value={editForm.ordem} onChange={(e) => setEditForm({ ...editForm, ordem: Number(e.target.value) })} /></div>
+          </div>
+          <div><Label>Texto</Label><Textarea rows={6} value={editForm.texto} onChange={(e) => setEditForm({ ...editForm, texto: e.target.value })} /></div>
+          <div className="flex gap-2">
+            <Button size="sm" onClick={saveEdit}><Save className="mr-1 h-3.5 w-3.5" /> Salvar</Button>
+            <Button size="sm" variant="ghost" onClick={cancelEdit}>Cancelar</Button>
           </div>
         </div>
-        <Button size="sm" variant="outline" onClick={() => setOpen((o) => !o)}>
-          <Plus className="mr-1 h-3.5 w-3.5" /> Incidência
-        </Button>
-        <Button size="icon" variant="ghost" onClick={onEdit}><Pencil className="h-4 w-4" /></Button>
-        <Button size="icon" variant="ghost" onClick={onRemove}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-      </div>
-      {open && (
+      ) : (
+        // ── Modo de visualização ──
+        <div className="flex items-start gap-2">
+          {/* Alça de arrastar */}
+          <button
+            {...attributes}
+            {...listeners}
+            className="mt-0.5 cursor-grab touch-none text-muted-foreground hover:text-foreground active:cursor-grabbing"
+            title="Arrastar para reordenar"
+          >
+            <GripVertical className="h-5 w-5" />
+          </button>
+          <div className="min-w-0 flex-1">
+            <div className="font-semibold">{artigo.rotulo || `Art. ${artigo.numero}`}</div>
+            <p className="line-clamp-2 text-sm text-muted-foreground">{artigo.texto}</p>
+            <div className="mt-1 flex flex-wrap gap-1 text-[11px]">
+              {incs.map((i) => (
+                <span key={i.id} className="flex items-center gap-1 rounded border border-border bg-secondary/40 px-1.5 py-0.5">
+                  {CARGO_LABEL[i.cargo]}: {i.quantidade}×
+                  <button onClick={() => delInc(i.id)} className="text-destructive hover:underline">×</button>
+                </span>
+              ))}
+            </div>
+          </div>
+          <Button size="sm" variant="outline" onClick={() => setOpen((o) => !o)}>
+            <Plus className="mr-1 h-3.5 w-3.5" /> Incidência
+          </Button>
+          <Button
+            size="icon" variant="ghost"
+            title="Editar artigo"
+            onClick={() => { setEditing(true); setEditForm({ numero: artigo.numero, rotulo: artigo.rotulo ?? "", texto: artigo.texto, ordem: artigo.ordem }); }}
+          >
+            <Pencil className="h-4 w-4" />
+          </Button>
+          <Button size="icon" variant="ghost" onClick={onRemove}>
+            <Trash2 className="h-4 w-4 text-destructive" />
+          </Button>
+        </div>
+      )}
+
+      {/* Painel de incidências (só no modo visualização) */}
+      {!editing && open && (
         <div className="mt-3 flex flex-wrap items-end gap-2 rounded border border-border bg-background p-2">
           <div><Label className="text-xs">Cargo</Label>
             <Select value={cargo} onValueChange={(v) => setCargo(v as VmCargo)}>
               <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
               <SelectContent>
-                {(["magistratura","defensoria","mp","delegado"] as VmCargo[]).map((c) => (
+                {(["magistratura", "defensoria", "mp", "delegado"] as VmCargo[]).map((c) => (
                   <SelectItem key={c} value={c}>{CARGO_LABEL[c]}</SelectItem>
                 ))}
               </SelectContent>
