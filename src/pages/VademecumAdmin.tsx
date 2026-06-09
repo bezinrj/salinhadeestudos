@@ -159,6 +159,10 @@ function ArtigosTab() {
 
   const [form, setForm] = useState<Partial<VmArtigo>>({ numero: "", rotulo: "", texto: "", ordem: 0 });
   const [editId, setEditId] = useState<string | null>(null);
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const [bulkText, setBulkText] = useState("");
+  const [bulkReplace, setBulkReplace] = useState(false);
+  const [bulkLoading, setBulkLoading] = useState(false);
 
   const save = async () => {
     if (!leiId || !form.texto || !form.numero) return toast.error("Número e texto obrigatórios");
@@ -188,6 +192,64 @@ function ArtigosTab() {
     qc.invalidateQueries({ queryKey: ["vm-lei"] });
   };
 
+  const parseBulk = (raw: string): Partial<VmArtigo>[] => {
+    const t = raw.trim();
+    if (!t) return [];
+    if (t.startsWith("[") || t.startsWith("{")) {
+      const arr = JSON.parse(t);
+      const list = Array.isArray(arr) ? arr : [arr];
+      return list.map((x: any, i: number) => ({
+        numero: String(x.numero ?? x.num ?? "").trim(),
+        rotulo: x.rotulo ?? x.label ?? "",
+        texto: String(x.texto ?? x.text ?? "").trim(),
+        ordem: Number.isFinite(x.ordem) ? x.ordem : i + 1,
+      }));
+    }
+    const blocks = t.split(/\n\s*---+\s*\n/);
+    return blocks.map((b, i) => {
+      const lines = b.trim().split("\n");
+      const header = lines[0] ?? "";
+      const rest = lines.slice(1).join("\n").trim();
+      const m = header.match(/^(?:Art\.?\s*)?([\w°ºª\.-]+)\s*[—\-|:]\s*(.*)$/i);
+      let numero = "", rotulo = "", texto = rest || header;
+      if (m) { numero = m[1].trim(); rotulo = m[2].trim(); }
+      else {
+        const m2 = header.match(/^(?:Art\.?\s*)?([\w°ºª\.-]+)\s*(.*)$/i);
+        if (m2) { numero = m2[1].trim(); rotulo = m2[2].trim(); }
+      }
+      if (!rest) texto = rotulo || header;
+      return { numero, rotulo: rotulo || "", texto, ordem: i + 1 };
+    });
+  };
+
+  const bulkImport = async () => {
+    if (!leiId) return toast.error("Selecione uma lei");
+    let parsed: Partial<VmArtigo>[] = [];
+    try { parsed = parseBulk(bulkText); }
+    catch (e: any) { return toast.error("JSON inválido: " + e.message); }
+    const valid = parsed.filter((p) => p.numero && p.texto);
+    if (!valid.length) return toast.error("Nenhum artigo válido encontrado");
+    if (!confirm(`Importar ${valid.length} artigo(s)?${bulkReplace ? " Substituindo todos os existentes." : ""}`)) return;
+    setBulkLoading(true);
+    try {
+      if (bulkReplace) {
+        const { error: delErr } = await sb.from("vm_artigos").delete().eq("lei_id", leiId);
+        if (delErr) throw delErr;
+      }
+      const payload = valid.map((p) => ({ ...p, lei_id: leiId }));
+      for (let i = 0; i < payload.length; i += 200) {
+        const { error } = await sb.from("vm_artigos").insert(payload.slice(i, i + 200));
+        if (error) throw error;
+      }
+      toast.success(`${valid.length} artigo(s) importado(s)`);
+      setBulkText("");
+      setBulkOpen(false);
+      refetch();
+      qc.invalidateQueries({ queryKey: ["vm-lei"] });
+    } catch (e: any) { toast.error(e.message); }
+    finally { setBulkLoading(false); }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
@@ -198,7 +260,38 @@ function ArtigosTab() {
             {leis.map((l) => <SelectItem key={l.id} value={l.id}>{l.sigla} — {l.nome}</SelectItem>)}
           </SelectContent>
         </Select>
+        <Button size="sm" variant="outline" className="ml-auto" onClick={() => setBulkOpen((o) => !o)}>
+          <Plus className="mr-1 h-4 w-4" /> Importar em lote
+        </Button>
       </div>
+
+      {bulkOpen && (
+        <div className="space-y-3 rounded-lg border border-border bg-card p-4">
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold">Importar artigos em lote</h3>
+            <Label className="flex items-center gap-2 text-xs">
+              <input type="checkbox" checked={bulkReplace} onChange={(e) => setBulkReplace(e.target.checked)} />
+              Substituir todos os artigos desta lei
+            </Label>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Cole um <strong>JSON</strong> <code>{`[{"numero","rotulo","texto","ordem"}]`}</code> ou <strong>texto</strong> com blocos separados por <code>---</code> (1ª linha: <code>Art. 1º — Rótulo</code>; demais linhas: texto).
+          </p>
+          <Textarea
+            rows={10}
+            value={bulkText}
+            onChange={(e) => setBulkText(e.target.value)}
+            placeholder={`Art. 1º — Disposições iniciais\nTexto do artigo...\n---\nArt. 2º — Outro\nTexto...`}
+            className="font-mono text-xs"
+          />
+          <div className="flex gap-2">
+            <Button onClick={bulkImport} disabled={bulkLoading}>
+              <Save className="mr-1 h-4 w-4" /> {bulkLoading ? "Importando..." : "Importar"}
+            </Button>
+            <Button variant="ghost" onClick={() => { setBulkOpen(false); setBulkText(""); }}>Cancelar</Button>
+          </div>
+        </div>
+      )}
 
       <div className="rounded-lg border border-border bg-card p-4">
         <h3 className="mb-3 font-semibold">{editId ? "Editar artigo" : "Novo artigo"}</h3>
