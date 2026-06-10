@@ -44,10 +44,7 @@ export function useBadges(userId: string | undefined) {
   const awardBadge = useCallback(async (badgeId: string) => {
     if (!userId) return;
     if (earnedBadges.some(e => e.badge_id === badgeId)) return;
-    await (supabase.from("user_badges" as any) as any).insert({
-      user_id: userId,
-      badge_id: badgeId,
-    });
+    await (supabase.rpc as any)("claim_badge", { _badge_id: badgeId });
     await fetchEarned();
   }, [userId, earnedBadges, fetchEarned]);
 
