@@ -175,9 +175,21 @@ function ArtigosTab() {
     const oldIndex = ordered.findIndex((a) => a.id === active.id);
     const newIndex = ordered.findIndex((a) => a.id === over.id);
     const reordered = arrayMove(ordered, oldIndex, newIndex);
-    setOrdered(reordered);
+    // Atualiza estado local com novas ordens para evitar "pulo" visual
+    const withNewOrder = reordered.map((a, i) => ({ ...a, ordem: i + 1 }));
+    setOrdered(withNewOrder);
     // Persiste nova ordem no banco em lote
-    await Promise.all(reordered.map((a, i) => sb.from("vm_artigos").update({ ordem: i + 1 }).eq("id", a.id)));
+    const results = await Promise.all(
+      withNewOrder.map((a) => sb.from("vm_artigos").update({ ordem: a.ordem }).eq("id", a.id))
+    );
+    const firstError = results.find((r: any) => r?.error)?.error;
+    if (firstError) {
+      toast.error("Erro ao salvar ordem: " + firstError.message);
+      refetch();
+      return;
+    }
+    toast.success("Ordem salva");
+    qc.invalidateQueries({ queryKey: ["admin-vm-artigos", leiId] });
     qc.invalidateQueries({ queryKey: ["vm-lei"] });
   };
 
