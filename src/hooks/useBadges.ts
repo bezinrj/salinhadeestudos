@@ -118,8 +118,9 @@ export function useBadges(userId: string | undefined) {
     const newBadges = toAward.filter(id => !earnedBadges.some(e => e.badge_id === id));
     if (newBadges.length === 0) return;
 
-    const rows = newBadges.map(badge_id => ({ user_id: userId, badge_id }));
-    await (supabase.from("user_badges" as any) as any).insert(rows);
+    for (const badge_id of newBadges) {
+      await (supabase.rpc as any)("claim_badge", { _badge_id: badge_id });
+    }
     await fetchEarned();
     return newBadges;
   }, [userId, earnedBadges, fetchEarned]);
