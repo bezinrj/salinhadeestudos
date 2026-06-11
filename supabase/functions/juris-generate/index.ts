@@ -177,17 +177,23 @@ serve(async (req) => {
     }
     clearTimeout(aiTimeout);
 
-    if (!aiRes.ok) {
-      const errText = await aiRes.text();
-      console.error("AI gateway error", aiRes.status, errText);
-      if (aiRes.status === 429) {
+    if (!aiRes || !aiRes.ok) {
+      const status = aiRes?.status ?? 500;
+      const errText = aiRes ? await aiRes.text().catch(() => "") : lastErrText;
+      console.error("AI gateway error", status, errText);
+      if (status === 429) {
         return new Response(JSON.stringify({ error: "Limite de requisições atingido. Tente em alguns instantes." }), {
           status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      if (aiRes.status === 402) {
+      if (status === 402) {
         return new Response(JSON.stringify({ error: "Créditos de IA esgotados. Adicione saldo em Workspace → Usage." }), {
           status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if ([502, 503, 504].includes(status)) {
+        return new Response(JSON.stringify({ error: "O serviço de IA está temporariamente indisponível. Tente novamente em alguns instantes." }), {
+          status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       return new Response(JSON.stringify({ error: "Falha ao analisar o julgado." }), {
