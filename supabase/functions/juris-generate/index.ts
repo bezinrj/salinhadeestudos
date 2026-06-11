@@ -68,10 +68,8 @@ const TOOL_SCHEMA = {
 };
 
 const AI_MODELS = [
-  "openai/gpt-5-mini",
   "openai/gpt-5-nano",
-  "google/gemini-2.5-flash",
-  "google/gemini-3-flash-preview",
+  "openai/gpt-5-mini",
 ];
 
 function stripJsonFence(value: string) {
@@ -200,7 +198,7 @@ serve(async (req) => {
     let parsedJulgado: ReturnType<typeof normalizeJulgado> = null;
     for (const model of AI_MODELS) {
       const aiController = new AbortController();
-      const aiTimeout = setTimeout(() => aiController.abort(), 52_000);
+      const aiTimeout = setTimeout(() => aiController.abort(), 32_000);
       try {
         aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
           method: "POST",
