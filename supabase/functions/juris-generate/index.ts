@@ -68,14 +68,67 @@ const TOOL_SCHEMA = {
 };
 
 const AI_MODELS = [
-  "openai/gpt-5-nano",
   "openai/gpt-5-mini",
+  "openai/gpt-5-nano",
   "google/gemini-2.5-flash",
   "google/gemini-3-flash-preview",
 ];
 
 function stripJsonFence(value: string) {
   return value.trim().replace(/^```(?:json)?\s*/i, "").replace(/```$/i, "").trim();
+}
+
+function extractJsonObject(value: string) {
+  const clean = stripJsonFence(value);
+  const start = clean.indexOf("{");
+  const end = clean.lastIndexOf("}");
+  return start >= 0 && end > start ? clean.slice(start, end + 1) : clean;
+}
+
+function normalizeJulgado(value: any) {
+  const source = value?.julgado && typeof value.julgado === "object" ? value.julgado : value;
+  if (!source || typeof source !== "object" || Array.isArray(source)) return null;
+
+  const s = (key: string) => typeof source[key] === "string" ? source[key] : "";
+  const casos = Array.isArray(source.casos_concretos)
+    ? source.casos_concretos.slice(0, 3).map((item: any) => ({
+      antes: typeof item?.antes === "string" ? item.antes : "",
+      depois: typeof item?.depois === "string" ? item.depois : "",
+    })).filter((item: any) => item.antes || item.depois)
+    : [];
+
+  const parsed = {
+    titulo: s("titulo"),
+    tribunal: s("tribunal"),
+    numero: s("numero"),
+    relator: s("relator"),
+    data: s("data"),
+    info: s("info"),
+    area: s("area"),
+    assunto: s("assunto"),
+    nocoes: {
+      frase: typeof source.nocoes?.frase === "string" ? source.nocoes.frase : "",
+      contexto: typeof source.nocoes?.contexto === "string" ? source.nocoes.contexto : "",
+      ok: typeof source.nocoes?.ok === "string" ? source.nocoes.ok : "",
+      ko: typeof source.nocoes?.ko === "string" ? source.nocoes.ko : "",
+    },
+    conceitual: s("conceitual"),
+    problema: s("problema"),
+    solucao: s("solucao"),
+    antes: s("antes"),
+    depois: s("depois"),
+    casos_concretos: casos,
+    conclusoes: s("conclusoes"),
+    principios: s("principios"),
+    doutrina: s("doutrina"),
+    jurisprudencia: s("jurisprudencia"),
+    abertura: s("abertura"),
+    tese: s("tese"),
+    integra_texto: s("integra_texto"),
+    integra_ref: s("integra_ref"),
+  };
+
+  return parsed.titulo || parsed.tese || parsed.conceitual ? parsed : null;
 }
 
 serve(async (req) => {
