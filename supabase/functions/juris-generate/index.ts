@@ -67,6 +67,16 @@ const TOOL_SCHEMA = {
   additionalProperties: false,
 };
 
+const AI_MODELS = [
+  "openai/gpt-5-mini",
+  "google/gemini-2.5-flash",
+  "google/gemini-3-flash-preview",
+];
+
+function stripJsonFence(value: string) {
+  return value.trim().replace(/^```(?:json)?\s*/i, "").replace(/```$/i, "").trim();
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -120,13 +130,8 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    // Client invoke cai em ~60s; abortamos antes pra devolver erro claro.
-    const aiController = new AbortController();
-    const aiTimeout = setTimeout(() => aiController.abort(), 55_000);
-
-    const aiBody = JSON.stringify({
-      // gemini-3-flash-preview: rápido e estável, suporta tool-calling.
-      model: "google/gemini-3-flash-preview",
+    const buildAiBody = (model: string) => JSON.stringify({
+      model,
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         { role: "user", content: `Analise o julgado abaixo e extraia todos os campos.\n\nTEXTO:\n${text.substring(0, 8000)}` },
@@ -145,38 +150,38 @@ serve(async (req) => {
 
     let aiRes: Response | null = null;
     let lastErrText = "";
-    const MAX_ATTEMPTS = 2;
-    try {
-      for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    let selectedModel = "";
+    for (const model of AI_MODELS) {
+      const aiController = new AbortController();
+      const aiTimeout = setTimeout(() => aiController.abort(), 52_000);
+      try {
         aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
           method: "POST",
           signal: aiController.signal,
           headers: {
-            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            "Lovable-API-Key": LOVABLE_API_KEY,
             "Content-Type": "application/json",
           },
-          body: aiBody,
+          body: buildAiBody(model),
         });
-        if (aiRes.ok) break;
-        // Retry on transient upstream errors
-        if ([502, 503, 504].includes(aiRes.status) && attempt < MAX_ATTEMPTS) {
-          lastErrText = await aiRes.text().catch(() => "");
-          console.warn(`AI gateway ${aiRes.status} (attempt ${attempt}/${MAX_ATTEMPTS}), retrying...`, lastErrText);
-          await new Promise((r) => setTimeout(r, 1000 * attempt));
-          continue;
+        if (aiRes.ok) {
+          selectedModel = model;
+          break;
         }
-        break;
+        lastErrText = await aiRes.text().catch(() => "");
+        console.warn(`AI gateway ${aiRes.status} using ${model}`, lastErrText);
+        if (![502, 503, 504].includes(aiRes.status)) break;
+      } catch (e) {
+        if ((e as any)?.name === "AbortError") {
+          return new Response(JSON.stringify({ error: "A IA demorou demais para responder. Tente novamente com um texto menor." }), {
+            status: 504, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        throw e;
+      } finally {
+        clearTimeout(aiTimeout);
       }
-    } catch (e) {
-      clearTimeout(aiTimeout);
-      if ((e as any)?.name === "AbortError") {
-        return new Response(JSON.stringify({ error: "A IA demorou demais para responder. Tente novamente com um texto menor." }), {
-          status: 504, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      throw e;
     }
-    clearTimeout(aiTimeout);
 
     if (!aiRes || !aiRes.ok) {
       const status = aiRes?.status ?? 500;
@@ -203,14 +208,17 @@ serve(async (req) => {
     }
 
     const aiData = await aiRes.json();
-    const toolCall = aiData?.choices?.[0]?.message?.tool_calls?.[0];
+    console.info("juris-generate AI success", selectedModel);
+    const message = aiData?.choices?.[0]?.message;
+    const toolCall = message?.tool_calls?.[0];
     const argsStr = toolCall?.function?.arguments;
-    if (!argsStr) {
+    const contentStr = typeof message?.content === "string" ? stripJsonFence(message.content) : "";
+    if (!argsStr && !contentStr) {
       return new Response(JSON.stringify({ error: "IA não retornou estrutura válida." }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const parsed = JSON.parse(argsStr);
+    const parsed = JSON.parse(argsStr || contentStr);
 
     return new Response(JSON.stringify({ julgado: parsed }), {
       status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
