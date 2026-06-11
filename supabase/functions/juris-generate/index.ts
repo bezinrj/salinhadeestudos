@@ -239,7 +239,7 @@ serve(async (req) => {
         }
         lastErrText = await aiRes.text().catch(() => "");
         console.warn(`AI gateway ${aiRes.status} using ${model}`, lastErrText);
-        if (![502, 503, 504].includes(aiRes.status)) break;
+        if (![400, 502, 503, 504].includes(aiRes.status)) break;
       } catch (e) {
         if ((e as any)?.name === "AbortError") {
           return new Response(JSON.stringify({ error: "A IA demorou demais para responder. Tente novamente com um texto menor." }), {
