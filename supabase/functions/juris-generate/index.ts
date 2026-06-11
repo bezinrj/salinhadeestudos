@@ -120,15 +120,16 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    // Abort if AI gateway demora demais (client invoke costuma cair em ~60s)
+    // Client invoke cai em ~60s; abortamos antes pra devolver erro claro.
     const aiController = new AbortController();
-    const aiTimeout = setTimeout(() => aiController.abort(), 110_000);
+    const aiTimeout = setTimeout(() => aiController.abort(), 55_000);
 
     const aiBody = JSON.stringify({
-      model: "google/gemini-2.5-flash",
+      // flash-lite é ~2-3x mais rápido que o flash mantendo tool-calling.
+      model: "google/gemini-2.5-flash-lite",
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: `Analise o julgado abaixo e extraia todos os campos.\n\nTEXTO:\n${text.substring(0, 12000)}` },
+        { role: "user", content: `Analise o julgado abaixo e extraia todos os campos.\n\nTEXTO:\n${text.substring(0, 8000)}` },
       ],
       tools: [{
         type: "function",
@@ -139,7 +140,7 @@ serve(async (req) => {
         },
       }],
       tool_choice: { type: "function", function: { name: "salvar_julgado_estruturado" } },
-      max_completion_tokens: 6000,
+      max_completion_tokens: 4000,
     });
 
     let aiRes: Response | null = null;
