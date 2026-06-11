@@ -145,7 +145,7 @@ serve(async (req) => {
 
     let aiRes: Response | null = null;
     let lastErrText = "";
-    const MAX_ATTEMPTS = 3;
+    const MAX_ATTEMPTS = 2;
     try {
       for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
         aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
