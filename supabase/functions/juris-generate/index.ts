@@ -125,8 +125,8 @@ serve(async (req) => {
     const aiTimeout = setTimeout(() => aiController.abort(), 55_000);
 
     const aiBody = JSON.stringify({
-      // flash-lite é ~2-3x mais rápido que o flash mantendo tool-calling.
-      model: "google/gemini-2.5-flash-lite",
+      // gemini-3-flash-preview: rápido e estável, suporta tool-calling.
+      model: "google/gemini-3-flash-preview",
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         { role: "user", content: `Analise o julgado abaixo e extraia todos os campos.\n\nTEXTO:\n${text.substring(0, 8000)}` },
