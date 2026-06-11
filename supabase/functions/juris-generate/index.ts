@@ -68,6 +68,7 @@ const TOOL_SCHEMA = {
 };
 
 const AI_MODELS = [
+  "openai/gpt-5-nano",
   "openai/gpt-5-mini",
   "google/gemini-2.5-flash",
   "google/gemini-3-flash-preview",
@@ -134,7 +135,7 @@ serve(async (req) => {
       model,
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: `Analise o julgado abaixo e extraia todos os campos.\n\nTEXTO:\n${text.substring(0, 8000)}` },
+        { role: "user", content: `Analise o julgado abaixo e extraia todos os campos.\n\nTEXTO:\n${text.substring(0, 6000)}` },
       ],
       tools: [{
         type: "function",
@@ -145,7 +146,7 @@ serve(async (req) => {
         },
       }],
       tool_choice: { type: "function", function: { name: "salvar_julgado_estruturado" } },
-      max_completion_tokens: 4000,
+      max_completion_tokens: 3200,
     });
 
     let aiRes: Response | null = null;
