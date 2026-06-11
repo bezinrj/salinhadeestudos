@@ -124,34 +124,48 @@ serve(async (req) => {
     const aiController = new AbortController();
     const aiTimeout = setTimeout(() => aiController.abort(), 110_000);
 
-    let aiRes: Response;
-    try {
-      aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        signal: aiController.signal,
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
+    const aiBody = JSON.stringify({
+      model: "google/gemini-2.5-flash",
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT },
+        { role: "user", content: `Analise o julgado abaixo e extraia todos os campos.\n\nTEXTO:\n${text.substring(0, 12000)}` },
+      ],
+      tools: [{
+        type: "function",
+        function: {
+          name: "salvar_julgado_estruturado",
+          description: "Retorna o julgado decomposto nos campos estruturados.",
+          parameters: TOOL_SCHEMA,
         },
-        body: JSON.stringify({
-          // Flash é ~5-10x mais rápido e barato que o pro, mantendo tool-calling estruturado.
-          model: "google/gemini-2.5-flash",
-          messages: [
-            { role: "system", content: SYSTEM_PROMPT },
-            { role: "user", content: `Analise o julgado abaixo e extraia todos os campos.\n\nTEXTO:\n${text.substring(0, 12000)}` },
-          ],
-          tools: [{
-            type: "function",
-            function: {
-              name: "salvar_julgado_estruturado",
-              description: "Retorna o julgado decomposto nos campos estruturados.",
-              parameters: TOOL_SCHEMA,
-            },
-          }],
-          tool_choice: { type: "function", function: { name: "salvar_julgado_estruturado" } },
-          max_completion_tokens: 6000,
-        }),
-      });
+      }],
+      tool_choice: { type: "function", function: { name: "salvar_julgado_estruturado" } },
+      max_completion_tokens: 6000,
+    });
+
+    let aiRes: Response | null = null;
+    let lastErrText = "";
+    const MAX_ATTEMPTS = 3;
+    try {
+      for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+        aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          signal: aiController.signal,
+          headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: aiBody,
+        });
+        if (aiRes.ok) break;
+        // Retry on transient upstream errors
+        if ([502, 503, 504].includes(aiRes.status) && attempt < MAX_ATTEMPTS) {
+          lastErrText = await aiRes.text().catch(() => "");
+          console.warn(`AI gateway ${aiRes.status} (attempt ${attempt}/${MAX_ATTEMPTS}), retrying...`, lastErrText);
+          await new Promise((r) => setTimeout(r, 1000 * attempt));
+          continue;
+        }
+        break;
+      }
     } catch (e) {
       clearTimeout(aiTimeout);
       if ((e as any)?.name === "AbortError") {
@@ -163,17 +177,23 @@ serve(async (req) => {
     }
     clearTimeout(aiTimeout);
 
-    if (!aiRes.ok) {
-      const errText = await aiRes.text();
-      console.error("AI gateway error", aiRes.status, errText);
-      if (aiRes.status === 429) {
+    if (!aiRes || !aiRes.ok) {
+      const status = aiRes?.status ?? 500;
+      const errText = aiRes ? await aiRes.text().catch(() => "") : lastErrText;
+      console.error("AI gateway error", status, errText);
+      if (status === 429) {
         return new Response(JSON.stringify({ error: "Limite de requisições atingido. Tente em alguns instantes." }), {
           status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      if (aiRes.status === 402) {
+      if (status === 402) {
         return new Response(JSON.stringify({ error: "Créditos de IA esgotados. Adicione saldo em Workspace → Usage." }), {
           status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if ([502, 503, 504].includes(status)) {
+        return new Response(JSON.stringify({ error: "O serviço de IA está temporariamente indisponível. Tente novamente em alguns instantes." }), {
+          status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       return new Response(JSON.stringify({ error: "Falha ao analisar o julgado." }), {
