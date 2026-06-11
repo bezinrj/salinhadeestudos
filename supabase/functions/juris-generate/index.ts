@@ -182,23 +182,26 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    const buildAiBody = (model: string) => JSON.stringify({
+    const buildAiBody = (model: string, strictSchema = true) => JSON.stringify({
       model,
-      response_format: { type: "json_object" },
+      response_format: strictSchema
+        ? { type: "json_schema", json_schema: { name: "julgado_estruturado", strict: true, schema: TOOL_SCHEMA } }
+        : { type: "json_object" },
       messages: [
         { role: "system", content: `${SYSTEM_PROMPT}\n\nResponda SOMENTE com um objeto JSON válido, sem markdown, sem texto antes ou depois. Use exatamente estas chaves: ${TOOL_SCHEMA.required.join(", ")}. O campo nocoes deve ser objeto com frase, contexto, ok e ko. O campo casos_concretos deve ser array de objetos com antes e depois.` },
         { role: "user", content: `Analise o julgado abaixo e extraia todos os campos.\n\nTEXTO:\n${text.substring(0, 6000)}` },
       ],
-      max_completion_tokens: 5000,
+      max_completion_tokens: 4200,
     });
 
     let aiRes: Response | null = null;
     let lastErrText = "";
     let selectedModel = "";
     let parsedJulgado: ReturnType<typeof normalizeJulgado> = null;
-    for (const model of AI_MODELS) {
+    const attempts = AI_MODELS.flatMap((model) => [{ model, strictSchema: true }, { model, strictSchema: false }]);
+    for (const { model, strictSchema } of attempts) {
       const aiController = new AbortController();
-      const aiTimeout = setTimeout(() => aiController.abort(), 32_000);
+      const aiTimeout = setTimeout(() => aiController.abort(), 28_000);
       try {
         aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
           method: "POST",
@@ -207,7 +210,7 @@ serve(async (req) => {
             "Lovable-API-Key": LOVABLE_API_KEY,
             "Content-Type": "application/json",
           },
-          body: buildAiBody(model),
+          body: buildAiBody(model, strictSchema),
         });
         if (aiRes.ok) {
           const aiData = await aiRes.json();
@@ -236,7 +239,7 @@ serve(async (req) => {
           continue;
         }
         lastErrText = await aiRes.text().catch(() => "");
-        console.warn(`AI gateway ${aiRes.status} using ${model}`, lastErrText);
+        console.warn(`AI gateway ${aiRes.status} using ${model} strict=${strictSchema}`, lastErrText);
         if (![400, 502, 503, 504].includes(aiRes.status)) break;
       } catch (e) {
         if ((e as any)?.name === "AbortError") {
