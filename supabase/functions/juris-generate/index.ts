@@ -68,14 +68,66 @@ const TOOL_SCHEMA = {
 };
 
 const AI_MODELS = [
+  "google/gemini-2.5-flash-lite",
+  "google/gemini-3.1-flash-lite-preview",
   "openai/gpt-5-nano",
-  "openai/gpt-5-mini",
-  "google/gemini-2.5-flash",
-  "google/gemini-3-flash-preview",
 ];
 
 function stripJsonFence(value: string) {
   return value.trim().replace(/^```(?:json)?\s*/i, "").replace(/```$/i, "").trim();
+}
+
+function extractJsonObject(value: string) {
+  const clean = stripJsonFence(value);
+  const start = clean.indexOf("{");
+  const end = clean.lastIndexOf("}");
+  return start >= 0 && end > start ? clean.slice(start, end + 1) : clean;
+}
+
+function normalizeJulgado(value: any) {
+  const source = value?.julgado && typeof value.julgado === "object" ? value.julgado : value;
+  if (!source || typeof source !== "object" || Array.isArray(source)) return null;
+
+  const s = (key: string) => typeof source[key] === "string" ? source[key] : "";
+  const casos = Array.isArray(source.casos_concretos)
+    ? source.casos_concretos.slice(0, 3).map((item: any) => ({
+      antes: typeof item?.antes === "string" ? item.antes : "",
+      depois: typeof item?.depois === "string" ? item.depois : "",
+    })).filter((item: any) => item.antes || item.depois)
+    : [];
+
+  const parsed = {
+    titulo: s("titulo"),
+    tribunal: s("tribunal"),
+    numero: s("numero"),
+    relator: s("relator"),
+    data: s("data"),
+    info: s("info"),
+    area: s("area"),
+    assunto: s("assunto"),
+    nocoes: {
+      frase: typeof source.nocoes?.frase === "string" ? source.nocoes.frase : "",
+      contexto: typeof source.nocoes?.contexto === "string" ? source.nocoes.contexto : "",
+      ok: typeof source.nocoes?.ok === "string" ? source.nocoes.ok : "",
+      ko: typeof source.nocoes?.ko === "string" ? source.nocoes.ko : "",
+    },
+    conceitual: s("conceitual"),
+    problema: s("problema"),
+    solucao: s("solucao"),
+    antes: s("antes"),
+    depois: s("depois"),
+    casos_concretos: casos,
+    conclusoes: s("conclusoes"),
+    principios: s("principios"),
+    doutrina: s("doutrina"),
+    jurisprudencia: s("jurisprudencia"),
+    abertura: s("abertura"),
+    tese: s("tese"),
+    integra_texto: s("integra_texto"),
+    integra_ref: s("integra_ref"),
+  };
+
+  return parsed.titulo || parsed.tese || parsed.conceitual ? parsed : null;
 }
 
 serve(async (req) => {
@@ -133,28 +185,21 @@ serve(async (req) => {
 
     const buildAiBody = (model: string) => JSON.stringify({
       model,
+      response_format: { type: "json_object" },
       messages: [
-        { role: "system", content: SYSTEM_PROMPT },
+        { role: "system", content: `${SYSTEM_PROMPT}\n\nResponda SOMENTE com um objeto JSON válido, sem markdown, sem texto antes ou depois. Use exatamente estas chaves: ${TOOL_SCHEMA.required.join(", ")}. O campo nocoes deve ser objeto com frase, contexto, ok e ko. O campo casos_concretos deve ser array de objetos com antes e depois.` },
         { role: "user", content: `Analise o julgado abaixo e extraia todos os campos.\n\nTEXTO:\n${text.substring(0, 6000)}` },
       ],
-      tools: [{
-        type: "function",
-        function: {
-          name: "salvar_julgado_estruturado",
-          description: "Retorna o julgado decomposto nos campos estruturados.",
-          parameters: TOOL_SCHEMA,
-        },
-      }],
-      tool_choice: { type: "function", function: { name: "salvar_julgado_estruturado" } },
-      max_completion_tokens: 3200,
+      max_completion_tokens: 3600,
     });
 
     let aiRes: Response | null = null;
     let lastErrText = "";
     let selectedModel = "";
+    let parsedJulgado: ReturnType<typeof normalizeJulgado> = null;
     for (const model of AI_MODELS) {
       const aiController = new AbortController();
-      const aiTimeout = setTimeout(() => aiController.abort(), 52_000);
+      const aiTimeout = setTimeout(() => aiController.abort(), 38_000);
       try {
         aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
           method: "POST",
@@ -166,12 +211,34 @@ serve(async (req) => {
           body: buildAiBody(model),
         });
         if (aiRes.ok) {
-          selectedModel = model;
-          break;
+          const aiData = await aiRes.json();
+          const message = aiData?.choices?.[0]?.message;
+          const candidates = [
+            message?.tool_calls?.[0]?.function?.arguments,
+            typeof message?.content === "string" ? message.content : "",
+          ].filter(Boolean) as string[];
+
+          for (const candidate of candidates) {
+            try {
+              const normalized = normalizeJulgado(JSON.parse(extractJsonObject(candidate)));
+              if (normalized) {
+                parsedJulgado = normalized;
+                selectedModel = model;
+                break;
+              }
+            } catch (_parseError) {
+              // tenta o próximo formato/candidato antes de trocar de modelo
+            }
+          }
+
+          if (parsedJulgado) break;
+          lastErrText = "AI response did not contain valid structured JSON";
+          console.warn("AI returned invalid structure", model, JSON.stringify(aiData).slice(0, 1200));
+          continue;
         }
         lastErrText = await aiRes.text().catch(() => "");
         console.warn(`AI gateway ${aiRes.status} using ${model}`, lastErrText);
-        if (![502, 503, 504].includes(aiRes.status)) break;
+        if (![400, 502, 503, 504].includes(aiRes.status)) break;
       } catch (e) {
         if ((e as any)?.name === "AbortError") {
           return new Response(JSON.stringify({ error: "A IA demorou demais para responder. Tente novamente com um texto menor." }), {
@@ -184,9 +251,16 @@ serve(async (req) => {
       }
     }
 
+    if (parsedJulgado) {
+      console.info("juris-generate AI success", selectedModel);
+      return new Response(JSON.stringify({ julgado: parsedJulgado }), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     if (!aiRes || !aiRes.ok) {
       const status = aiRes?.status ?? 500;
-      const errText = aiRes ? await aiRes.text().catch(() => "") : lastErrText;
+      const errText = aiRes ? lastErrText || await aiRes.text().catch(() => "") : lastErrText;
       console.error("AI gateway error", status, errText);
       if (status === 429) {
         return new Response(JSON.stringify({ error: "Limite de requisições atingido. Tente em alguns instantes." }), {
@@ -208,21 +282,9 @@ serve(async (req) => {
       });
     }
 
-    const aiData = await aiRes.json();
-    console.info("juris-generate AI success", selectedModel);
-    const message = aiData?.choices?.[0]?.message;
-    const toolCall = message?.tool_calls?.[0];
-    const argsStr = toolCall?.function?.arguments;
-    const contentStr = typeof message?.content === "string" ? stripJsonFence(message.content) : "";
-    if (!argsStr && !contentStr) {
-      return new Response(JSON.stringify({ error: "IA não retornou estrutura válida." }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    const parsed = JSON.parse(argsStr || contentStr);
-
-    return new Response(JSON.stringify({ julgado: parsed }), {
-      status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    console.error("AI structured parsing failed", lastErrText);
+    return new Response(JSON.stringify({ error: "A IA não conseguiu estruturar esse julgado. Tente reduzir o texto ou remover trechos repetidos." }), {
+      status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
     console.error("juris-generate error", e);
