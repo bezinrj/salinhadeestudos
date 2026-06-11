@@ -186,20 +186,12 @@ serve(async (req) => {
 
     const buildAiBody = (model: string) => JSON.stringify({
       model,
+      response_format: { type: "json_object" },
       messages: [
-        { role: "system", content: SYSTEM_PROMPT },
+        { role: "system", content: `${SYSTEM_PROMPT}\n\nResponda SOMENTE com um objeto JSON válido, sem markdown, sem texto antes ou depois. Use exatamente estas chaves: ${TOOL_SCHEMA.required.join(", ")}. O campo nocoes deve ser objeto com frase, contexto, ok e ko. O campo casos_concretos deve ser array de objetos com antes e depois.` },
         { role: "user", content: `Analise o julgado abaixo e extraia todos os campos.\n\nTEXTO:\n${text.substring(0, 6000)}` },
       ],
-      tools: [{
-        type: "function",
-        function: {
-          name: "salvar_julgado_estruturado",
-          description: "Retorna o julgado decomposto nos campos estruturados.",
-          parameters: TOOL_SCHEMA,
-        },
-      }],
-      tool_choice: { type: "function", function: { name: "salvar_julgado_estruturado" } },
-      max_completion_tokens: 3200,
+      max_completion_tokens: 5000,
     });
 
     let aiRes: Response | null = null;
