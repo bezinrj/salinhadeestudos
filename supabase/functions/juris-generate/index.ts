@@ -282,8 +282,8 @@ serve(async (req) => {
     }
 
     console.error("AI structured parsing failed", lastErrText);
-    return new Response(JSON.stringify({ error: "A IA não conseguiu estruturar esse julgado. Tente reduzir o texto ou remover trechos repetidos." }), {
-      status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    return new Response(JSON.stringify({ error: "A geração falhou temporariamente. Tente novamente em alguns instantes." }), {
+      status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
     console.error("juris-generate error", e);
