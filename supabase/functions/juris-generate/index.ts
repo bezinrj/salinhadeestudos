@@ -68,9 +68,8 @@ const TOOL_SCHEMA = {
 };
 
 const AI_MODELS = [
-  "google/gemini-2.5-flash-lite",
-  "google/gemini-3.1-flash-lite-preview",
-  "openai/gpt-5-nano",
+  "openai/gpt-5-mini",
+  "google/gemini-2.5-flash",
 ];
 
 function stripJsonFence(value: string) {
@@ -190,7 +189,7 @@ serve(async (req) => {
         { role: "system", content: `${SYSTEM_PROMPT}\n\nResponda SOMENTE com um objeto JSON válido, sem markdown, sem texto antes ou depois. Use exatamente estas chaves: ${TOOL_SCHEMA.required.join(", ")}. O campo nocoes deve ser objeto com frase, contexto, ok e ko. O campo casos_concretos deve ser array de objetos com antes e depois.` },
         { role: "user", content: `Analise o julgado abaixo e extraia todos os campos.\n\nTEXTO:\n${text.substring(0, 6000)}` },
       ],
-      max_completion_tokens: 3600,
+      max_completion_tokens: 8000,
     });
 
     let aiRes: Response | null = null;
@@ -241,9 +240,9 @@ serve(async (req) => {
         if (![400, 502, 503, 504].includes(aiRes.status)) break;
       } catch (e) {
         if ((e as any)?.name === "AbortError") {
-          return new Response(JSON.stringify({ error: "A IA demorou demais para responder. Tente novamente com um texto menor." }), {
-            status: 504, headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
+          lastErrText = "timeout";
+          console.warn(`AI timeout using ${model}`);
+          continue;
         }
         throw e;
       } finally {
@@ -273,18 +272,18 @@ serve(async (req) => {
         });
       }
       if ([502, 503, 504].includes(status)) {
-        return new Response(JSON.stringify({ error: "O serviço de IA está temporariamente indisponível. Tente novamente em alguns instantes." }), {
+        return new Response(JSON.stringify({ error: "A geração falhou temporariamente. Tente novamente em alguns instantes." }), {
           status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      return new Response(JSON.stringify({ error: "Falha ao analisar o julgado." }), {
+      return new Response(JSON.stringify({ error: "A geração falhou temporariamente. Tente novamente em alguns instantes." }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     console.error("AI structured parsing failed", lastErrText);
-    return new Response(JSON.stringify({ error: "A IA não conseguiu estruturar esse julgado. Tente reduzir o texto ou remover trechos repetidos." }), {
-      status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    return new Response(JSON.stringify({ error: "A geração falhou temporariamente. Tente novamente em alguns instantes." }), {
+      status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
     console.error("juris-generate error", e);
