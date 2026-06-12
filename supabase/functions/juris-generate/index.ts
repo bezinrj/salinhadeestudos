@@ -272,11 +272,11 @@ serve(async (req) => {
         });
       }
       if ([502, 503, 504].includes(status)) {
-        return new Response(JSON.stringify({ error: "O serviço de IA está temporariamente indisponível. Tente novamente em alguns instantes." }), {
+        return new Response(JSON.stringify({ error: "A geração falhou temporariamente. Tente novamente em alguns instantes." }), {
           status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      return new Response(JSON.stringify({ error: "Falha ao analisar o julgado." }), {
+      return new Response(JSON.stringify({ error: "A geração falhou temporariamente. Tente novamente em alguns instantes." }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
