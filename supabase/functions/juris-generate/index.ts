@@ -68,9 +68,8 @@ const TOOL_SCHEMA = {
 };
 
 const AI_MODELS = [
-  "google/gemini-2.5-flash-lite",
-  "google/gemini-3.1-flash-lite-preview",
-  "openai/gpt-5-nano",
+  "openai/gpt-5-mini",
+  "google/gemini-2.5-flash",
 ];
 
 function stripJsonFence(value: string) {
