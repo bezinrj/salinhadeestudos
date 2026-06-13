@@ -109,8 +109,8 @@ serve(async (req) => {
       );
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
+    if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not configured");
 
     const handwritingSection = hasImage ? `
 
@@ -206,22 +206,26 @@ Regras inegociáveis:
 - Se houve acerto parcial, reconheça o acerto e explique o que faltou para a pontuação integral.
 - Tom: corretor de banca falando diretamente com o aluno (2ª pessoa), didático, direto.
 - Não apenas repetir o gabarito — transformá-lo em orientação prática de melhoria.
-- O campo "modelSentence" deve trazer um trecho curto no estilo de prova discursiva (1 a 3 frases) que o aluno poderia usar como modelo.${handwritingSection}`;
+- O campo "modelSentence" deve trazer um trecho curto no estilo de prova discursiva (1 a 3 frases) que o aluno poderia usar como modelo.${handwritingSection}
 
-    // Build user message content
+IMPORTANTE: você DEVE responder OBRIGATORIAMENTE chamando a ferramenta "submit_correction" com todos os campos estruturados preenchidos. Não escreva texto livre.`;
+
+    // Build user message content (Anthropic format)
     const userContent: any[] = [];
-    
+
     if (hasImage) {
       userContent.push({
-        type: "image_url",
-        image_url: {
-          url: `data:${mimeType || "image/jpeg"};base64,${imageBase64}`,
+        type: "image",
+        source: {
+          type: "base64",
+          media_type: mimeType || "image/jpeg",
+          data: imageBase64,
         },
       });
       userContent.push({
         type: "text",
         text: `Esta é a RESPOSTA MANUSCRITA DO ALUNO em imagem. Leia a imagem, transcreva mentalmente o conteúdo e avalie cada critério do barema. Retorne o resultado usando a ferramenta fornecida.
-IMPORTANTE: 
+IMPORTANTE:
 - Extraia os itens/critérios do barema de texto e use-os no baremaBreakdown
 - A resposta ideal (idealAnswer) deve ser PERSONALIZADA para este aluno
 - Inclua o diagnóstico de caligrafia (handwritingNote e handwritingLevel)`,
@@ -233,7 +237,7 @@ IMPORTANTE:
 ${answer}
 
 Avalie cada critério do barema e retorne o resultado usando a ferramenta fornecida.
-IMPORTANTE: 
+IMPORTANTE:
 - Extraia os itens/critérios do barema de texto e use-os no baremaBreakdown
 - A resposta ideal (idealAnswer) deve ser PERSONALIZADA para este aluno, reescrevendo a resposta dele corrigindo erros e omissões`,
       });
@@ -276,29 +280,13 @@ IMPORTANTE:
       feedback: { type: "string", description: "Feedback de melhoria geral, curto" },
       maxScoreFeedback: {
         type: "object",
-        description: "Feedback DETALHADO, ESPECÍFICO e NÃO genérico para o aluno alcançar a nota máxima. DEVE comparar a resposta concreta do aluno com o enunciado, barema e gabarito. NUNCA usar frases genéricas como 'estude mais o tema'. Sempre falar com o aluno em 2ª pessoa, como um corretor de banca.",
+        description: "Feedback DETALHADO, ESPECÍFICO e NÃO genérico para o aluno alcançar a nota máxima.",
         properties: {
-          thesisAssessment: {
-            type: "string",
-            description: "Diga EXPRESSAMENTE se o aluno acertou ou errou a TESE CENTRAL da questão. Se errou, aponte qual era a tese correta. Se acertou parcialmente, reconheça e explique o que faltou.",
-          },
-          pointsLost: {
-            type: "array",
-            items: { type: "string" },
-            description: "Lista dos erros materiais, omissões, imprecisões e classificações erradas que derrubaram a nota. Cada item deve referenciar o que o aluno escreveu (ou deixou de escrever) e o critério do barema afetado.",
-          },
-          whatShouldHaveBeenWritten: {
-            type: "string",
-            description: "Mostre objetivamente, item por item do barema, quais FUNDAMENTOS JURÍDICOS, palavras-chave, expressões técnicas e dispositivos legais deveriam ter sido citados, e a consequência prática no caso concreto. Não repita o gabarito — transforme-o em orientação prática.",
-          },
-          howToImprove: {
-            type: "string",
-            description: "Orientação prática e direta de como o aluno deve estruturar e escrever a resposta na próxima prova para alcançar a nota máxima.",
-          },
-          modelSentence: {
-            type: "string",
-            description: "Um trecho-modelo curto, em estilo de prova discursiva de concurso, que o aluno poderia usar para responder no padrão da banca.",
-          },
+          thesisAssessment: { type: "string" },
+          pointsLost: { type: "array", items: { type: "string" } },
+          whatShouldHaveBeenWritten: { type: "string" },
+          howToImprove: { type: "string" },
+          modelSentence: { type: "string" },
         },
         required: ["thesisAssessment", "pointsLost", "whatShouldHaveBeenWritten", "howToImprove", "modelSentence"],
       },
@@ -307,83 +295,69 @@ IMPORTANTE:
     const requiredFields = ["baremaBreakdown", "mirror", "positives", "errors", "omissions", "idealAnswer", "feedback", "maxScoreFeedback"];
 
     if (hasImage) {
-      toolProperties.handwritingNote = {
-        type: "string",
-        description: "Observação humanizada sobre a caligrafia/legibilidade do manuscrito",
-      };
+      toolProperties.handwritingNote = { type: "string" };
       toolProperties.handwritingLevel = {
         type: "string",
         enum: ["plenamente_legivel", "legivel_com_esforco", "prejudica_parcialmente", "compromete_correcao"],
-        description: "Nível de legibilidade da caligrafia",
       };
       requiredFields.push("handwritingNote", "handwritingLevel");
     }
 
     const tools = [
       {
-        type: "function",
-        function: {
-          name: "submit_correction",
-          description: "Submit the structured correction result",
-          parameters: {
-            type: "object",
-            properties: toolProperties,
-            required: requiredFields,
-          },
+        name: "submit_correction",
+        description: "Submit the structured correction result",
+        input_schema: {
+          type: "object",
+          properties: toolProperties,
+          required: requiredFields,
         },
       },
     ];
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
+        "x-api-key": ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
       },
       body: JSON.stringify({
-        model: hasImage ? "google/gemini-2.5-flash" : "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userContent },
-        ],
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 8000,
+        system: systemPrompt,
+        messages: [{ role: "user", content: userContent }],
         tools,
-        tool_choice: { type: "function", function: { name: "submit_correction" } },
+        tool_choice: { type: "tool", name: "submit_correction" },
       }),
     });
 
     if (!response.ok) {
       const status = response.status;
+      const text = await response.text().catch(() => "");
+      console.error("Anthropic error:", status, text);
       if (status === 429) {
         return new Response(JSON.stringify({ error: "Limite de requisições excedido. Tente novamente em alguns segundos." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      if (status === 402) {
-        return new Response(JSON.stringify({ error: "Créditos de IA esgotados." }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      const text = await response.text();
-      console.error("AI gateway error:", status, text);
-      return new Response(JSON.stringify({ error: "Erro ao chamar IA" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      return new Response(JSON.stringify({ error: "Geração falhou, tente novamente" }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const aiResult = await response.json();
-    const toolCall = aiResult.choices?.[0]?.message?.tool_calls?.[0];
-    if (!toolCall?.function?.arguments) {
-      console.error("No tool call in response:", JSON.stringify(aiResult));
-      return new Response(JSON.stringify({ error: "IA não retornou resultado estruturado" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    const toolUse = Array.isArray(aiResult?.content)
+      ? aiResult.content.find((b: any) => b?.type === "tool_use")
+      : null;
+    if (!toolUse?.input) {
+      console.error("No tool_use in response:", JSON.stringify(aiResult).slice(0, 1500));
+      return new Response(JSON.stringify({ error: "Geração falhou, tente novamente" }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const correction = JSON.parse(toolCall.function.arguments);
+    const correction = toolUse.input;
 
     const grade = Math.round(
       correction.baremaBreakdown.reduce((sum: number, item: any) => sum + item.earnedScore, 0) * 10
