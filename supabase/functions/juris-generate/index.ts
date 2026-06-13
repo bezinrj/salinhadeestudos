@@ -68,8 +68,8 @@ const TOOL_SCHEMA = {
 };
 
 const ANTHROPIC_MODELS = [
-  "claude-sonnet-4-5",
   "claude-haiku-4-5",
+  "claude-sonnet-4-5",
 ];
 
 function stripJsonFence(value: string) {
@@ -197,7 +197,7 @@ serve(async (req) => {
     for (const model of ANTHROPIC_MODELS) {
       if (parsedJulgado) break;
       const aiController = new AbortController();
-      const aiTimeout = setTimeout(() => aiController.abort(), model.includes("haiku") ? 70_000 : 95_000);
+      const aiTimeout = setTimeout(() => aiController.abort(), model.includes("haiku") ? 70_000 : 55_000);
       try {
       const aiRes = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
