@@ -67,8 +67,9 @@ const TOOL_SCHEMA = {
   additionalProperties: false,
 };
 
-const AI_MODELS = [
-  "google/gemini-2.5-pro",
+const ANTHROPIC_MODELS = [
+  "claude-sonnet-4-5",
+  "claude-haiku-4-5",
 ];
 
 function stripJsonFence(value: string) {
@@ -181,17 +182,23 @@ serve(async (req) => {
     const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
     if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not configured");
 
-    const ANTHROPIC_MODEL = "claude-sonnet-4-5";
-    const systemMsg = `${SYSTEM_PROMPT}\n\nResponda SOMENTE com um objeto JSON válido, sem markdown, sem texto antes ou depois. Use exatamente estas chaves: ${TOOL_SCHEMA.required.join(", ")}. O campo nocoes deve ser objeto com frase, contexto, ok e ko. O campo casos_concretos deve ser array de objetos com antes e depois.`;
+    const tools = [{
+      name: "submit_julgado",
+      description: "Retorna o julgado jurídico estruturado para publicação.",
+      input_schema: TOOL_SCHEMA,
+    }];
+    const systemMsg = `${SYSTEM_PROMPT}\n\nSeja completo, mas objetivo. Preencha todos os campos obrigatórios por meio da ferramenta submit_julgado, sem texto fora da ferramenta.`;
     const userMsg = `Analise o julgado abaixo e extraia todos os campos.\n\nTEXTO:\n${text.substring(0, 6000)}`;
 
     let parsedJulgado: ReturnType<typeof normalizeJulgado> = null;
     let lastErrText = "";
     let aiStatus = 0;
 
-    const aiController = new AbortController();
-    const aiTimeout = setTimeout(() => aiController.abort(), 120_000);
-    try {
+    for (const model of ANTHROPIC_MODELS) {
+      if (parsedJulgado) break;
+      const aiController = new AbortController();
+      const aiTimeout = setTimeout(() => aiController.abort(), model.includes("haiku") ? 70_000 : 95_000);
+      try {
       const aiRes = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         signal: aiController.signal,
@@ -201,38 +208,40 @@ serve(async (req) => {
           "content-type": "application/json",
         },
         body: JSON.stringify({
-          model: ANTHROPIC_MODEL,
-          max_tokens: 8000,
+          model,
+          max_tokens: model.includes("haiku") ? 5000 : 6500,
           system: systemMsg,
           messages: [{ role: "user", content: userMsg }],
+          tools,
+          tool_choice: { type: "tool", name: "submit_julgado" },
         }),
       });
       aiStatus = aiRes.status;
       if (aiRes.ok) {
         const aiData = await aiRes.json();
-        const content = Array.isArray(aiData?.content)
-          ? aiData.content.filter((b: any) => b?.type === "text").map((b: any) => b.text).join("\n")
-          : "";
-        try {
-          const normalized = normalizeJulgado(JSON.parse(extractJsonObject(content)));
-          if (normalized) parsedJulgado = normalized;
-        } catch (_e) {
-          lastErrText = "parse_failed";
-          console.warn("Anthropic returned invalid JSON", content.slice(0, 1200));
+        const toolUse = Array.isArray(aiData?.content)
+          ? aiData.content.find((b: any) => b?.type === "tool_use" && b?.name === "submit_julgado")
+          : null;
+        const normalized = normalizeJulgado(toolUse?.input);
+        if (normalized) parsedJulgado = normalized;
+        else {
+          lastErrText = "tool_input_missing";
+          console.warn("Anthropic returned no valid tool input", JSON.stringify(aiData).slice(0, 1200));
         }
       } else {
         lastErrText = await aiRes.text().catch(() => "");
-        console.error(`Anthropic ${aiRes.status}`, lastErrText);
+        console.error(`Anthropic ${model} ${aiRes.status}`, lastErrText);
       }
     } catch (e) {
       lastErrText = (e as any)?.name === "AbortError" ? "timeout" : String(e);
-      console.error("Anthropic call error", lastErrText);
+      console.error(`Anthropic ${model} call error`, lastErrText);
     } finally {
       clearTimeout(aiTimeout);
     }
+    }
 
     if (parsedJulgado) {
-      console.info("juris-generate Anthropic success", ANTHROPIC_MODEL);
+      console.info("juris-generate Anthropic success");
       return new Response(JSON.stringify({ julgado: parsedJulgado }), {
         status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
