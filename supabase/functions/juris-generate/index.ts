@@ -181,7 +181,7 @@ serve(async (req) => {
     const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
     if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not configured");
 
-    const ANTHROPIC_MODEL = "claude-sonnet-4-20250514";
+    const ANTHROPIC_MODEL = "claude-sonnet-4-5";
     const systemMsg = `${SYSTEM_PROMPT}\n\nResponda SOMENTE com um objeto JSON válido, sem markdown, sem texto antes ou depois. Use exatamente estas chaves: ${TOOL_SCHEMA.required.join(", ")}. O campo nocoes deve ser objeto com frase, contexto, ok e ko. O campo casos_concretos deve ser array de objetos com antes e depois.`;
     const userMsg = `Analise o julgado abaixo e extraia todos os campos.\n\nTEXTO:\n${text.substring(0, 6000)}`;
 
