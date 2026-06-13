@@ -178,111 +178,69 @@ serve(async (req) => {
       });
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
+    if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not configured");
 
-    const buildAiBody = (model: string) => JSON.stringify({
-      model,
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: `${SYSTEM_PROMPT}\n\nResponda SOMENTE com um objeto JSON válido, sem markdown, sem texto antes ou depois. Use exatamente estas chaves: ${TOOL_SCHEMA.required.join(", ")}. O campo nocoes deve ser objeto com frase, contexto, ok e ko. O campo casos_concretos deve ser array de objetos com antes e depois.` },
-        { role: "user", content: `Analise o julgado abaixo e extraia todos os campos.\n\nTEXTO:\n${text.substring(0, 6000)}` },
-      ],
-      max_completion_tokens: 8000,
-    });
+    const ANTHROPIC_MODEL = "claude-sonnet-4-20250514";
+    const systemMsg = `${SYSTEM_PROMPT}\n\nResponda SOMENTE com um objeto JSON válido, sem markdown, sem texto antes ou depois. Use exatamente estas chaves: ${TOOL_SCHEMA.required.join(", ")}. O campo nocoes deve ser objeto com frase, contexto, ok e ko. O campo casos_concretos deve ser array de objetos com antes e depois.`;
+    const userMsg = `Analise o julgado abaixo e extraia todos os campos.\n\nTEXTO:\n${text.substring(0, 6000)}`;
 
-    let aiRes: Response | null = null;
-    let lastErrText = "";
-    let selectedModel = "";
     let parsedJulgado: ReturnType<typeof normalizeJulgado> = null;
-    for (const model of AI_MODELS) {
-      const aiController = new AbortController();
-      const aiTimeout = setTimeout(() => aiController.abort(), 90_000);
-      try {
-        aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-          method: "POST",
-          signal: aiController.signal,
-          headers: {
-            "Lovable-API-Key": LOVABLE_API_KEY,
-            "Content-Type": "application/json",
-          },
-          body: buildAiBody(model),
-        });
-        if (aiRes.ok) {
-          const aiData = await aiRes.json();
-          const message = aiData?.choices?.[0]?.message;
-          const candidates = [
-            message?.tool_calls?.[0]?.function?.arguments,
-            typeof message?.content === "string" ? message.content : "",
-          ].filter(Boolean) as string[];
+    let lastErrText = "";
+    let aiStatus = 0;
 
-          for (const candidate of candidates) {
-            try {
-              const normalized = normalizeJulgado(JSON.parse(extractJsonObject(candidate)));
-              if (normalized) {
-                parsedJulgado = normalized;
-                selectedModel = model;
-                break;
-              }
-            } catch (_parseError) {
-              // tenta o próximo formato/candidato antes de trocar de modelo
-            }
-          }
-
-          if (parsedJulgado) break;
-          lastErrText = "AI response did not contain valid structured JSON";
-          console.warn("AI returned invalid structure", model, JSON.stringify(aiData).slice(0, 1200));
-          continue;
+    const aiController = new AbortController();
+    const aiTimeout = setTimeout(() => aiController.abort(), 120_000);
+    try {
+      const aiRes = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        signal: aiController.signal,
+        headers: {
+          "x-api-key": ANTHROPIC_API_KEY,
+          "anthropic-version": "2023-06-01",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          model: ANTHROPIC_MODEL,
+          max_tokens: 8000,
+          system: systemMsg,
+          messages: [{ role: "user", content: userMsg }],
+        }),
+      });
+      aiStatus = aiRes.status;
+      if (aiRes.ok) {
+        const aiData = await aiRes.json();
+        const content = Array.isArray(aiData?.content)
+          ? aiData.content.filter((b: any) => b?.type === "text").map((b: any) => b.text).join("\n")
+          : "";
+        try {
+          const normalized = normalizeJulgado(JSON.parse(extractJsonObject(content)));
+          if (normalized) parsedJulgado = normalized;
+        } catch (_e) {
+          lastErrText = "parse_failed";
+          console.warn("Anthropic returned invalid JSON", content.slice(0, 1200));
         }
+      } else {
         lastErrText = await aiRes.text().catch(() => "");
-        console.warn(`AI gateway ${aiRes.status} using ${model}`, lastErrText);
-        if (![400, 502, 503, 504].includes(aiRes.status)) break;
-      } catch (e) {
-        if ((e as any)?.name === "AbortError") {
-          lastErrText = "timeout";
-          console.warn(`AI timeout using ${model}`);
-          continue;
-        }
-        throw e;
-      } finally {
-        clearTimeout(aiTimeout);
+        console.error(`Anthropic ${aiRes.status}`, lastErrText);
       }
+    } catch (e) {
+      lastErrText = (e as any)?.name === "AbortError" ? "timeout" : String(e);
+      console.error("Anthropic call error", lastErrText);
+    } finally {
+      clearTimeout(aiTimeout);
     }
 
     if (parsedJulgado) {
-      console.info("juris-generate AI success", selectedModel);
+      console.info("juris-generate Anthropic success", ANTHROPIC_MODEL);
       return new Response(JSON.stringify({ julgado: parsedJulgado }), {
         status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    if (!aiRes || !aiRes.ok) {
-      const status = aiRes?.status ?? 500;
-      const errText = aiRes ? lastErrText || await aiRes.text().catch(() => "") : lastErrText;
-      console.error("AI gateway error", status, errText);
-      if (status === 429) {
-        return new Response(JSON.stringify({ error: "Limite de requisições atingido. Tente em alguns instantes." }), {
-          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (status === 402) {
-        return new Response(JSON.stringify({ error: "Créditos de IA esgotados. Adicione saldo em Workspace → Usage." }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if ([502, 503, 504].includes(status)) {
-        return new Response(JSON.stringify({ error: "A geração falhou temporariamente. Tente novamente em alguns instantes." }), {
-          status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      return new Response(JSON.stringify({ error: "A geração falhou temporariamente. Tente novamente em alguns instantes." }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    console.error("AI structured parsing failed", lastErrText);
-    return new Response(JSON.stringify({ error: "A geração falhou temporariamente. Tente novamente em alguns instantes." }), {
-      status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    return new Response(JSON.stringify({ error: "Geração falhou, tente novamente" }), {
+      status: aiStatus && aiStatus >= 400 && aiStatus < 600 ? aiStatus : 503,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
     console.error("juris-generate error", e);
