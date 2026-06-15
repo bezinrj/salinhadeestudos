@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { usePersistedState } from "@/hooks/usePersistedState";
 import { useDisciplines } from "@/hooks/useDisciplines";
 import { QuestionCard } from "@/components/QuestionCard";
 import { motion } from "framer-motion";
@@ -24,14 +25,14 @@ const years = ["Todos", "2021", "2022", "2023", "2024", "2025", "2026"] as const
 
 export default function Discursivas() {
   const { disciplines } = useDisciplines();
-  const [career, setCareer] = useState<string>("Todas");
-  const [type, setType] = useState<string>("Todas");
-  const [selectedBanca, setSelectedBanca] = useState<string>("Todas");
-  const [statusFilter, setStatusFilter] = useState<string>("Todas");
-  const [selectedDiscipline, setSelectedDiscipline] = useState<string>("Todas");
-  const [selectedSubject, setSelectedSubject] = useState<string>("Todas");
-  const [selectedYear, setSelectedYear] = useState<string>("Todos");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [career, setCareer] = usePersistedState<string>("discursivas:career", "Todas");
+  const [type, setType] = usePersistedState<string>("discursivas:type", "Todas");
+  const [selectedBanca, setSelectedBanca] = usePersistedState<string>("discursivas:banca", "Todas");
+  const [statusFilter, setStatusFilter] = usePersistedState<string>("discursivas:status", "Todas");
+  const [selectedDiscipline, setSelectedDiscipline] = usePersistedState<string>("discursivas:discipline", "Todas");
+  const [selectedSubject, setSelectedSubject] = usePersistedState<string>("discursivas:subject", "Todas");
+  const [selectedYear, setSelectedYear] = usePersistedState<string>("discursivas:year", "Todos");
+  const [searchQuery, setSearchQuery] = usePersistedState<string>("discursivas:search", "");
   const { isAdmin } = useIsAdmin();
   const { user } = useAuth();
   const queryClient = useQueryClient();
