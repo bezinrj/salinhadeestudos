@@ -209,7 +209,7 @@ serve(async (req) => {
         },
         body: JSON.stringify({
           model,
-          max_tokens: model.includes("haiku") ? 5000 : 6500,
+          max_tokens: model.includes("haiku") ? 9000 : 12000,
           system: systemMsg,
           messages: [{ role: "user", content: userMsg }],
           tools,
