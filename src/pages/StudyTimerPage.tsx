@@ -299,7 +299,7 @@ export default function StudyTimerPage() {
       update.adjustment_reason = opts.reason || null;
       update.adjusted_at = nowIso;
     }
-    const { error } = await supabase.from(TABLE).update(update).eq("id", session.id);
+    const { error } = await supabase.from(TABLE).update(update as any).eq("id", session.id);
     setSubmitting(false);
     if (error) {
       toast.error("Erro ao finalizar sessão.");
