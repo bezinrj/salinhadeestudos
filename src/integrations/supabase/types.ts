@@ -1967,6 +1967,113 @@ export type Database = {
           },
         ]
       }
+      vm_caderno_notas: {
+        Row: {
+          artigo_id: string | null
+          atualizado_em: string
+          caderno_id: string
+          conteudo_html: string
+          criado_em: string
+          id: string
+          tags: string[]
+          user_id: string
+        }
+        Insert: {
+          artigo_id?: string | null
+          atualizado_em?: string
+          caderno_id: string
+          conteudo_html?: string
+          criado_em?: string
+          id?: string
+          tags?: string[]
+          user_id: string
+        }
+        Update: {
+          artigo_id?: string | null
+          atualizado_em?: string
+          caderno_id?: string
+          conteudo_html?: string
+          criado_em?: string
+          id?: string
+          tags?: string[]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vm_caderno_notas_artigo_id_fkey"
+            columns: ["artigo_id"]
+            isOneToOne: false
+            referencedRelation: "vm_artigos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vm_caderno_notas_caderno_id_fkey"
+            columns: ["caderno_id"]
+            isOneToOne: false
+            referencedRelation: "vm_cadernos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vm_caderno_pastas: {
+        Row: {
+          atualizado_em: string
+          criado_em: string
+          id: string
+          nome: string
+          user_id: string
+        }
+        Insert: {
+          atualizado_em?: string
+          criado_em?: string
+          id?: string
+          nome: string
+          user_id: string
+        }
+        Update: {
+          atualizado_em?: string
+          criado_em?: string
+          id?: string
+          nome?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      vm_cadernos: {
+        Row: {
+          atualizado_em: string
+          criado_em: string
+          id: string
+          pasta_id: string | null
+          titulo: string
+          user_id: string
+        }
+        Insert: {
+          atualizado_em?: string
+          criado_em?: string
+          id?: string
+          pasta_id?: string | null
+          titulo: string
+          user_id: string
+        }
+        Update: {
+          atualizado_em?: string
+          criado_em?: string
+          id?: string
+          pasta_id?: string | null
+          titulo?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vm_cadernos_pasta_id_fkey"
+            columns: ["pasta_id"]
+            isOneToOne: false
+            referencedRelation: "vm_caderno_pastas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vm_comentarios: {
         Row: {
           artigo_id: string
