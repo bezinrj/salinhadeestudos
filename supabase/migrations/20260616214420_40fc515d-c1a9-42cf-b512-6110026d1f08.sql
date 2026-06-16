@@ -1,0 +1,1 @@
+ALTER TABLE public.study_timer_sessions ADD COLUMN IF NOT EXISTS assunto text;

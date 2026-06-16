@@ -1,41 +1,39 @@
-## Diagnóstico
+## Objetivo
 
-A compra `pi_3TefqoQ4whpSK2DU1JM9sdcJ` (cus_UdhBDKwVk0aVMQ, R$ 79,90) foi paga com sucesso na Stripe, mas o aluno não recebeu o acesso.
+A UI do menu **Cadernos** (`/cadernos`) e os hooks (`useCadernoPastas`, `useCadernos`, `useCadernoNotas`) já existem e apontam para 3 tabelas que ainda não existem no banco:
 
-Investigando:
-- A função `stripe-turma-webhook` **não tem nenhum log** desde sempre — ela nunca foi chamada pela Stripe (endpoint provavelmente não cadastrado / `STRIPE_TURMA_WEBHOOK_SECRET` desalinhado).
-- **Todas** as linhas de `turmas_assinaturas` estão com `status = pending` e `stripe_payment_intent_id = NULL`. Ou seja, nenhuma compra de Turma jamais foi liberada automaticamente — só funcionou quando foi liberada manualmente.
-- A página `/checkout-success` hoje só exibe "Assinatura confirmada", sem verificar nada no backend.
+- `vm_caderno_pastas`
+- `vm_cadernos`
+- `vm_caderno_notas`
 
-Conclusão: o sistema depende exclusivamente do webhook, que está silenciosamente quebrado. Precisamos remover essa dependência única.
+A única coisa que falta é criar essas tabelas com RLS e GRANTs corretos. Nenhuma mudança de código é necessária — o frontend já está pronto.
 
-## Solução
+## Estrutura das tabelas
 
-Adicionar um **caminho de verificação no retorno do checkout** (padrão polling no success page) que confere o pagamento direto na Stripe e libera o acesso. O webhook continua existindo como reforço, mas o success-page passa a ser a fonte primária e confiável.
+**`vm_caderno_pastas`** (pasta organizadora)
+- `id`, `user_id` (FK `auth.users`), `nome` (text)
+- `criado_em`, `atualizado_em`
 
-### 1. Nova Edge Function `verify-turma-checkout`
-- Recebe `{ session_id }` do usuário autenticado.
-- Busca a `checkout.sessions.retrieve(session_id)` na Stripe.
-- Valida que `payment_status === "paid"` e que o `metadata.user_id` bate com o usuário autenticado (segurança).
-- Executa exatamente a mesma lógica de liberação do webhook (em uma função compartilhada copiada para o arquivo): atualiza `turmas_assinaturas` → `active`, cria `turmas_acessos` para cada `album_id` do plano e estende `profiles.banco_geral_expires_at`.
-- É **idempotente** (usa `upsert` em `turmas_acessos` por `user_id,album_id` e checa status atual antes de estender o banco geral). Pode ser chamada várias vezes sem efeito colateral.
-- Retorna `{ granted: true, album_ids: [...] }` quando ok, `{ granted: false, reason: "pending" }` quando o pagamento ainda não foi confirmado.
+**`vm_cadernos`** (caderno, opcionalmente dentro de uma pasta)
+- `id`, `user_id`, `pasta_id` (FK → `vm_caderno_pastas`, nullable, `ON DELETE SET NULL` para que excluir a pasta não apague os cadernos — bate com o aviso da UI "Os cadernos ficarão sem pasta")
+- `titulo` (text)
+- `criado_em`, `atualizado_em`
 
-### 2. Atualizar `src/pages/CheckoutSuccess.tsx`
-- Ler `session_id` da query string.
-- Estado inicial "Confirmando seu pagamento..." com spinner.
-- Polling: chama `verify-turma-checkout` a cada 2 s, até 10 tentativas.
-- Sucesso → mostra "Assinatura confirmada!" e botão "Ir para Minhas Turmas".
-- Falha após tentativas → mensagem "Pagamento ainda processando. Atualize a página em alguns minutos ou fale com o suporte." (sem alarme falso — a próxima visita re-tenta).
+**`vm_caderno_notas`** (anotação dentro de um caderno)
+- `id`, `caderno_id` (FK → `vm_cadernos`, `ON DELETE CASCADE`), `user_id`
+- `artigo_id` (FK → `vm_artigos`, nullable, `ON DELETE SET NULL`) — usado quando a anotação vem do Vade Mecum
+- `conteudo_html` (text)
+- `tags` (text[]) — valores usados pela UI: `Legislação`, `Questões`, `Flashcards`, `Julgados`, `Livre`
+- `criado_em`, `atualizado_em`
 
-### 3. Regularizar a compra perdida
-- Aplicar manualmente, via insert tool, o acesso para `user_id = c6d74687-ba56-4f42-80f8-316f147a6d1a` ao plano `d9db1d62-1842-4a54-87db-54c9ef44d00b`: marcar a `turmas_assinaturas` mais recente como `active` com o `pi_3TefqoQ4whpSK2DU1JM9sdcJ`, inserir `turmas_acessos` para cada álbum do plano, e estender o `banco_geral_expires_at` do perfil conforme `meses_banco_geral`.
+## Segurança
 
-### 4. Webhook
-- Não mexer no `stripe-turma-webhook` (continua como reforço). Ao final, recomendarei verificar no painel da Stripe se o endpoint `…/functions/v1/stripe-turma-webhook` está cadastrado e se o `STRIPE_TURMA_WEBHOOK_SECRET` bate — mas o sistema deixa de depender disso.
+- `ENABLE ROW LEVEL SECURITY` nas 3 tabelas.
+- Políticas: cada usuário só lê/escreve/atualiza/deleta linhas onde `user_id = auth.uid()`.
+- GRANTs: `SELECT, INSERT, UPDATE, DELETE` para `authenticated`; `ALL` para `service_role`. Sem grant para `anon` (conteúdo privado).
+- Trigger `update_updated_at_column` para manter `atualizado_em` nas 3 tabelas.
+- Índices em `user_id`, `pasta_id` (cadernos) e `caderno_id` (notas) para listagens rápidas.
 
-## Arquivos
+## Entrega
 
-- **Criar:** `supabase/functions/verify-turma-checkout/index.ts`
-- **Editar:** `src/pages/CheckoutSuccess.tsx`
-- **Insert tool:** liberar manualmente a compra do aluno c6d74687.
+Uma única migração criando as 3 tabelas, índices, RLS, políticas, GRANTs e triggers de `atualizado_em`. Após aprovação, o menu Cadernos passa a funcionar sem mais alterações.
