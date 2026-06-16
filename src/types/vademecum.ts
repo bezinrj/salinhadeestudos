@@ -77,6 +77,7 @@ export interface VmMarcacao {
   offset_inicio: number;
   offset_fim: number;
   cor: VmHighlightCor;
+  anotacao?: string;
   created_at: string;
 }
 

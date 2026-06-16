@@ -2,15 +2,15 @@ import type { VmFiltroCargo, VmFiltroStatus } from "@/types/vademecum";
 import { CARGO_ICON, CARGO_LABEL } from "@/types/vademecum";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Bookmark } from "lucide-react";
+import { BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useNavigate } from "react-router-dom";
 
 interface Props {
   status: VmFiltroStatus;
   setStatus: (s: VmFiltroStatus) => void;
   cargo: VmFiltroCargo;
   setCargo: (c: VmFiltroCargo) => void;
-  onAbrirMarcados: () => void;
 }
 
 const STATUS_TABS: { id: VmFiltroStatus; label: string }[] = [
@@ -20,7 +20,9 @@ const STATUS_TABS: { id: VmFiltroStatus; label: string }[] = [
   { id: "marcados", label: "Marcados" },
 ];
 
-export function ArticleFilters({ status, setStatus, cargo, setCargo, onAbrirMarcados }: Props) {
+export function ArticleFilters({ status, setStatus, cargo, setCargo }: Props) {
+  const navigate = useNavigate();
+
   return (
     <div className="flex flex-wrap items-center gap-2 border-b border-border pb-3">
       <div className="flex gap-1 rounded-md border border-border bg-card p-1">
@@ -52,8 +54,8 @@ export function ArticleFilters({ status, setStatus, cargo, setCargo, onAbrirMarc
         </SelectContent>
       </Select>
 
-      <Button size="sm" variant="outline" onClick={onAbrirMarcados} className="ml-auto">
-        <Bookmark className="mr-1 h-4 w-4" /> Ver Marcados
+      <Button size="sm" variant="outline" onClick={() => navigate("/cadernos")} className="ml-auto">
+        <BookOpen className="mr-1 h-4 w-4" /> Meus cadernos
       </Button>
     </div>
   );

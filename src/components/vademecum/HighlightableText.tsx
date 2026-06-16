@@ -1,12 +1,13 @@
 import { useRef, useState } from "react";
 import { HIGHLIGHT_COLORS, type VmHighlightCor, type VmMarcacao } from "@/types/vademecum";
 import { cn } from "@/lib/utils";
-import { X } from "lucide-react";
+import { GrifoPopover } from "./GrifoPopover";
 
 interface Props {
   text: string;
   marcacoes: VmMarcacao[];
-  onCreate: (range: { start: number; end: number; trecho: string; cor: VmHighlightCor }) => void;
+  onCreate: (range: { start: number; end: number; trecho: string; cor: VmHighlightCor; anotacao?: string }) => void;
+  onUpdate?: (id: string, cor: VmHighlightCor, anotacao?: string) => void;
   onRemove: (id: string) => void;
   className?: string;
   prefix?: React.ReactNode;
@@ -20,20 +21,19 @@ interface Selection {
   y: number;
 }
 
-export function HighlightableText({ text, marcacoes, onCreate, onRemove, className, prefix }: Props) {
+export function HighlightableText({ text, marcacoes, onCreate, onUpdate, onRemove, className, prefix }: Props) {
   const containerRef = useRef<HTMLSpanElement>(null);
-  const [sel, setSel] = useState<Selection | null>(null);
-  const [openMarc, setOpenMarc] = useState<{ id: string; x: number; y: number } | null>(null);
+
+  const [newSel, setNewSel] = useState<Selection | null>(null);
+  const [editingMarc, setEditingMarc] = useState<(VmMarcacao & { x: number; y: number }) | null>(null);
 
   const handleMouseUp = () => {
     const s = window.getSelection();
     if (!s || s.isCollapsed || !containerRef.current) {
-      setSel(null);
       return;
     }
     const range = s.getRangeAt(0);
     if (!containerRef.current.contains(range.commonAncestorContainer)) {
-      setSel(null);
       return;
     }
     // Compute offsets relative to container text
@@ -43,19 +43,31 @@ export function HighlightableText({ text, marcacoes, onCreate, onRemove, classNa
     const start = preRange.toString().length;
     const trecho = range.toString();
     if (!trecho.trim()) {
-      setSel(null);
       return;
     }
     const end = start + trecho.length;
     const rect = range.getBoundingClientRect();
-    setSel({ start, end, trecho, x: rect.left + rect.width / 2, y: rect.top - 8 });
+    setNewSel({ start, end, trecho, x: rect.left + rect.width / 2, y: rect.top - 8 });
+    setEditingMarc(null);
   };
 
-  const handleColorClick = (cor: VmHighlightCor) => {
-    if (!sel) return;
-    onCreate({ start: sel.start, end: sel.end, trecho: sel.trecho, cor });
-    window.getSelection()?.removeAllRanges();
-    setSel(null);
+  const handleDrawerSave = (cor: VmHighlightCor, anotacao: string) => {
+    if (editingMarc && onUpdate) {
+      onUpdate(editingMarc.id, cor, anotacao);
+    } else if (newSel) {
+      onCreate({ start: newSel.start, end: newSel.end, trecho: newSel.trecho, cor, anotacao });
+      window.getSelection()?.removeAllRanges();
+    }
+    setNewSel(null);
+    setEditingMarc(null);
+  };
+
+  const handleDrawerRemove = () => {
+    if (editingMarc) {
+      onRemove(editingMarc.id);
+    }
+    setNewSel(null);
+    setEditingMarc(null);
   };
 
   // Render text with marcacoes
@@ -70,11 +82,13 @@ export function HighlightableText({ text, marcacoes, onCreate, onRemove, classNa
     nodes.push(
       <mark
         key={`m-${m.id}-${idx}`}
-        className={cn("cursor-pointer rounded-sm px-0.5", cor.bg)}
+        className={cn("cursor-pointer rounded-sm px-0.5", cor.bg, m.anotacao ? "border-b-2 border-dashed border-white/50" : "")}
         onClick={(e) => {
           e.stopPropagation();
-          setOpenMarc({ id: m.id, x: e.clientX, y: e.clientY - 8 });
+          setEditingMarc({ ...m, x: e.clientX, y: e.clientY - 8 });
+          setNewSel(null);
         }}
+        title={m.anotacao ? "Tem anotação (clique para ver)" : undefined}
       >
         {seg}
       </mark>,
@@ -90,41 +104,20 @@ export function HighlightableText({ text, marcacoes, onCreate, onRemove, classNa
         {nodes}
       </span>
 
-      {sel && (
-        <div
-          className="fixed z-50 -translate-x-1/2 -translate-y-full rounded-lg border border-border bg-popover p-1.5 shadow-xl"
-          style={{ left: sel.x, top: sel.y }}
-          onMouseDown={(e) => e.preventDefault()}
-        >
-          <div className="flex items-center gap-1">
-            {(Object.keys(HIGHLIGHT_COLORS) as VmHighlightCor[]).map((c) => (
-              <button
-                key={c}
-                title={HIGHLIGHT_COLORS[c].label}
-                onClick={() => handleColorClick(c)}
-                className={cn("h-6 w-6 rounded-full border border-border transition hover:scale-110", HIGHLIGHT_COLORS[c].swatch)}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {openMarc && (
-        <div
-          className="fixed z-50 -translate-x-1/2 -translate-y-full rounded-lg border border-border bg-popover p-1.5 shadow-xl"
-          style={{ left: openMarc.x, top: openMarc.y }}
-        >
-          <button
-            onClick={() => {
-              onRemove(openMarc.id);
-              setOpenMarc(null);
-            }}
-            className="flex items-center gap-1 rounded px-2 py-1 text-xs text-destructive hover:bg-destructive/10"
-          >
-            <X className="h-3 w-3" /> Remover marcação
-          </button>
-        </div>
-      )}
+      <GrifoPopover
+        open={!!newSel || !!editingMarc}
+        x={editingMarc ? editingMarc.x : (newSel?.x ?? 0)}
+        y={editingMarc ? editingMarc.y : (newSel?.y ?? 0)}
+        onClose={() => {
+          setNewSel(null);
+          setEditingMarc(null);
+        }}
+        trecho={editingMarc ? editingMarc.trecho : newSel?.trecho ?? ""}
+        initialCor={editingMarc ? editingMarc.cor : "amarelo"}
+        initialAnotacao={editingMarc ? editingMarc.anotacao : ""}
+        onSave={handleDrawerSave}
+        onRemove={editingMarc ? handleDrawerRemove : undefined}
+      />
     </>
   );
 }

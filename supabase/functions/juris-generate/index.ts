@@ -7,7 +7,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const SYSTEM_PROMPT = `Você é um professor jurídico especialista com conhecimento profundo da doutrina e jurisprudência brasileira. Analise o texto jurídico fornecido e retorne os campos do briefing preenchidos. REGRAS POR CAMPO: DADOS FACTUAIS (título, tribunal, número, relator, data, informativo, matéria/assunto): extraia diretamente do texto. EM UMA FRASE: resumo executivo direto em 1 a 2 frases. CONTEXTO E IMPACTO: explique para quem a decisão importa e por quê, em linguagem acessível. RESULTADO (os dois campos de destaque): adapte o rótulo ao tipo de julgado: - Controle de constitucionalidade (STF): "Constitucional / Válido" e "Inconstitucional / Inválido" - Tributário sobre incidência: "INCIDE" e "NÃO INCIDE" - Competência jurisdicional: "Entendimento adotado" e "Entendimento afastado" - Demais casos: "Tese vencedora" e "Tese afastada" Nunca use "Inconstitucional" fora de controle de constitucionalidade. PARTE CONCEITUAL: explicação didática dos institutos jurídicos centrais, com definições e base legal. Complemente com seu conhecimento. O PROBLEMA: o conflito ou controvérsia jurídica que chegou ao tribunal. A SOLUÇÃO: como o tribunal resolveu, com o raciocínio jurídico passo a passo. ANTES: situação jurídica anterior — um ponto por linha. DEPOIS: situação após a decisão — um ponto por linha. CASOS CONCRETOS: crie sempre 3 exemplos hipotéticos didáticos com nomes fictícios, mostrando ANTES e DEPOIS da decisão. Nunca menos de 3. CONCLUSÕES: gere sempre no mínimo 6 conclusões objetivas numeradas (1. 2. 3...), uma por linha, cobrindo todos os efeitos práticos. Use seu conhecimento se o texto não trouxer. Nunca deixe vazio. PRINCÍPIOS: identifique sempre no mínimo 3 princípios jurídicos do tema, um por linha no formato NOME — descrição de como se aplica ao caso. Use seu conhecimento. Nunca deixe vazio. DOUTRINA: cite sempre de 3 a 5 doutrinadores REAIS e reconhecidos da área, um por linha no formato NOME COMPLETO (Obra, Editora, ano) — posição e se CONVERGE ou DIVERGE do entendimento fixado. Use seu conhecimento. Nunca cite menos de 3. JURISPRUDÊNCIA: cite os precedentes do texto MAIS pelo menos 2 outros julgados relevantes do STF e STJ sobre o tema, um por linha no formato TRIBUNAL · Número · Ano — descrição. Use seu conhecimento. Nunca deixe vazio. ARGUMENTO DE ABERTURA: mínimo 5 linhas, tom formal e eloquente, próprio para sustentação oral. TESE SÍNTESE: frase objetiva e memorável, útil para prova e audiência. ÍNTEGRA — TEXTO: a tese ou destaque do julgado na íntegra. ÍNTEGRA — REFERÊNCIA: referência completa (tribunal, órgão, número, relator, data, informativo). REGRA FINAL: os campos doutrina, princípios, jurisprudência, conclusões e casos concretos devem SEMPRE ser preenchidos com seu conhecimento próprio, mesmo que o texto colado seja curto ou não os mencione. Um texto oficial enxuto nunca justifica campos vazios. Se algum desses campos estiver vazio, refaça antes de finalizar.`;
+const SYSTEM_PROMPT = `Você é um professor jurídico especialista com conhecimento profundo da doutrina e jurisprudência brasileira. Analise o texto jurídico abaixo e preencha os campos seguindo OBRIGATORIAMENTE estas regras: DADOS FACTUAIS — tribunal, número, relator, data, informativo, área: extraia do texto. NOÇÕES, CONCEITUAL, PROBLEMA, SOLUÇÃO, ANTES, DEPOIS: use o texto como base e complemente com seu conhecimento para tornar o conteúdo didático e completo. CASOS CONCRETOS: crie SEMPRE exatamente 3 exemplos hipotéticos com nomes fictícios mostrando ANTES e DEPOIS da decisão. Nunca deixe vazio. Nunca crie menos de 3. CONCLUSÕES: gere SEMPRE no mínimo 6 conclusões objetivas cobrindo todos os pontos do julgado, incluindo todos os efeitos práticos da decisão. PRINCÍPIOS JURÍDICOS: identifique SEMPRE no mínimo 3 princípios constitucionais e processuais envolvidos no tema usando seu próprio conhecimento. Nunca deixe com menos de 3. DOUTRINA: gere SEMPRE entre 3 e 5 doutrinadores reais e reconhecidos que tratam do tema, usando seu próprio conhecimento jurídico — independente do que está no texto colado. Para cada autor inclua: nome completo, obra principal com editora e ano aproximado, posição sobre o tema, e se CONVERGE ou DIVERGE do entendimento fixado. Nunca deixe esse campo com menos de 3 autores. Nunca deixe vazio. JURISPRUDÊNCIA: além dos precedentes mencionados no texto, acrescente SEMPRE outros 2 a 3 julgados relevantes do STF e STJ sobre o mesmo tema que você conhece. RESULTADO DO JULGAMENTO — rótulos: Se for decisão do STF em controle de constitucionalidade: use Constitucional e Inconstitucional. Se for decisão do STJ em matéria infraconstitucional ou recurso repetitivo: use INCIDE e NÃO INCIDE conforme o caso. Nunca use o rótulo Inconstitucional para decisão do STJ. ARGUMENTO DE ABERTURA: escreva sempre com no mínimo 5 linhas, tom formal e eloquente, próprio para sustentação oral em tribunal. TESE SÍNTESE: escreva sempre uma frase objetiva e memorável útil para prova e audiência. REGRA GERAL ABSOLUTA: os campos de doutrina, princípios, jurisprudência e casos concretos devem ser sempre preenchidos com seu conhecimento próprio, mesmo que o texto colado seja curto ou não mencione esses elementos. Um texto oficial e enxuto do STJ ou STF nunca é justificativa para deixar qualquer campo vazio ou com menos itens do que o mínimo exigido acima.`;
 
 const TOOL_SCHEMA = {
   type: "object",
@@ -67,68 +67,6 @@ const TOOL_SCHEMA = {
   additionalProperties: false,
 };
 
-const ANTHROPIC_MODELS = [
-  "claude-haiku-4-5",
-  "claude-sonnet-4-5",
-];
-
-function stripJsonFence(value: string) {
-  return value.trim().replace(/^```(?:json)?\s*/i, "").replace(/```$/i, "").trim();
-}
-
-function extractJsonObject(value: string) {
-  const clean = stripJsonFence(value);
-  const start = clean.indexOf("{");
-  const end = clean.lastIndexOf("}");
-  return start >= 0 && end > start ? clean.slice(start, end + 1) : clean;
-}
-
-function normalizeJulgado(value: any) {
-  const source = value?.julgado && typeof value.julgado === "object" ? value.julgado : value;
-  if (!source || typeof source !== "object" || Array.isArray(source)) return null;
-
-  const s = (key: string) => typeof source[key] === "string" ? source[key] : "";
-  const casos = Array.isArray(source.casos_concretos)
-    ? source.casos_concretos.slice(0, 3).map((item: any) => ({
-      antes: typeof item?.antes === "string" ? item.antes : "",
-      depois: typeof item?.depois === "string" ? item.depois : "",
-    })).filter((item: any) => item.antes || item.depois)
-    : [];
-
-  const parsed = {
-    titulo: s("titulo"),
-    tribunal: s("tribunal"),
-    numero: s("numero"),
-    relator: s("relator"),
-    data: s("data"),
-    info: s("info"),
-    area: s("area"),
-    assunto: s("assunto"),
-    nocoes: {
-      frase: typeof source.nocoes?.frase === "string" ? source.nocoes.frase : "",
-      contexto: typeof source.nocoes?.contexto === "string" ? source.nocoes.contexto : "",
-      ok: typeof source.nocoes?.ok === "string" ? source.nocoes.ok : "",
-      ko: typeof source.nocoes?.ko === "string" ? source.nocoes.ko : "",
-    },
-    conceitual: s("conceitual"),
-    problema: s("problema"),
-    solucao: s("solucao"),
-    antes: s("antes"),
-    depois: s("depois"),
-    casos_concretos: casos,
-    conclusoes: s("conclusoes"),
-    principios: s("principios"),
-    doutrina: s("doutrina"),
-    jurisprudencia: s("jurisprudencia"),
-    abertura: s("abertura"),
-    tese: s("tese"),
-    integra_texto: s("integra_texto"),
-    integra_ref: s("integra_ref"),
-  };
-
-  return parsed.titulo || parsed.tese || parsed.conceitual ? parsed : null;
-}
-
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -179,77 +117,82 @@ serve(async (req) => {
       });
     }
 
-    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
-    if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not configured");
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    const tools = [{
-      name: "submit_julgado",
-      description: "Retorna o julgado jurídico estruturado para publicação.",
-      input_schema: TOOL_SCHEMA,
-    }];
-    const systemMsg = `${SYSTEM_PROMPT}\n\nSeja completo, mas objetivo. Preencha todos os campos obrigatórios por meio da ferramenta submit_julgado, sem texto fora da ferramenta.`;
-    const userMsg = `Analise o julgado abaixo e extraia todos os campos.\n\nTEXTO:\n${text.substring(0, 6000)}`;
+    // Abort if AI gateway demora demais (client invoke costuma cair em ~60s)
+    const aiController = new AbortController();
+    const aiTimeout = setTimeout(() => aiController.abort(), 110_000);
 
-    let parsedJulgado: ReturnType<typeof normalizeJulgado> = null;
-    let lastErrText = "";
-    let aiStatus = 0;
-
-    for (const model of ANTHROPIC_MODELS) {
-      if (parsedJulgado) break;
-      const aiController = new AbortController();
-      const aiTimeout = setTimeout(() => aiController.abort(), model.includes("haiku") ? 70_000 : 55_000);
-      try {
-      const aiRes = await fetch("https://api.anthropic.com/v1/messages", {
+    let aiRes: Response;
+    try {
+      aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         signal: aiController.signal,
         headers: {
-          "x-api-key": ANTHROPIC_API_KEY,
-          "anthropic-version": "2023-06-01",
-          "content-type": "application/json",
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model,
-          max_tokens: model.includes("haiku") ? 9000 : 12000,
-          system: systemMsg,
-          messages: [{ role: "user", content: userMsg }],
-          tools,
-          tool_choice: { type: "tool", name: "submit_julgado" },
+          // Flash é ~5-10x mais rápido e barato que o pro, mantendo tool-calling estruturado.
+          model: "google/gemini-2.5-flash",
+          messages: [
+            { role: "system", content: SYSTEM_PROMPT },
+            { role: "user", content: `Analise o julgado abaixo e extraia todos os campos.\n\nTEXTO:\n${text.substring(0, 12000)}` },
+          ],
+          tools: [{
+            type: "function",
+            function: {
+              name: "salvar_julgado_estruturado",
+              description: "Retorna o julgado decomposto nos campos estruturados.",
+              parameters: TOOL_SCHEMA,
+            },
+          }],
+          tool_choice: { type: "function", function: { name: "salvar_julgado_estruturado" } },
+          max_completion_tokens: 6000,
         }),
       });
-      aiStatus = aiRes.status;
-      if (aiRes.ok) {
-        const aiData = await aiRes.json();
-        const toolUse = Array.isArray(aiData?.content)
-          ? aiData.content.find((b: any) => b?.type === "tool_use" && b?.name === "submit_julgado")
-          : null;
-        const normalized = normalizeJulgado(toolUse?.input);
-        if (normalized) parsedJulgado = normalized;
-        else {
-          lastErrText = "tool_input_missing";
-          console.warn("Anthropic returned no valid tool input", JSON.stringify(aiData).slice(0, 1200));
-        }
-      } else {
-        lastErrText = await aiRes.text().catch(() => "");
-        console.error(`Anthropic ${model} ${aiRes.status}`, lastErrText);
-      }
     } catch (e) {
-      lastErrText = (e as any)?.name === "AbortError" ? "timeout" : String(e);
-      console.error(`Anthropic ${model} call error`, lastErrText);
-    } finally {
       clearTimeout(aiTimeout);
+      if ((e as any)?.name === "AbortError") {
+        return new Response(JSON.stringify({ error: "A IA demorou demais para responder. Tente novamente com um texto menor." }), {
+          status: 504, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      throw e;
     }
-    }
+    clearTimeout(aiTimeout);
 
-    if (parsedJulgado) {
-      console.info("juris-generate Anthropic success");
-      return new Response(JSON.stringify({ julgado: parsedJulgado }), {
-        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    if (!aiRes.ok) {
+      const errText = await aiRes.text();
+      console.error("AI gateway error", aiRes.status, errText);
+      if (aiRes.status === 429) {
+        return new Response(JSON.stringify({ error: "Limite de requisições atingido. Tente em alguns instantes." }), {
+          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (aiRes.status === 402) {
+        return new Response(JSON.stringify({ error: "Créditos de IA esgotados. Adicione saldo em Workspace → Usage." }), {
+          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      return new Response(JSON.stringify({ error: "Falha ao analisar o julgado." }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    return new Response(JSON.stringify({ error: "Geração falhou, tente novamente" }), {
-      status: aiStatus && aiStatus >= 400 && aiStatus < 600 ? aiStatus : 503,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    const aiData = await aiRes.json();
+    const toolCall = aiData?.choices?.[0]?.message?.tool_calls?.[0];
+    const argsStr = toolCall?.function?.arguments;
+    if (!argsStr) {
+      return new Response(JSON.stringify({ error: "IA não retornou estrutura válida." }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const parsed = JSON.parse(argsStr);
+
+    return new Response(JSON.stringify({ julgado: parsed }), {
+      status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
     console.error("juris-generate error", e);

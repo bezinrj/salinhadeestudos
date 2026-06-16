@@ -106,14 +106,33 @@ export function useVmMarcacoes(artigoIds: string[]) {
       offset_inicio: number;
       offset_fim: number;
       cor: VmHighlightCor;
+      anotacao?: string;
     }) => {
       if (!user?.id) throw new Error("no user");
+      
+      const insertData: any = { 
+        artigo_id: payload.artigo_id,
+        paragrafo_id: payload.paragrafo_id,
+        trecho: payload.trecho,
+        offset_inicio: payload.offset_inicio,
+        offset_fim: payload.offset_fim,
+        cor: payload.cor,
+        user_id: user.id 
+      };
+      
+      if (payload.anotacao && payload.anotacao.trim() !== "") {
+        insertData.anotacao = payload.anotacao;
+      }
+
       const { data, error } = await sb
         .from("vm_marcacoes")
-        .insert({ ...payload, user_id: user.id })
+        .insert(insertData)
         .select()
         .single();
-      if (error) throw error;
+      if (error) {
+        console.error("Erro ao salvar marcação:", error);
+        throw error;
+      }
       return data as VmMarcacao;
     },
     // Atualização otimista: mostra o realce imediatamente antes do banco confirmar
@@ -129,6 +148,7 @@ export function useVmMarcacoes(artigoIds: string[]) {
         offset_inicio: payload.offset_inicio,
         offset_fim: payload.offset_fim,
         cor: payload.cor,
+        anotacao: payload.anotacao,
         created_at: new Date().toISOString(),
       };
       queryClient.setQueryData<VmMarcacao[]>(queryKey, (old) => [...(old ?? []), optimistic]);
@@ -139,6 +159,33 @@ export function useVmMarcacoes(artigoIds: string[]) {
       if (ctx?.prev !== undefined) queryClient.setQueryData(queryKey, ctx.prev);
     },
     // Sempre re-sincroniza com o banco ao final para substituir ID temporário pelo real
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ["vm-marcacoes", user?.id] }),
+  });
+
+  const update = useMutation({
+    mutationFn: async ({ id, cor, anotacao }: { id: string; cor: VmHighlightCor; anotacao?: string }) => {
+      const updateData: any = { cor };
+      if (anotacao !== undefined && anotacao.trim() !== "") {
+        updateData.anotacao = anotacao;
+      }
+      
+      const { error } = await sb.from("vm_marcacoes").update(updateData).eq("id", id);
+      if (error) {
+        console.error("Erro ao atualizar marcação:", error);
+        throw error;
+      }
+    },
+    onMutate: async (payload) => {
+      await queryClient.cancelQueries({ queryKey });
+      const prev = queryClient.getQueryData<VmMarcacao[]>(queryKey);
+      queryClient.setQueryData<VmMarcacao[]>(queryKey, (old) =>
+        (old ?? []).map((m) => (m.id === payload.id ? { ...m, cor: payload.cor, anotacao: payload.anotacao } : m))
+      );
+      return { prev };
+    },
+    onError: (_err, _payload, ctx) => {
+      if (ctx?.prev !== undefined) queryClient.setQueryData(queryKey, ctx.prev);
+    },
     onSettled: () => queryClient.invalidateQueries({ queryKey: ["vm-marcacoes", user?.id] }),
   });
 
@@ -161,7 +208,7 @@ export function useVmMarcacoes(artigoIds: string[]) {
     onSettled: () => queryClient.invalidateQueries({ queryKey: ["vm-marcacoes", user?.id] }),
   });
 
-  return { byBlock, create, remove, isLoading: query.isLoading };
+  return { byBlock, create, update, remove, isLoading: query.isLoading };
 }
 
 // ============ Notas do Professor ============

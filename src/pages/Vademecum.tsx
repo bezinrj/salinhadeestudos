@@ -114,7 +114,6 @@ export default function Vademecum() {
                 setStatus={setStatus}
                 cargo={cargo}
                 setCargo={setCargo}
-                onAbrirMarcados={() => setMarcadosOpen(true)}
               />
 
               <div className="mt-4 space-y-4">
@@ -139,6 +138,7 @@ export default function Vademecum() {
                       onToggleMarcado={(id, v) => handleToggle(id, "marcado", v)}
                       onRemissaoClick={(rem) => setRemissaoDestinoId(rem.artigo_destino_id)}
                       onCreateMarcacao={(p) => marc.create.mutate(p)}
+                      onUpdateMarcacao={(id, cor, anotacao) => marc.update.mutate({ id, cor, anotacao })}
                       onRemoveMarcacao={(id) => marc.remove.mutate(id)}
                       onCreateProfNote={(artigoId, conteudo) =>
                         notasProf.create.mutateAsync({

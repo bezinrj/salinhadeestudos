@@ -164,8 +164,9 @@ function ArtigosTab() {
   const [ordered, setOrdered] = useState<(VmArtigo & { vm_incidencias: VmIncidencia[] })[]>([]);
   useEffect(() => { setOrdered(artigos); }, [artigos]);
 
-  // Formulário exclusivo para criação de novos artigos
+  // Formulário exclusivo para criação de novos itens
   const [form, setForm] = useState<Partial<VmArtigo>>({ numero: "", rotulo: "", texto: "", ordem: 0 });
+  const [modoCriacao, setModoCriacao] = useState<"artigo" | "titulo">("artigo");
 
   const sensors = useSensors(useSensor(PointerSensor));
 
@@ -175,28 +176,23 @@ function ArtigosTab() {
     const oldIndex = ordered.findIndex((a) => a.id === active.id);
     const newIndex = ordered.findIndex((a) => a.id === over.id);
     const reordered = arrayMove(ordered, oldIndex, newIndex);
-    // Atualiza estado local com novas ordens para evitar "pulo" visual
-    const withNewOrder = reordered.map((a, i) => ({ ...a, ordem: i + 1 }));
-    setOrdered(withNewOrder);
+    setOrdered(reordered);
     // Persiste nova ordem no banco em lote
-    const results = await Promise.all(
-      withNewOrder.map((a) => sb.from("vm_artigos").update({ ordem: a.ordem }).eq("id", a.id))
-    );
-    const firstError = results.find((r: any) => r?.error)?.error;
-    if (firstError) {
-      toast.error("Erro ao salvar ordem: " + firstError.message);
-      refetch();
-      return;
-    }
-    toast.success("Ordem salva");
-    qc.invalidateQueries({ queryKey: ["admin-vm-artigos", leiId] });
+    await Promise.all(reordered.map((a, i) => sb.from("vm_artigos").update({ ordem: i + 1 }).eq("id", a.id)));
     qc.invalidateQueries({ queryKey: ["vm-lei"] });
   };
 
   const save = async () => {
-    if (!leiId || !form.texto || !form.numero) return toast.error("Número e texto obrigatórios");
+    if (!leiId) return toast.error("Selecione a lei.");
+    if (!form.numero) return toast.error(modoCriacao === "artigo" ? "O número do artigo é obrigatório" : "O identificador é obrigatório");
+    
     try {
-      const { error } = await sb.from("vm_artigos").insert({ ...form, lei_id: leiId });
+      const payload = {
+        ...form,
+        lei_id: leiId,
+        texto: form.texto || "", // Texto pode ser vazio (útil para títulos)
+      };
+      const { error } = await sb.from("vm_artigos").insert(payload);
       if (error) throw error;
       toast.success("Artigo criado");
       setForm({ numero: "", rotulo: "", texto: "", ordem: 0 });
@@ -228,14 +224,33 @@ function ArtigosTab() {
 
       {/* Formulário exclusivo para criação */}
       <div className="rounded-lg border border-border bg-card p-4">
-        <h3 className="mb-3 font-semibold">Novo artigo</h3>
-        <div className="space-y-3">
-          <div className="grid grid-cols-4 gap-2">
-            <div><Label>Número</Label><Input value={form.numero ?? ""} onChange={(e) => setForm({ ...form, numero: e.target.value })} placeholder="121" /></div>
-            <div className="col-span-2"><Label>Rótulo (opcional)</Label><Input value={form.rotulo ?? ""} onChange={(e) => setForm({ ...form, rotulo: e.target.value })} placeholder="Art. 121 — Homicídio" /></div>
-            <div><Label>Ordem</Label><Input type="number" value={form.ordem ?? 0} onChange={(e) => setForm({ ...form, ordem: Number(e.target.value) })} /></div>
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="font-semibold">Novo Item</h3>
+          <div className="flex gap-2">
+            <Button size="sm" variant={modoCriacao === "artigo" ? "default" : "outline"} onClick={() => setModoCriacao("artigo")}>Artigo</Button>
+            <Button size="sm" variant={modoCriacao === "titulo" ? "default" : "outline"} onClick={() => setModoCriacao("titulo")}>Título/Subtítulo</Button>
           </div>
-          <div><Label>Texto</Label><Textarea rows={5} value={form.texto ?? ""} onChange={(e) => setForm({ ...form, texto: e.target.value })} /></div>
+        </div>
+        <div className="space-y-3">
+          {modoCriacao === "artigo" ? (
+            <>
+              <div className="grid grid-cols-4 gap-2">
+                <div><Label>Número do Artigo</Label><Input value={form.numero ?? ""} onChange={(e) => setForm({ ...form, numero: e.target.value })} placeholder="Ex: 121" /></div>
+                <div className="col-span-2"><Label>Rótulo (opcional)</Label><Input value={form.rotulo ?? ""} onChange={(e) => setForm({ ...form, rotulo: e.target.value })} placeholder="Ex: Art. 121" /></div>
+                <div><Label>Ordem</Label><Input type="number" value={form.ordem ?? 0} onChange={(e) => setForm({ ...form, ordem: Number(e.target.value) })} /></div>
+              </div>
+              <div><Label>Texto</Label><Textarea rows={5} value={form.texto ?? ""} onChange={(e) => setForm({ ...form, texto: e.target.value })} placeholder="Texto do artigo..." /></div>
+            </>
+          ) : (
+            <>
+              <div className="grid grid-cols-4 gap-2">
+                <div><Label>Identificador</Label><Input value={form.numero ?? ""} onChange={(e) => setForm({ ...form, numero: e.target.value })} placeholder="Ex: TITULO I" /></div>
+                <div className="col-span-2"><Label>Rótulo de Exibição</Label><Input value={form.rotulo ?? ""} onChange={(e) => setForm({ ...form, rotulo: e.target.value })} placeholder="Ex: TÍTULO I" /></div>
+                <div><Label>Ordem</Label><Input type="number" value={form.ordem ?? 0} onChange={(e) => setForm({ ...form, ordem: Number(e.target.value) })} /></div>
+              </div>
+              <div><Label>Descrição (opcional)</Label><Input value={form.texto ?? ""} onChange={(e) => setForm({ ...form, texto: e.target.value })} placeholder="Ex: DOS DIREITOS FUNDAMENTAIS" /></div>
+            </>
+          )}
           <div className="flex gap-2">
             <Button onClick={save}><Save className="mr-1 h-4 w-4" /> Salvar</Button>
           </div>
@@ -288,7 +303,11 @@ function ArtigoRow({ artigo, onRemove, onSaved, onIncidenciasChanged }: {
   const incs = artigo.vm_incidencias ?? [];
 
   const saveEdit = async () => {
-    const { error } = await sb.from("vm_artigos").update(editForm).eq("id", artigo.id);
+    const payload = {
+      ...editForm,
+      texto: editForm.texto || "", // Garante que texto pode ser vazio
+    };
+    const { error } = await sb.from("vm_artigos").update(payload).eq("id", artigo.id);
     if (error) return toast.error(error.message);
     toast.success("Artigo salvo");
     setEditing(false);

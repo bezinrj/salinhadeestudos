@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react";
-import { usePersistedState } from "@/hooks/usePersistedState";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -26,12 +25,12 @@ export default function Juris() {
   const canManage = isAdmin || isModerator;
   const { isLido, isFavorito, toggleLido, toggleFavorito } = useJurisMarks();
 
-  const [search, setSearch] = usePersistedState<string>("juris:search", "");
-  const [tribunal, setTribunal] = usePersistedState<string>("juris:tribunal", "all");
-  const [materia, setMateria] = usePersistedState<string>("juris:materia", "all");
-  const [assunto, setAssunto] = usePersistedState<string>("juris:assunto", "all");
-  const [info, setInfo] = usePersistedState<string>("juris:info", "all");
-  const [marcacao, setMarcacao] = usePersistedState<"all" | "lidos" | "nao_lidos" | "favoritos">("juris:marcacao", "all");
+  const [search, setSearch] = useState("");
+  const [tribunal, setTribunal] = useState<string>("all");
+  const [materia, setMateria] = useState<string>("all");
+  const [assunto, setAssunto] = useState<string>("all");
+  const [info, setInfo] = useState<string>("all");
+  const [marcacao, setMarcacao] = useState<"all" | "lidos" | "nao_lidos" | "favoritos">("all");
 
   const { data: julgados, isLoading } = useQuery({
     queryKey: ["juris-julgados-list"],

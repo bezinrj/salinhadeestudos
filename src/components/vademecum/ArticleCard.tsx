@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, Bookmark, BookmarkCheck } from "lucide-react";
+import { Check, Bookmark, BookmarkCheck, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { IncidenciaBadge, CARGO_BORDER } from "./IncidenciaBadge";
@@ -7,6 +7,7 @@ import { ArticleText } from "./ArticleText";
 import { ArticleComments } from "./ArticleComments";
 import { ProfessorNoteCard } from "./ProfessorNoteCard";
 import { PrivateNoteCard } from "./PrivateNoteCard";
+import { CadernoModal } from "@/components/cadernos/CadernoModal";
 import type {
   VmArtigo,
   VmFiltroCargo,
@@ -40,7 +41,9 @@ interface Props {
     offset_inicio: number;
     offset_fim: number;
     cor: VmHighlightCor;
+    anotacao?: string;
   }) => void;
+  onUpdateMarcacao: (id: string, cor: VmHighlightCor, anotacao?: string) => void;
   onRemoveMarcacao: (id: string) => void;
   onCreateProfNote: (artigoId: string, conteudo: string) => Promise<void> | void;
   onRemoveProfNote: (id: string) => void;
@@ -63,6 +66,7 @@ export function ArticleCard(props: Props) {
     onToggleMarcado,
     onRemissaoClick,
     onCreateMarcacao,
+    onUpdateMarcacao,
     onRemoveMarcacao,
     onCreateProfNote,
     onRemoveProfNote,
@@ -74,6 +78,7 @@ export function ArticleCard(props: Props) {
   const marcado = progresso?.marcado ?? false;
   const [addingProf, setAddingProf] = useState(false);
   const [profText, setProfText] = useState("");
+  const [isCadernoOpen, setIsCadernoOpen] = useState(false);
 
   let borderClass = "";
   if (filtroCargo !== "todos") {
@@ -89,6 +94,32 @@ export function ArticleCard(props: Props) {
     toast.success("Nota publicada");
   };
 
+  const normalize = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+  const numNorm = normalize(artigo.numero);
+  const isTitle = numNorm.startsWith("TITULO") || 
+                  numNorm === "PREAMBULO" || 
+                  numNorm.startsWith("LIVRO") || 
+                  numNorm.startsWith("CAPITULO") || 
+                  numNorm.startsWith("SECAO") || 
+                  numNorm.startsWith("SUBSECAO");
+
+  if (isTitle) {
+    return (
+      <div id={`vm-art-${artigo.id}`} className="my-14 flex flex-col items-center justify-center text-center scroll-m-24">
+        {artigo.rotulo && (
+          <h2 className="mb-4 text-[1rem] font-semibold uppercase tracking-[0.2em] text-[#5C728A]">
+            {artigo.rotulo}
+          </h2>
+        )}
+        {artigo.texto && (
+          <div className="mx-auto max-w-4xl font-serif text-2xl font-medium text-[#E2E8F0] leading-relaxed">
+            {artigo.texto}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <article
       id={`vm-art-${artigo.id}`}
@@ -98,7 +129,11 @@ export function ArticleCard(props: Props) {
       )}
     >
       <header className="mb-3 flex flex-wrap items-center gap-2">
-        <h3 className="font-display text-lg font-bold text-foreground">{artigo.rotulo || `Art. ${artigo.numero}`}</h3>
+        {!(artigo.numero === "0" && !artigo.rotulo) && (
+          <h3 className="font-display text-lg font-bold text-foreground">
+            {artigo.rotulo || `Art. ${artigo.numero}`}
+          </h3>
+        )}
         {lido && <Check className="h-4 w-4 text-emerald-500" aria-label="Lido" />}
         <div className="ml-auto flex flex-wrap gap-1.5">
           {artigo.incidencias
@@ -114,6 +149,7 @@ export function ArticleCard(props: Props) {
         artigo={artigo}
         marcacoesByBlock={marcacoesByBlock}
         onCreateMarcacao={onCreateMarcacao}
+        onUpdateMarcacao={onUpdateMarcacao}
         onRemoveMarcacao={onRemoveMarcacao}
         onRemissaoClick={onRemissaoClick}
       />
@@ -174,17 +210,17 @@ export function ArticleCard(props: Props) {
         </Button>
         <Button
           size="sm"
-          variant={marcado ? "default" : "outline"}
-          className={marcado ? "bg-sky-600 text-white hover:bg-sky-700" : ""}
-          onClick={() => onToggleMarcado(artigo.id, !marcado)}
+          variant="outline"
+          className="text-white hover:bg-white/10"
+          onClick={() => setIsCadernoOpen(true)}
         >
-          {marcado ? <BookmarkCheck className="mr-1 h-4 w-4" /> : <Bookmark className="mr-1 h-4 w-4" />}
-          {marcado ? "Marcado" : "Marcar"}
+          <BookOpen className="mr-1 h-4 w-4" />
+          Caderno
         </Button>
       </footer>
 
-
       <ArticleComments artigoId={artigo.id} />
+      <CadernoModal open={isCadernoOpen} onOpenChange={setIsCadernoOpen} artigo={artigo} />
     </article>
   );
 }

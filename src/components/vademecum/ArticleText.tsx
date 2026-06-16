@@ -13,7 +13,9 @@ interface Props {
     offset_inicio: number;
     offset_fim: number;
     cor: VmHighlightCor;
+    anotacao?: string;
   }) => void;
+  onUpdateMarcacao?: (id: string, cor: VmHighlightCor, anotacao?: string) => void;
   onRemoveMarcacao: (id: string) => void;
   onRemissaoClick?: (remissao: VmArtigo["remissoes"][number]) => void;
 }
@@ -25,7 +27,7 @@ const TIPO_INDENT: Record<string, string> = {
   alinea: "pl-12",
 };
 
-export function ArticleText({ artigo, marcacoesByBlock, onCreateMarcacao, onRemoveMarcacao, onRemissaoClick }: Props) {
+export function ArticleText({ artigo, marcacoesByBlock, onCreateMarcacao, onUpdateMarcacao, onRemoveMarcacao, onRemissaoClick }: Props) {
   const artigoMarc = marcacoesByBlock.get(artigo.id) ?? [];
 
   return (
@@ -42,8 +44,10 @@ export function ArticleText({ artigo, marcacoesByBlock, onCreateMarcacao, onRemo
               offset_inicio: r.start,
               offset_fim: r.end,
               cor: r.cor,
+              anotacao: r.anotacao,
             })
           }
+          onUpdate={onUpdateMarcacao}
           onRemove={onRemoveMarcacao}
         />
       </p>
@@ -54,7 +58,7 @@ export function ArticleText({ artigo, marcacoesByBlock, onCreateMarcacao, onRemo
             <HighlightableText
               text={p.texto}
               marcacoes={marc}
-              prefix={p.rotulo ? <strong className="mr-1 text-foreground">{p.rotulo}</strong> : null}
+              prefix={p.rotulo ? <strong className="mr-3 font-bold text-sky-400">{p.rotulo}</strong> : null}
               onCreate={(r) =>
                 onCreateMarcacao({
                   artigo_id: artigo.id,
@@ -63,8 +67,10 @@ export function ArticleText({ artigo, marcacoesByBlock, onCreateMarcacao, onRemo
                   offset_inicio: r.start,
                   offset_fim: r.end,
                   cor: r.cor,
+                  anotacao: r.anotacao,
                 })
               }
+              onUpdate={onUpdateMarcacao}
               onRemove={onRemoveMarcacao}
             />
           </p>

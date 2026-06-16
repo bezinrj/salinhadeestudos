@@ -19,17 +19,33 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 
-const mainItems = [
-  { title: "Perfil", url: "/perfil", icon: User },
-  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-  { title: "Discursivas", url: "/discursivas", icon: FileText },
-  { title: "Questões da Semana", url: "/semanal", icon: Calendar },
-  { title: "Minhas Turmas", url: "/turmas", icon: BookOpen },
-  { title: "Salinha Juris", url: "/juris", icon: Gavel },
-  { title: "Vade Mecum", url: "/vademecum", icon: Library },
-  { title: "Ranking", url: "/ranking", icon: Trophy },
-  { title: "Cronômetro", url: "/cronometro", icon: Timer },
-  { title: "Meu Plano", url: "/meu-plano", icon: CreditCard },
+const groups = [
+  {
+    label: "Geral",
+    items: [
+      { title: "Perfil", url: "/perfil", icon: User },
+      { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+      { title: "Cadernos", url: "/cadernos", icon: Library },
+    ]
+  },
+  {
+    label: "Estudos",
+    items: [
+      { title: "Discursivas", url: "/discursivas", icon: FileText },
+      { title: "Questões da Semana", url: "/semanal", icon: Calendar },
+      { title: "Minhas Turmas", url: "/turmas", icon: BookOpen },
+      { title: "Vade Mecum", url: "/vademecum", icon: Library },
+      { title: "Salinha Juris", url: "/juris", icon: Gavel },
+    ]
+  },
+  {
+    label: "Desempenho",
+    items: [
+      { title: "Ranking", url: "/ranking", icon: Trophy },
+      { title: "Cronômetro", url: "/cronometro", icon: Timer },
+      { title: "Meu Plano", url: "/meu-plano", icon: CreditCard },
+    ]
+  }
 ];
 
 export function AppSidebar() {
@@ -62,58 +78,68 @@ export function AppSidebar() {
           )}
         </div>
 
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-muted-foreground text-xs uppercase tracking-wider">
-            {!collapsed && "Menu"}
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {mainItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={isActive(item.url)}>
-                    <NavLink
-                      to={item.url}
-                      end={item.url === "/dashboard"}
-                      className="hover:bg-secondary/50"
-                      activeClassName="bg-secondary text-primary font-medium"
-                    >
-                      <item.icon className="mr-2 h-4 w-4" />
-                      {!collapsed && <span>{item.title}</span>}
+        {groups.map((group) => (
+          <SidebarGroup key={group.label}>
+            <SidebarGroupLabel className="text-muted-foreground text-xs uppercase tracking-wider">
+              {!collapsed && group.label}
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {group.items.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild isActive={isActive(item.url)}>
+                      <NavLink
+                        to={item.url}
+                        end={item.url === "/dashboard"}
+                        className="hover:bg-secondary/50"
+                        activeClassName="bg-secondary text-primary font-medium"
+                      >
+                        <item.icon className="mr-2 h-4 w-4" />
+                        {!collapsed && <span>{item.title}</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
+
+        {(isAdmin || isModerator) && (
+          <SidebarGroup>
+            <SidebarGroupLabel className="text-muted-foreground text-xs uppercase tracking-wider">
+              {!collapsed && "Administração"}
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={isActive("/cronograma")}>
+                    <NavLink to="/cronograma" className="hover:bg-secondary/50" activeClassName="bg-secondary text-primary font-medium">
+                      <CalendarRange className="mr-2 h-4 w-4" />
+                      {!collapsed && <span>Cronograma</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-              ))}
-              {(isAdmin || isModerator) && (
-                <>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild isActive={isActive("/cronograma")}>
-                      <NavLink to="/cronograma" className="hover:bg-secondary/50" activeClassName="bg-secondary text-primary font-medium">
-                        <CalendarRange className="mr-2 h-4 w-4" />
-                        {!collapsed && <span>Cronograma</span>}
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild isActive={location.pathname.startsWith("/juris/admin")}>
-                      <NavLink to="/juris/admin" className="hover:bg-secondary/50" activeClassName="bg-secondary text-primary font-medium">
-                        <Gavel className="mr-2 h-4 w-4" />
-                        {!collapsed && <span>Juris Admin</span>}
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild isActive={isActive("/admin")}>
-                      <NavLink to="/admin" className="hover:bg-secondary/50" activeClassName="bg-secondary text-primary font-medium">
-                        <Shield className="mr-2 h-4 w-4" />
-                        {!collapsed && <span>Admin</span>}
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                </>
-              )}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={location.pathname.startsWith("/juris/admin")}>
+                    <NavLink to="/juris/admin" className="hover:bg-secondary/50" activeClassName="bg-secondary text-primary font-medium">
+                      <Gavel className="mr-2 h-4 w-4" />
+                      {!collapsed && <span>Juris Admin</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={isActive("/admin")}>
+                    <NavLink to="/admin" className="hover:bg-secondary/50" activeClassName="bg-secondary text-primary font-medium">
+                      <Shield className="mr-2 h-4 w-4" />
+                      {!collapsed && <span>Admin</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
 
       <SidebarFooter className="border-t border-border p-3">
