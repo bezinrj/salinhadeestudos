@@ -1268,7 +1268,6 @@ export type Database = {
           adjusted_at: string | null
           adjusted_total_seconds: number | null
           adjustment_reason: string | null
-          assunto: string | null
           created_at: string
           discipline: string | null
           end_time: string | null
@@ -1287,7 +1286,6 @@ export type Database = {
           adjusted_at?: string | null
           adjusted_total_seconds?: number | null
           adjustment_reason?: string | null
-          assunto?: string | null
           created_at?: string
           discipline?: string | null
           end_time?: string | null
@@ -1306,7 +1304,6 @@ export type Database = {
           adjusted_at?: string | null
           adjusted_total_seconds?: number | null
           adjustment_reason?: string | null
-          assunto?: string | null
           created_at?: string
           discipline?: string | null
           end_time?: string | null
@@ -2583,6 +2580,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_badge: { Args: { _badge_id: string }; Returns: boolean }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
