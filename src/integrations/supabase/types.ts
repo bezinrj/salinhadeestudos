@@ -2244,6 +2244,7 @@ export type Database = {
       }
       vm_marcacoes: {
         Row: {
+          anotacao: string | null
           artigo_id: string
           cor: string
           created_at: string
@@ -2255,6 +2256,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          anotacao?: string | null
           artigo_id: string
           cor?: string
           created_at?: string
@@ -2266,6 +2268,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          anotacao?: string | null
           artigo_id?: string
           cor?: string
           created_at?: string
