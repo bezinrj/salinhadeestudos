@@ -8,15 +8,18 @@ import type { VmArtigo } from "@/types/vademecum";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 
+import type { VmCadernoNota } from "@/types/cadernos";
+
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   artigo?: VmArtigo; // Contexto opcional se vier da legislação
   leiSigla?: string; // Ex: "CF"
   cadernoId?: string;
+  notaToEdit?: VmCadernoNota;
 }
 
-export function CadernoModal({ open, onOpenChange, artigo, leiSigla, cadernoId }: Props) {
+export function CadernoModal({ open, onOpenChange, artigo, leiSigla, cadernoId, notaToEdit }: Props) {
   const { profile } = useAuth();
   const userName = profile?.name || profile?.username || "Deltinha";
   
@@ -24,17 +27,29 @@ export function CadernoModal({ open, onOpenChange, artigo, leiSigla, cadernoId }
   const [selectedCadernoId, setSelectedCadernoId] = useState<string>("");
   const [htmlContent, setHtmlContent] = useState("");
   const editorRef = useRef<HTMLDivElement>(null);
-  const { create: createNota, isLoading: saving } = useCadernoNotas(selectedCadernoId);
+  const { create: createNota, update: updateNota, isLoading: saving } = useCadernoNotas(selectedCadernoId);
 
   useEffect(() => {
     if (open) {
-      if (cadernoId) {
-        setSelectedCadernoId(cadernoId);
-      } else if (cadernos.length > 0 && !selectedCadernoId) {
-        setSelectedCadernoId(cadernos[0].id);
+      if (notaToEdit) {
+        setSelectedCadernoId(notaToEdit.caderno_id);
+        setHtmlContent(notaToEdit.conteudo_html || "");
+        if (editorRef.current) {
+          editorRef.current.innerHTML = notaToEdit.conteudo_html || "";
+        }
+      } else {
+        if (cadernoId) {
+          setSelectedCadernoId(cadernoId);
+        } else if (cadernos.length > 0 && !selectedCadernoId) {
+          setSelectedCadernoId(cadernos[0].id);
+        }
+        setHtmlContent("");
+        if (editorRef.current) {
+          editorRef.current.innerHTML = "";
+        }
       }
     }
-  }, [open, cadernos, selectedCadernoId, cadernoId]);
+  }, [open, cadernos, selectedCadernoId, cadernoId, notaToEdit]);
 
   const applyFormat = (command: string, value?: string) => {
     document.execCommand(command, false, value);
@@ -44,18 +59,29 @@ export function CadernoModal({ open, onOpenChange, artigo, leiSigla, cadernoId }
 
   const handleSave = async () => {
     if (!selectedCadernoId) return toast.error("Selecione ou crie um caderno primeiro");
-    if (!htmlContent.trim() && (!editorRef.current || !editorRef.current.textContent?.trim())) {
+    const isArtigo = !!artigo || (notaToEdit && !!notaToEdit.artigo_id);
+    const isContentEmpty = !htmlContent.trim() && (!editorRef.current || !editorRef.current.textContent?.trim());
+    
+    if (isContentEmpty && !isArtigo) {
       return toast.error("A anotação não pode estar vazia");
     }
 
     try {
-      await createNota.mutateAsync({
-        caderno_id: selectedCadernoId,
-        artigo_id: artigo?.id,
-        conteudo_html: htmlContent,
-        tags: artigo ? ["Legislação"] : ["Livre"],
-      });
-      toast.success("Anotação salva no caderno!");
+      if (notaToEdit) {
+        await updateNota.mutateAsync({
+          id: notaToEdit.id,
+          conteudo_html: htmlContent,
+        });
+        toast.success("Anotação atualizada!");
+      } else {
+        await createNota.mutateAsync({
+          caderno_id: selectedCadernoId,
+          artigo_id: artigo?.id,
+          conteudo_html: htmlContent,
+          tags: artigo ? ["Legislação"] : ["Livre"],
+        });
+        toast.success("Anotação salva no caderno!");
+      }
       onOpenChange(false);
       setHtmlContent("");
       if (editorRef.current) editorRef.current.innerHTML = "";

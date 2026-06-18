@@ -128,7 +128,7 @@ export function useCadernoNotas(cadernoId: string | null) {
         .from("vm_caderno_notas")
         .select(`
           *,
-          artigo:vm_artigos(numero, rotulo, lei:vm_leis(sigla))
+          artigo:vm_artigos(numero, rotulo, texto, lei:vm_leis(sigla))
         `)
         .eq("user_id", user!.id)
         .eq("caderno_id", cadernoId)
@@ -170,5 +170,23 @@ export function useCadernoNotas(cadernoId: string | null) {
     },
   });
 
-  return { notas: query.data ?? [], isLoading: query.isLoading, create, remove };
+  const update = useMutation({
+    mutationFn: async (payload: { id: string; conteudo_html: string }) => {
+      const { data, error } = await sb
+        .from("vm_caderno_notas")
+        .update({
+          conteudo_html: payload.conteudo_html,
+        })
+        .eq("id", payload.id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data as VmCadernoNota;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["caderno-notas", user?.id, cadernoId] });
+    },
+  });
+
+  return { notas: query.data ?? [], isLoading: query.isLoading, create, remove, update };
 }

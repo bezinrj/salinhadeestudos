@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useCadernos, useCadernoNotas, useCadernoPastas } from "@/hooks/useCadernos";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Plus, Download, FileText, Trash2, FolderPlus } from "lucide-react";
+import { Plus, Download, FileText, Trash2, FolderPlus, Edit2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { CadernoModal } from "@/components/cadernos/CadernoModal";
@@ -10,7 +10,7 @@ import { CadernoModal } from "@/components/cadernos/CadernoModal";
 export default function CadernosPage() {
   const { profile } = useAuth();
   const userName = profile?.name || profile?.username || "Deltinha";
-  
+
   const { pastas, create: createPasta, remove: removePasta } = useCadernoPastas();
   const { cadernos, create: createCaderno, remove: removeCaderno, moveToPasta } = useCadernos();
   const [activePastaId, setActivePastaId] = useState<string>("all");
@@ -18,16 +18,22 @@ export default function CadernosPage() {
   const { notas, remove: removeNota, isLoading } = useCadernoNotas(activeCadernoId || null);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [notaToEdit, setNotaToEdit] = useState<any>(null);
+
+  const handleEditNota = (nota: any) => {
+    setNotaToEdit(nota);
+    setIsModalOpen(true);
+  };
 
   useEffect(() => {
     // Ao mudar os cadernos ou a pasta, seleciona um caderno padrão se não houver um selecionado válido
     if (cadernos.length > 0) {
-      const filtered = activePastaId === "all" 
-        ? cadernos 
-        : activePastaId === "none" 
+      const filtered = activePastaId === "all"
+        ? cadernos
+        : activePastaId === "none"
           ? cadernos.filter(c => !c.pasta_id)
           : cadernos.filter(c => c.pasta_id === activePastaId);
-          
+
       if (filtered.length > 0 && !filtered.find(c => c.id === activeCadernoId)) {
         setActiveCadernoId(filtered[0].id);
       } else if (filtered.length === 0) {
@@ -87,8 +93,8 @@ export default function CadernosPage() {
     }
   };
 
-  const filteredCadernos = activePastaId === "all" 
-    ? cadernos 
+  const filteredCadernos = activePastaId === "all"
+    ? cadernos
     : activePastaId === "none"
       ? cadernos.filter(c => !c.pasta_id)
       : cadernos.filter(c => c.pasta_id === activePastaId);
@@ -96,7 +102,7 @@ export default function CadernosPage() {
   return (
     <div className="min-h-screen bg-card border border-border rounded-lg text-white p-6 pb-24">
       <div className="max-w-4xl mx-auto space-y-8">
-        
+
         {/* Header */}
         <div className="flex items-start justify-between">
           <div>
@@ -136,7 +142,6 @@ export default function CadernosPage() {
                 </SelectTrigger>
                 <SelectContent className="bg-[#1B1E2B] border-white/10 text-white">
                   <SelectItem value="all">Todas as Pastas</SelectItem>
-                  <SelectItem value="none">Sem Pasta</SelectItem>
                   {pastas.map((p) => (
                     <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>
                   ))}
@@ -206,21 +211,40 @@ export default function CadernosPage() {
                     </span>
                   )}
                 </div>
-                
-                <div 
-                  className="prose prose-invert prose-sm max-w-none text-white/80"
-                  dangerouslySetInnerHTML={{ __html: nota.conteudo_html }} 
-                />
 
-                <Button 
-                  size="icon" 
-                  variant="ghost" 
-                  className="absolute top-4 right-4 h-8 w-8 text-white/20 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
-                  onClick={() => removeNota.mutate(nota.id)}
-                  title="Excluir anotação"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
+                {nota.artigo && nota.artigo.texto && (
+                  <div className="mb-4 text-sm text-white/70 border-l-2 border-white/10 pl-3 italic whitespace-pre-wrap">
+                    {nota.artigo.texto}
+                  </div>
+                )}
+
+                {nota.conteudo_html && nota.conteudo_html.trim() !== "" && (
+                  <div
+                    className="prose prose-invert prose-sm max-w-none text-white/80"
+                    dangerouslySetInnerHTML={{ __html: nota.conteudo_html }}
+                  />
+                )}
+
+                <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-all bg-[#1B1E2B]/80 backdrop-blur-sm rounded-lg p-1">
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 text-white/40 hover:text-blue-400"
+                    onClick={() => handleEditNota(nota)}
+                    title="Editar anotação"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 text-white/40 hover:text-red-400"
+                    onClick={() => removeNota.mutate(nota.id)}
+                    title="Excluir anotação"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
             ))}
           </div>
@@ -228,8 +252,8 @@ export default function CadernosPage() {
 
         {/* Add Free Note */}
         {activeCadernoId && (
-          <button 
-            onClick={() => setIsModalOpen(true)}
+          <button
+            onClick={() => { setNotaToEdit(null); setIsModalOpen(true); }}
             className="w-full py-4 border border-dashed border-white/10 rounded-xl text-white/40 hover:text-white hover:bg-white/5 hover:border-white/20 transition-all flex items-center justify-center gap-2 text-sm font-medium"
           >
             <Plus className="w-4 h-4" /> Adicionar anotação livre
@@ -238,7 +262,15 @@ export default function CadernosPage() {
 
       </div>
 
-      <CadernoModal open={isModalOpen} onOpenChange={setIsModalOpen} cadernoId={activeCadernoId} />
+      <CadernoModal
+        open={isModalOpen}
+        onOpenChange={(open) => {
+          setIsModalOpen(open);
+          if (!open) setNotaToEdit(null);
+        }}
+        cadernoId={activeCadernoId}
+        notaToEdit={notaToEdit}
+      />
     </div>
   );
 }
