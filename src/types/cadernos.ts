@@ -31,6 +31,7 @@ export interface VmCadernoNota {
   artigo?: {
     numero: string;
     rotulo: string;
+    texto?: string;
     lei?: {
       sigla: string;
     };
