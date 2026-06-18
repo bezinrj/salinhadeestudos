@@ -27,28 +27,44 @@ export function HighlightableText({ text, marcacoes, onCreate, onUpdate, onRemov
   const [newSel, setNewSel] = useState<Selection | null>(null);
   const [editingMarc, setEditingMarc] = useState<(VmMarcacao & { x: number; y: number }) | null>(null);
 
-  const handleMouseUp = () => {
-    const s = window.getSelection();
-    if (!s || s.isCollapsed || !containerRef.current) {
-      return;
-    }
-    const range = s.getRangeAt(0);
-    if (!containerRef.current.contains(range.commonAncestorContainer)) {
-      return;
-    }
-    // Compute offsets relative to container text
-    const preRange = range.cloneRange();
-    preRange.selectNodeContents(containerRef.current);
-    preRange.setEnd(range.startContainer, range.startOffset);
-    const start = preRange.toString().length;
-    const trecho = range.toString();
-    if (!trecho.trim()) {
-      return;
-    }
-    const end = start + trecho.length;
-    const rect = range.getBoundingClientRect();
-    setNewSel({ start, end, trecho, x: rect.left + rect.width / 2, y: rect.top - 8 });
-    setEditingMarc(null);
+  // Aguarda 1 frame para garantir que o navegador finalizou a seleção
+  // antes de medirmos os offsets e abrirmos o popover — evita "abre e fecha".
+  const handleMouseUp = (e: React.MouseEvent) => {
+    // Ignora cliques dentro de uma <mark> existente (tratados por onClick do mark)
+    if ((e.target as HTMLElement).closest("mark")) return;
+
+    requestAnimationFrame(() => {
+      const s = window.getSelection();
+      if (!s || s.isCollapsed || s.rangeCount === 0 || !containerRef.current) {
+        return;
+      }
+      const range = s.getRangeAt(0);
+      if (!containerRef.current.contains(range.commonAncestorContainer)) {
+        return;
+      }
+      const trecho = range.toString();
+      if (!trecho.trim()) return;
+
+      const preRange = range.cloneRange();
+      preRange.selectNodeContents(containerRef.current);
+      preRange.setEnd(range.startContainer, range.startOffset);
+      const start = preRange.toString().length;
+      const end = start + trecho.length;
+
+      // Bloqueia sobreposição: se intercepta qualquer marcação existente,
+      // não permite criar uma segunda camada sobre o mesmo trecho.
+      const overlaps = marcacoes.some(
+        (m) => !(end <= m.offset_inicio || start >= m.offset_fim),
+      );
+      if (overlaps) {
+        window.getSelection()?.removeAllRanges();
+        return;
+      }
+
+      const rect = range.getBoundingClientRect();
+      setNewSel({ start, end, trecho, x: rect.left + rect.width / 2, y: rect.top - 8 });
+      setEditingMarc(null);
+    });
   };
 
   const handleDrawerSave = (cor: VmHighlightCor, anotacao: string) => {
@@ -70,12 +86,12 @@ export function HighlightableText({ text, marcacoes, onCreate, onUpdate, onRemov
     setEditingMarc(null);
   };
 
-  // Render text with marcacoes
+  // Render text com marcações (já sem sobreposição, garantido na criação)
   const sorted = [...marcacoes].sort((a, b) => a.offset_inicio - b.offset_inicio);
   const nodes: React.ReactNode[] = [];
   let cursor = 0;
   sorted.forEach((m, idx) => {
-    if (m.offset_inicio < cursor) return; // skip overlaps
+    if (m.offset_inicio < cursor) return; // segurança extra contra sobreposição legada
     if (m.offset_inicio > cursor) nodes.push(text.slice(cursor, m.offset_inicio));
     const seg = text.slice(m.offset_inicio, m.offset_fim);
     const cor = HIGHLIGHT_COLORS[m.cor as VmHighlightCor] ?? HIGHLIGHT_COLORS.amarelo;
@@ -83,6 +99,7 @@ export function HighlightableText({ text, marcacoes, onCreate, onUpdate, onRemov
       <mark
         key={`m-${m.id}-${idx}`}
         className={cn("cursor-pointer rounded-sm px-0.5", cor.bg, m.anotacao ? "border-b-2 border-dashed border-white/50" : "")}
+        onMouseUp={(e) => e.stopPropagation()}
         onClick={(e) => {
           e.stopPropagation();
           setEditingMarc({ ...m, x: e.clientX, y: e.clientY - 8 });
