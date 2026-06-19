@@ -1,0 +1,1 @@
+ALTER TABLE public.vm_marcacoes ADD COLUMN IF NOT EXISTS anotacao text;

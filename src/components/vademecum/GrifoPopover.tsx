@@ -20,6 +20,7 @@ export function GrifoPopover({ open, x, y, onClose, trecho, initialCor, initialA
   const [cor, setCor] = useState<VmHighlightCor>("amarelo");
   const [anotacao, setAnotacao] = useState("");
   const editorRef = useRef<HTMLDivElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (open) {
@@ -30,6 +31,23 @@ export function GrifoPopover({ open, x, y, onClose, trecho, initialCor, initialA
       }
     }
   }, [open, initialCor, initialAnotacao, trecho]);
+
+  // Fecha ao clicar fora — sem backdrop bloqueante, para não interferir
+  // em novas seleções de texto e evitar o efeito de "abre e fecha".
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
+        onClose();
+      }
+    };
+    // mousedown garante fechar antes de iniciar nova seleção
+    const t = setTimeout(() => document.addEventListener("mousedown", handler), 0);
+    return () => {
+      clearTimeout(t);
+      document.removeEventListener("mousedown", handler);
+    };
+  }, [open, onClose]);
 
   if (!open) return null;
 
@@ -52,27 +70,13 @@ export function GrifoPopover({ open, x, y, onClose, trecho, initialCor, initialA
 
   return (
     <>
-      {/* Backdrop invisível para fechar ao clicar fora */}
-      <div 
-        className="fixed inset-0 z-40" 
-        onMouseDown={(e) => {
-          e.preventDefault();
-          onClose();
-        }} 
-      />
-      
       {/* Popover */}
-      <div 
+      <div
+        ref={popoverRef}
         className="fixed z-50 -translate-x-1/2 -translate-y-full w-80 rounded-xl border border-border bg-[#1B1E2B] p-4 shadow-2xl animate-in fade-in zoom-in-95 duration-200"
         style={{ left: x, top: y - 12 }}
-        onMouseDown={(e) => {
-          // Previne que o clique fora do contentEditable perca a seleção original da janela,
-          // mas permite o foco em áreas interativas.
-          if ((e.target as HTMLElement).isContentEditable) return;
-          if ((e.target as HTMLElement).tagName === 'BUTTON') return;
-          e.preventDefault(); 
-        }}
       >
+
         <div className="mb-3 text-xs font-bold uppercase tracking-widest text-white/50">
           GRIFAR TRECHO
         </div>
