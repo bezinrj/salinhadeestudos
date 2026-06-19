@@ -13,7 +13,6 @@ export function useVmLeis() {
         .from("vm_leis")
         .select("*")
         .eq("publicada", true)
-        .order("categoria", { ascending: true })
         .order("ordem", { ascending: true });
       if (error) throw error;
       return (data ?? []) as VmLei[];

@@ -10,9 +10,10 @@ interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   artigoDestinoId: string | null;
+  onNavigateToDestino?: () => void;
 }
 
-export function RemissaoDrawer({ open, onOpenChange, artigoDestinoId }: Props) {
+export function RemissaoDrawer({ open, onOpenChange, artigoDestinoId, onNavigateToDestino }: Props) {
   const navigate = useNavigate();
 
   const { data } = useQuery({
@@ -52,6 +53,7 @@ export function RemissaoDrawer({ open, onOpenChange, artigoDestinoId }: Props) {
             <Button
               size="sm"
               onClick={() => {
+                onNavigateToDestino?.();
                 navigate(`/vademecum/${data.lei.id}`);
                 onOpenChange(false);
                 setTimeout(() => {

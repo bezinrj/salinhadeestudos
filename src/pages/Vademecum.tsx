@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { toast } from "sonner";
-import { Settings } from "lucide-react";
+import { Settings, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useVmLei, useVmLeis, useVmProgresso } from "@/hooks/useVademecum";
+import { useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import {
   useVmMarcacoes,
   useVmNotasProfessor,
@@ -49,6 +51,8 @@ export default function Vademecum() {
   const [cargo, setCargo] = useState<VmFiltroCargo>("todos");
   const [marcadosOpen, setMarcadosOpen] = useState(false);
   const [remissaoDestinoId, setRemissaoDestinoId] = useState<string | null>(null);
+  const [pendingOrigem, setPendingOrigem] = useState<any | null>(null);
+  const [retornoOrigem, setRetornoOrigem] = useState<any | null>(null);
 
   const filtered = useMemo(() => {
     return artigos.filter((a) => {
@@ -64,8 +68,16 @@ export default function Vademecum() {
     });
   }, [artigos, progressoMap, status, cargo]);
 
-  const totalLidos = artigos.filter((a) => progressoMap.get(a.id)?.lido).length;
-  const progressPct = artigos.length ? Math.round((totalLidos / artigos.length) * 100) : 0;
+  const artigosContaveis = useMemo(() => {
+    return artigos.filter((a) => a.rotulo && /^Art\.?\s*\d+/i.test(a.rotulo.trim()));
+  }, [artigos]);
+
+  const totalLidos = useMemo(() => {
+    return artigosContaveis.filter((a) => progressoMap.get(a.id)?.lido).length;
+  }, [artigosContaveis, progressoMap]);
+
+  const progressPct = artigosContaveis.length ? Math.round((totalLidos / artigosContaveis.length) * 100) : 0;
+
 
   const handleToggle = (artigoId: string, field: "lido" | "marcado", value: boolean) => {
     toggle({ artigoId, field, value });
@@ -73,9 +85,42 @@ export default function Vademecum() {
     if (field === "marcado" && value) toast.success("Artigo marcado");
   };
 
+  const queryClient = useQueryClient();
+
+  const handleAddRemissao = async (artigoId: string, destArtigoId: string, textoExibido: string) => {
+    try {
+      const { error } = await supabase.from("vm_remissoes").insert({
+        artigo_origem_id: artigoId,
+        artigo_destino_id: destArtigoId,
+        texto_exibido: textoExibido,
+      });
+      if (error) throw error;
+      toast.success("Remissão adicionada");
+      queryClient.invalidateQueries({ queryKey: ["vm-lei", leiId] });
+    } catch (e: any) {
+      toast.error("Erro ao adicionar remissão: " + e.message);
+    }
+  };
+
+  const handleDeleteRemissao = async (remissaoId: string) => {
+    try {
+      const { error } = await supabase.from("vm_remissoes").delete().eq("id", remissaoId);
+      if (error) throw error;
+      toast.success("Remissão removida");
+      queryClient.invalidateQueries({ queryKey: ["vm-lei", leiId] });
+    } catch (e: any) {
+      toast.error("Erro ao remover remissão: " + e.message);
+    }
+  };
+
   return (
     <div className="flex h-[calc(100vh-4rem)] overflow-hidden">
-      <LeiSidebar leis={leis} activeLeiId={leiId} />
+      <LeiSidebar
+        leis={leis}
+        activeLeiId={leiId}
+        canReorder={canEdit}
+        onReordered={() => queryClient.invalidateQueries({ queryKey: ["vm-leis"] })}
+      />
 
       <main className="flex-1 overflow-y-auto">
         <div className="mx-auto max-w-3xl px-4 py-6 lg:px-8">
@@ -104,7 +149,7 @@ export default function Vademecum() {
                 <div className="mt-3 flex items-center gap-3">
                   <Progress value={progressPct} className="h-2 flex-1" />
                   <span className="whitespace-nowrap text-xs text-muted-foreground">
-                    {totalLidos}/{artigos.length} lidos
+                    {totalLidos}/{artigosContaveis.length} lidos
                   </span>
                 </div>
               </header>
@@ -136,7 +181,18 @@ export default function Vademecum() {
                       autorNome={profile?.name || profile?.username || "Professor"}
                       onToggleLido={(id, v) => handleToggle(id, "lido", v)}
                       onToggleMarcado={(id, v) => handleToggle(id, "marcado", v)}
-                      onRemissaoClick={(rem) => setRemissaoDestinoId(rem.artigo_destino_id)}
+                      onRemissaoClick={(rem) => {
+                        setRemissaoDestinoId(rem.artigo_destino_id);
+                        const originArt = artigos.find((a) => a.id === rem.artigo_origem_id);
+                        if (originArt && data) {
+                          setPendingOrigem({
+                            artigoId: originArt.id,
+                            leiId: data.lei.id,
+                            rotulo: originArt.rotulo || `Art. ${originArt.numero}`,
+                            leiSigla: data.lei.sigla,
+                          });
+                        }
+                      }}
                       onCreateMarcacao={(p) => marc.create.mutate(p)}
                       onUpdateMarcacao={(id, cor, anotacao) => marc.update.mutate({ id, cor, anotacao })}
                       onRemoveMarcacao={(id) => marc.remove.mutate(id)}
@@ -153,6 +209,9 @@ export default function Vademecum() {
                         notasPriv.upsert.mutateAsync({ artigo_id: artigoId, conteudo })
                       }
                       onRemovePrivNote={(id) => notasPriv.remove.mutateAsync(id)}
+                      leis={leis}
+                      onAddRemissao={handleAddRemissao}
+                      onDeleteRemissao={handleDeleteRemissao}
                     />
                   ))
                 )}
@@ -176,7 +235,48 @@ export default function Vademecum() {
         open={!!remissaoDestinoId}
         onOpenChange={(v) => !v && setRemissaoDestinoId(null)}
         artigoDestinoId={remissaoDestinoId}
+        onNavigateToDestino={() => {
+          if (pendingOrigem) {
+            setRetornoOrigem(pendingOrigem);
+            setPendingOrigem(null);
+          }
+        }}
       />
+
+      {retornoOrigem && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-1.5 animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <Button
+            size="default"
+            className="flex items-center gap-2 rounded-full shadow-lg bg-sky-600 hover:bg-sky-700 text-white font-medium border border-sky-400/20"
+            onClick={() => {
+              navigate(`/vademecum/${retornoOrigem.leiId}`);
+              setTimeout(() => {
+                document.getElementById(`vm-art-${retornoOrigem.artigoId}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+                const el = document.getElementById(`vm-art-${retornoOrigem.artigoId}`);
+                if (el) {
+                  el.classList.add("ring-2", "ring-sky-500", "ring-offset-2", "ring-offset-background");
+                  setTimeout(() => {
+                    el.classList.remove("ring-2", "ring-sky-500", "ring-offset-2", "ring-offset-background");
+                  }, 2000);
+                }
+              }, 300);
+              setRetornoOrigem(null);
+            }}
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Voltar para {retornoOrigem.leiSigla} — {retornoOrigem.rotulo}
+          </Button>
+          <Button
+            size="icon"
+            variant="outline"
+            className="h-10 w-10 rounded-full shadow-lg bg-background text-muted-foreground hover:text-foreground border border-border"
+            onClick={() => setRetornoOrigem(null)}
+            title="Fechar"
+          >
+            <span className="text-lg">×</span>
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

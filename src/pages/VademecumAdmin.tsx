@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Navigate, Link } from "react-router-dom";
-import { ArrowLeft, Plus, Trash2, Save, Pencil, GripVertical } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Save, Pencil, GripVertical, CornerDownRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -154,14 +154,28 @@ function ArtigosTab() {
     queryKey: ["admin-vm-artigos", leiId],
     enabled: !!leiId,
     queryFn: async () => {
-      const { data, error } = await sb.from("vm_artigos").select("*, vm_incidencias(*)").eq("lei_id", leiId).order("ordem");
+      const { data, error } = await sb
+        .from("vm_artigos")
+        .select(`
+          *,
+          vm_incidencias(*),
+          vm_remissoes:vm_remissoes!vm_remissoes_artigo_origem_id_fkey(
+            id,
+            artigo_origem_id,
+            artigo_destino_id,
+            texto_exibido,
+            artigo_destino:vm_artigos!vm_remissoes_artigo_destino_id_fkey(id,numero,rotulo,lei_id)
+          )
+        `)
+        .eq("lei_id", leiId)
+        .order("ordem");
       if (error) throw error;
-      return data as (VmArtigo & { vm_incidencias: VmIncidencia[] })[];
+      return data as (VmArtigo & { vm_incidencias: VmIncidencia[]; vm_remissoes: any[] })[];
     },
   });
 
   // Estado local para reordenação otimista via drag-and-drop
-  const [ordered, setOrdered] = useState<(VmArtigo & { vm_incidencias: VmIncidencia[] })[]>([]);
+  const [ordered, setOrdered] = useState<(VmArtigo & { vm_incidencias: VmIncidencia[]; vm_remissoes: any[] })[]>([]);
   useEffect(() => { setOrdered(artigos); }, [artigos]);
 
   // Formulário exclusivo para criação de novos itens
@@ -265,6 +279,7 @@ function ArtigosTab() {
               <ArtigoRow
                 key={a.id}
                 artigo={a}
+                leis={leis}
                 onRemove={() => remove(a.id)}
                 onSaved={() => { refetch(); qc.invalidateQueries({ queryKey: ["vm-lei"] }); }}
                 onIncidenciasChanged={() => { refetch(); qc.invalidateQueries({ queryKey: ["vm-lei"] }); }}
@@ -277,8 +292,9 @@ function ArtigosTab() {
   );
 }
 
-function ArtigoRow({ artigo, onRemove, onSaved, onIncidenciasChanged }: {
-  artigo: VmArtigo & { vm_incidencias: VmIncidencia[] };
+function ArtigoRow({ artigo, leis, onRemove, onSaved, onIncidenciasChanged }: {
+  artigo: VmArtigo & { vm_incidencias: VmIncidencia[]; vm_remissoes: any[] };
+  leis: VmLei[];
   onRemove: () => void;
   onSaved: () => void;
   onIncidenciasChanged: () => void;
@@ -301,6 +317,82 @@ function ArtigoRow({ artigo, onRemove, onSaved, onIncidenciasChanged }: {
   const [cargo, setCargo] = useState<VmCargo>("magistratura");
   const [qtd, setQtd] = useState(1);
   const incs = artigo.vm_incidencias ?? [];
+
+  // Remissões
+  const [openRemissoes, setOpenRemissoes] = useState(false);
+  const [destLeiId, setDestLeiId] = useState<string>(artigo.lei_id);
+  const [destArtigos, setDestArtigos] = useState<any[]>([]);
+  const [destArtigoId, setDestArtigoId] = useState<string>("");
+  const [textoExibido, setTextoExibido] = useState<string>("");
+  const [loadingDestArtigos, setLoadingDestArtigos] = useState(false);
+
+  // Carrega os artigos da lei de destino selecionada
+  useEffect(() => {
+    if (!destLeiId || !openRemissoes) return;
+    const loadDestArtigos = async () => {
+      setLoadingDestArtigos(true);
+      try {
+        const { data, error } = await sb
+          .from("vm_artigos")
+          .select("id, numero, rotulo")
+          .eq("lei_id", destLeiId)
+          .order("ordem");
+        if (error) throw error;
+        setDestArtigos(data || []);
+        if (data && data.length > 0) {
+          setDestArtigoId(data[0].id);
+        } else {
+          setDestArtigoId("");
+        }
+      } catch (e: any) {
+        toast.error("Erro ao carregar artigos: " + e.message);
+      } finally {
+        setLoadingDestArtigos(false);
+      }
+    };
+    loadDestArtigos();
+  }, [destLeiId, openRemissoes]);
+
+  // Preenche o texto exibido sugerido dinamicamente
+  useEffect(() => {
+    if (destArtigoId && destArtigos.length > 0) {
+      const selected = destArtigos.find((a) => a.id === destArtigoId);
+      if (selected) {
+        const destLei = leis.find((l) => l.id === destLeiId);
+        const suffix = destLeiId !== artigo.lei_id && destLei ? ` da ${destLei.sigla}` : "";
+        setTextoExibido((selected.rotulo || `Art. ${selected.numero}`) + suffix);
+      }
+    }
+  }, [destArtigoId, destArtigos, destLeiId, artigo.lei_id, leis]);
+
+  const addRemissao = async () => {
+    if (!destArtigoId) return toast.error("Selecione o artigo de destino.");
+    if (!textoExibido.trim()) return toast.error("Informe o texto exibido.");
+    try {
+      const { error } = await sb.from("vm_remissoes").insert({
+        artigo_origem_id: artigo.id,
+        artigo_destino_id: destArtigoId,
+        texto_exibido: textoExibido.trim(),
+      });
+      if (error) throw error;
+      toast.success("Remissão adicionada");
+      setTextoExibido("");
+      onIncidenciasChanged();
+    } catch (e: any) {
+      toast.error("Erro ao adicionar remissão: " + e.message);
+    }
+  };
+
+  const deleteRemissao = async (id: string) => {
+    try {
+      const { error } = await sb.from("vm_remissoes").delete().eq("id", id);
+      if (error) throw error;
+      toast.success("Remissão removida");
+      onIncidenciasChanged();
+    } catch (e: any) {
+      toast.error("Erro ao remover remissão: " + e.message);
+    }
+  };
 
   const saveEdit = async () => {
     const payload = {
@@ -381,7 +473,15 @@ function ArtigoRow({ artigo, onRemove, onSaved, onIncidenciasChanged }: {
               ))}
             </div>
           </div>
-          <Button size="sm" variant="outline" onClick={() => setOpen((o) => !o)}>
+          <Button
+            size="sm"
+            variant="outline"
+            className="text-sky-400 border-sky-500/20 bg-sky-500/5 hover:bg-sky-500/10"
+            onClick={() => { setOpenRemissoes((r) => !r); setOpen(false); }}
+          >
+            <CornerDownRight className="mr-1 h-3.5 w-3.5" /> Remissões ({artigo.vm_remissoes?.length || 0})
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => { setOpen((o) => !o); setOpenRemissoes(false); }}>
             <Plus className="mr-1 h-3.5 w-3.5" /> Incidência
           </Button>
           <Button
@@ -412,6 +512,93 @@ function ArtigoRow({ artigo, onRemove, onSaved, onIncidenciasChanged }: {
           </div>
           <div><Label className="text-xs">Quantidade</Label><Input type="number" className="w-24" value={qtd} onChange={(e) => setQtd(Number(e.target.value))} /></div>
           <Button size="sm" onClick={addInc}>Salvar</Button>
+        </div>
+      )}
+
+      {/* Painel de Remissões (só no modo visualização) */}
+      {!editing && openRemissoes && (
+        <div className="mt-3 space-y-3 rounded border border-border bg-background p-3">
+          <h4 className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
+            <CornerDownRight className="h-3 w-3" /> Gerenciar Remissões
+          </h4>
+          
+          {/* Lista de remissões existentes */}
+          {artigo.vm_remissoes && artigo.vm_remissoes.length > 0 ? (
+            <div className="space-y-1.5">
+              {artigo.vm_remissoes.map((rem) => {
+                const leiDest = leis.find((l) => l.id === rem.artigo_destino?.lei_id);
+                const leiSigla = leiDest?.sigla || "Lei";
+                return (
+                  <div key={rem.id} className="flex items-center justify-between rounded border border-border/50 bg-secondary/20 px-2 py-1 text-xs">
+                    <div>
+                      <span className="font-medium text-sky-400">"{rem.texto_exibido}"</span>
+                      <span className="text-muted-foreground"> direciona para </span>
+                      <span className="font-semibold">{leiSigla} — {rem.artigo_destino?.rotulo || `Art. ${rem.artigo_destino?.numero}`}</span>
+                    </div>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10"
+                      onClick={() => deleteRemissao(rem.id)}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground italic">Nenhuma remissão adicionada.</p>
+          )}
+
+          {/* Formulário para adicionar nova remissão */}
+          <div className="border-t border-border/50 pt-3 flex flex-wrap items-end gap-3">
+            <div className="flex-1 min-w-[150px]">
+              <Label className="text-[11px] text-muted-foreground">Lei de Destino</Label>
+              <Select value={destLeiId} onValueChange={setDestLeiId}>
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {leis.map((l) => (
+                    <SelectItem key={l.id} value={l.id}>
+                      {l.sigla} — {l.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex-1 min-w-[150px]">
+              <Label className="text-[11px] text-muted-foreground">Artigo de Destino</Label>
+              <Select value={destArtigoId} onValueChange={setDestArtigoId} disabled={loadingDestArtigos || destArtigos.length === 0}>
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue placeholder={loadingDestArtigos ? "Carregando..." : "Selecione..."} />
+                </SelectTrigger>
+                <SelectContent>
+                  {destArtigos.map((art) => (
+                    <SelectItem key={art.id} value={art.id}>
+                      {art.rotulo || `Art. ${art.numero}`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex-[1.5] min-w-[200px]">
+              <Label className="text-[11px] text-muted-foreground">Texto Exibido (ex: "Art. 5º, XXXIV")</Label>
+              <Input
+                className="h-8 text-xs bg-background"
+                value={textoExibido}
+                onChange={(e) => setTextoExibido(e.target.value)}
+                placeholder="Ex: Art. 5º, XXXIV"
+              />
+            </div>
+
+            <Button size="sm" className="h-8" onClick={addRemissao} disabled={!destArtigoId || !textoExibido.trim()}>
+              <Plus className="mr-1 h-3.5 w-3.5" /> Adicionar
+            </Button>
+          </div>
         </div>
       )}
     </div>

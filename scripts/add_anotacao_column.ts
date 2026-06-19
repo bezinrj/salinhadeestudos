@@ -8,8 +8,8 @@ const supabase = createClient(supabaseUrl, supabaseKey)
 async function addAnotacaoColumn() {
   console.log('🔐 Autenticando...')
   const { error: authError } = await supabase.auth.signInWithPassword({
-    email: 'vneto2023@gmail.com',
-    password: 'Vneto8349',
+    email: process.env.VITE_SUPABASE_USER_EMAIL || '',
+    password: process.env.VITE_SUPABASE_USER_PASSWORD || '',
   })
   if (authError) {
     console.error('❌ Erro ao autenticar:', authError.message)
