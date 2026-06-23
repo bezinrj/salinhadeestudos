@@ -89,11 +89,16 @@ export default function Vademecum() {
 
   const handleAddRemissao = async (artigoId: string, destArtigoId: string, textoExibido: string) => {
     try {
+      if (!user?.id) {
+        toast.error("Faça login para adicionar remissões.");
+        return;
+      }
       const { error } = await supabase.from("vm_remissoes").insert({
         artigo_origem_id: artigoId,
         artigo_destino_id: destArtigoId,
         texto_exibido: textoExibido,
-      });
+        user_id: user.id,
+      } as any);
       if (error) throw error;
       toast.success("Remissão adicionada");
       queryClient.invalidateQueries({ queryKey: ["vm-lei", leiId] });
