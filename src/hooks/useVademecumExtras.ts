@@ -24,7 +24,7 @@ export function useVmComentarios(artigoId: string | undefined) {
         .from("vm_comentarios")
         .select("*")
         .eq("artigo_id", artigoId)
-        .order("created_at", { ascending: true });
+        .order("criado_em", { ascending: true });
       if (error) throw error;
       const rows = (data ?? []) as any[];
       const userIds = Array.from(new Set(rows.map((r) => r.user_id)));
@@ -38,20 +38,29 @@ export function useVmComentarios(artigoId: string | undefined) {
       }
       return rows.map((c) => ({
         ...c,
-        autor_nome: profMap.get(c.user_id)?.name || profMap.get(c.user_id)?.username || "Aluno",
+        // expose normalized fields for consumers
+        conteudo: c.texto,
+        created_at: c.criado_em,
+        autor_nome: profMap.get(c.user_id)?.name || profMap.get(c.user_id)?.username || c.autor_nome || "Aluno",
         autor_avatar: profMap.get(c.user_id)?.avatar_url ?? null,
       })) as VmComentario[];
     },
   });
 
   const create = useMutation({
-    mutationFn: async ({ conteudo, parentId }: { conteudo: string; parentId?: string }) => {
+    mutationFn: async ({ conteudo }: { conteudo: string; parentId?: string }) => {
       if (!user?.id || !artigoId) throw new Error("no user");
+      const { data: prof } = await sb
+        .from("profiles")
+        .select("name, username")
+        .eq("id", user.id)
+        .single();
+      const autorNome = prof?.name || prof?.username || "Aluno";
       const { error } = await sb.from("vm_comentarios").insert({
         artigo_id: artigoId,
         user_id: user.id,
-        parent_id: parentId ?? null,
-        conteudo,
+        autor_nome: autorNome,
+        texto: conteudo,
       });
       if (error) throw error;
     },
