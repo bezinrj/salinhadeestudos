@@ -222,161 +222,170 @@ export function ArticleCard(props: Props) {
         onRemissaoClick={onRemissaoClick}
       />
 
-      {(notasProf.length > 0 || notaPriv || canAddProfNote) && (
-        <div className="mt-4 space-y-2">
-          {notasProf.map((n) => (
-            <ProfessorNoteCard
-              key={n.id}
-              nota={n}
-              canDelete={canAddProfNote}
-              onDelete={() => onRemoveProfNote(n.id)}
+      <div className="mt-4 space-y-2">
+        {notasProf.map((n) => (
+          <ProfessorNoteCard
+            key={n.id}
+            nota={n}
+            canDelete={canAddProfNote}
+            onDelete={() => onRemoveProfNote(n.id)}
+          />
+        ))}
+
+        {/* Adicionar nota do professor — visível para todos os logados */}
+        {!addingProf && (subscribed || canAddProfNote) && (
+          <button
+            onClick={() => setAddingProf(true)}
+            className="w-full rounded-lg border border-dashed border-amber-500/40 bg-amber-500/5 p-2 text-left text-xs text-amber-300 hover:bg-amber-500/10"
+          >
+            + Adicionar nota do professor
+          </button>
+        )}
+        {!addingProf && !subscribed && !canAddProfNote && (
+          <UnlockPremiumCard variant="professor" />
+        )}
+        {addingProf && (
+          <div className="rounded-lg border-l-4 border-amber-500 bg-amber-500/5 p-3">
+            <Textarea
+              value={profText}
+              onChange={(e) => setProfText(e.target.value)}
+              rows={3}
+              placeholder="Comentário do professor visível para todos os alunos..."
+              className="text-sm"
             />
-          ))}
-          {canAddProfNote && !addingProf && (
+            <div className="mt-2 flex gap-1">
+              <Button size="sm" onClick={submitProfNote}>Publicar</Button>
+              <Button size="sm" variant="ghost" onClick={() => { setAddingProf(false); setProfText(""); }}>
+                Cancelar
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Nota privada — sempre visível (locked para não assinantes) */}
+        <PrivateNoteCard
+          artigoId={artigo.id}
+          nota={notaPriv}
+          subscribed={subscribed || canAddProfNote}
+          onSave={(c) => onSavePrivNote(artigo.id, c)}
+          onDelete={() => notaPriv && onRemovePrivNote(notaPriv.id)}
+        />
+
+        {/* Remissões */}
+        <div className="mt-2 space-y-2 border-t border-border/50 pt-3">
+          {artigo.remissoes && artigo.remissoes.length > 0 && (
+            <div className="space-y-1">
+              <span className="text-[11px] font-semibold text-muted-foreground">Remissões Ativas:</span>
+              <div className="flex flex-wrap gap-1.5">
+                {artigo.remissoes.map((rem) => (
+                  <span
+                    key={rem.id}
+                    className="inline-flex items-center gap-1 rounded border border-sky-500/20 bg-sky-500/5 px-2 py-0.5 text-xs text-sky-300"
+                  >
+                    {rem.texto_exibido}
+                    {canAddProfNote && (
+                      <button
+                        onClick={() => onDeleteRemissao?.(rem.id)}
+                        className="ml-1 text-destructive hover:text-red-400 font-bold"
+                        title="Remover remissão"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {!addingRemissao && (subscribed || canAddProfNote) && (
             <button
-              onClick={() => setAddingProf(true)}
-              className="w-full rounded-lg border border-dashed border-amber-500/40 bg-amber-500/5 p-2 text-left text-xs text-amber-300 hover:bg-amber-500/10"
+              onClick={() => {
+                setAddingRemissao(true);
+                setDestLeiId(artigo.lei_id);
+              }}
+              className="w-full rounded-lg border border-dashed border-sky-500/40 bg-sky-500/5 p-2 text-left text-xs text-sky-300 hover:bg-sky-500/10 flex items-center gap-1"
             >
-              + Adicionar nota do professor
+              <Plus className="h-3.5 w-3.5" /> + Adicionar remissão
             </button>
           )}
-          {addingProf && (
-            <div className="rounded-lg border-l-4 border-amber-500 bg-amber-500/5 p-3">
-              <Textarea
-                value={profText}
-                onChange={(e) => setProfText(e.target.value)}
-                rows={3}
-                placeholder="Comentário do professor visível para todos os alunos..."
-                className="text-sm"
-              />
-              <div className="mt-2 flex gap-1">
-                <Button size="sm" onClick={submitProfNote}>Publicar</Button>
-                <Button size="sm" variant="ghost" onClick={() => { setAddingProf(false); setProfText(""); }}>
+          {!addingRemissao && !subscribed && !canAddProfNote && (
+            <UnlockPremiumCard variant="remissao" />
+          )}
+
+          {addingRemissao && (
+            <div className="rounded-lg border border-sky-500/30 bg-sky-500/5 p-3 space-y-3">
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[10px] text-muted-foreground">Lei de Destino</label>
+                  <select
+                    value={destLeiId}
+                    onChange={(e) => setDestLeiId(e.target.value)}
+                    className="w-full h-8 text-xs rounded border border-border bg-background px-2 text-foreground focus:outline-none"
+                  >
+                    {leis.map((l) => (
+                      <option key={l.id} value={l.id}>
+                        {l.sigla}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-[10px] text-muted-foreground">Artigo de Destino</label>
+                  <select
+                    value={destArtigoId}
+                    onChange={(e) => setDestArtigoId(e.target.value)}
+                    disabled={loadingDestArtigos || destArtigos.length === 0}
+                    className="w-full h-8 text-xs rounded border border-border bg-background px-2 text-foreground focus:outline-none"
+                  >
+                    {loadingDestArtigos ? (
+                      <option>Carregando...</option>
+                    ) : destArtigos.length === 0 ? (
+                      <option>Nenhum artigo</option>
+                    ) : (
+                      destArtigos.map((art) => (
+                        <option key={art.id} value={art.id}>
+                          {art.rotulo || `Art. ${art.numero}`}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[10px] text-muted-foreground">Texto Exibido</label>
+                <input
+                  type="text"
+                  value={textoExibido}
+                  onChange={(e) => setTextoExibido(e.target.value)}
+                  placeholder="Ex: Art. 5º, XXXIV"
+                  className="w-full h-8 text-xs rounded border border-border bg-background px-2 text-foreground focus:outline-none"
+                />
+              </div>
+
+              <div className="flex gap-2">
+                <Button size="sm" onClick={submitRemissao} disabled={!destArtigoId || !textoExibido.trim()}>
+                  Salvar
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    setAddingRemissao(false);
+                    setTextoExibido("");
+                    setDestArtigoId("");
+                  }}
+                >
                   Cancelar
                 </Button>
               </div>
             </div>
           )}
-          <PrivateNoteCard
-            artigoId={artigo.id}
-            nota={notaPriv}
-            onSave={(c) => onSavePrivNote(artigo.id, c)}
-            onDelete={() => notaPriv && onRemovePrivNote(notaPriv.id)}
-          />
-          {canAddProfNote && (
-            <div className="mt-2 space-y-2 border-t border-border/50 pt-3">
-              {/* Listagem de remissões com opção de exclusão para o Admin */}
-              {artigo.remissoes && artigo.remissoes.length > 0 && (
-                <div className="space-y-1">
-                  <span className="text-[11px] font-semibold text-muted-foreground">Remissões Ativas:</span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {artigo.remissoes.map((rem) => (
-                      <span
-                        key={rem.id}
-                        className="inline-flex items-center gap-1 rounded border border-sky-500/20 bg-sky-500/5 px-2 py-0.5 text-xs text-sky-300"
-                      >
-                        {rem.texto_exibido}
-                        <button
-                          onClick={() => onDeleteRemissao?.(rem.id)}
-                          className="ml-1 text-destructive hover:text-red-400 font-bold"
-                          title="Remover remissão"
-                        >
-                          ×
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Botão de adicionar remissão */}
-              {!addingRemissao && (
-                <button
-                  onClick={() => {
-                    setAddingRemissao(true);
-                    setDestLeiId(artigo.lei_id);
-                  }}
-                  className="w-full rounded-lg border border-dashed border-sky-500/40 bg-sky-500/5 p-2 text-left text-xs text-sky-300 hover:bg-sky-500/10 flex items-center gap-1"
-                >
-                  <Plus className="h-3.5 w-3.5" /> + Adicionar remissão
-                </button>
-              )}
-
-              {/* Formulário de adicionar remissão */}
-              {addingRemissao && (
-                <div className="rounded-lg border border-sky-500/30 bg-sky-500/5 p-3 space-y-3">
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="text-[10px] text-muted-foreground">Lei de Destino</label>
-                      <select
-                        value={destLeiId}
-                        onChange={(e) => setDestLeiId(e.target.value)}
-                        className="w-full h-8 text-xs rounded border border-border bg-background px-2 text-foreground focus:outline-none"
-                      >
-                        {leis.map((l) => (
-                          <option key={l.id} value={l.id}>
-                            {l.sigla}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="text-[10px] text-muted-foreground">Artigo de Destino</label>
-                      <select
-                        value={destArtigoId}
-                        onChange={(e) => setDestArtigoId(e.target.value)}
-                        disabled={loadingDestArtigos || destArtigos.length === 0}
-                        className="w-full h-8 text-xs rounded border border-border bg-background px-2 text-foreground focus:outline-none"
-                      >
-                        {loadingDestArtigos ? (
-                          <option>Carregando...</option>
-                        ) : destArtigos.length === 0 ? (
-                          <option>Nenhum artigo</option>
-                        ) : (
-                          destArtigos.map((art) => (
-                            <option key={art.id} value={art.id}>
-                              {art.rotulo || `Art. ${art.numero}`}
-                            </option>
-                          ))
-                        )}
-                      </select>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-[10px] text-muted-foreground">Texto Exibido</label>
-                    <input
-                      type="text"
-                      value={textoExibido}
-                      onChange={(e) => setTextoExibido(e.target.value)}
-                      placeholder="Ex: Art. 5º, XXXIV"
-                      className="w-full h-8 text-xs rounded border border-border bg-background px-2 text-foreground focus:outline-none"
-                    />
-                  </div>
-
-                  <div className="flex gap-2">
-                    <Button size="sm" onClick={submitRemissao} disabled={!destArtigoId || !textoExibido.trim()}>
-                      Salvar
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => {
-                        setAddingRemissao(false);
-                        setTextoExibido("");
-                        setDestArtigoId("");
-                      }}
-                    >
-                      Cancelar
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
         </div>
-      )}
+      </div>
+
 
       <footer className="mt-4 flex flex-wrap items-center gap-2 border-t border-border/50 pt-3">
         <Button
