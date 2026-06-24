@@ -4,15 +4,17 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import type { VmNotaPrivada } from "@/types/vademecum";
 import { toast } from "sonner";
+import { UnlockPremiumCard } from "./UnlockPremiumCard";
 
 interface Props {
   artigoId: string;
   nota: VmNotaPrivada | undefined;
+  subscribed?: boolean;
   onSave: (conteudo: string) => Promise<void> | void;
   onDelete: () => Promise<void> | void;
 }
 
-export function PrivateNoteCard({ nota, onSave, onDelete }: Props) {
+export function PrivateNoteCard({ nota, subscribed = false, onSave, onDelete }: Props) {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(nota?.conteudo ?? "");
 
@@ -21,6 +23,9 @@ export function PrivateNoteCard({ nota, onSave, onDelete }: Props) {
   }, [nota?.conteudo]);
 
   if (!nota && !editing) {
+    if (!subscribed) {
+      return <UnlockPremiumCard variant="private" />;
+    }
     return (
       <button
         onClick={() => setEditing(true)}

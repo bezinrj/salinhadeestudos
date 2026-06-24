@@ -25,7 +25,7 @@ import type { VmFiltroCargo, VmFiltroStatus } from "@/types/vademecum";
 export default function Vademecum() {
   const { leiId } = useParams<{ leiId?: string }>();
   const navigate = useNavigate();
-  const { user, profile } = useAuth();
+  const { user, profile, subscribed } = useAuth();
   const { isAdmin } = useIsAdmin();
   const { isModerator } = useIsModerator();
   const canEdit = isAdmin || isModerator;
@@ -182,6 +182,7 @@ export default function Vademecum() {
                       notasProf={notasProf.byArtigo.get(a.id) ?? []}
                       notaPriv={notasPriv.byArtigo.get(a.id)}
                       canAddProfNote={canEdit}
+                      subscribed={subscribed}
                       autorId={user?.id}
                       autorNome={profile?.name || profile?.username || "Professor"}
                       onToggleLido={(id, v) => handleToggle(id, "lido", v)}
