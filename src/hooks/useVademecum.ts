@@ -44,8 +44,11 @@ export function useVmLei(leiId: string | undefined) {
       const [paragrafosRes, incidenciasRes, remissoesRes] = await Promise.all([
         sb.from("vm_paragrafos").select("*").in("artigo_id", artigoIds).order("ordem", { ascending: true }),
         sb.from("vm_incidencias").select("*").in("artigo_id", artigoIds),
-        sb.from("vm_remissoes").select("*, artigo_destino:vm_artigos!vm_remissoes_artigo_destino_id_fkey(id,numero,rotulo,lei_id)").in("artigo_origem_id", artigoIds),
+        user?.id
+          ? sb.from("vm_remissoes").select("*, artigo_destino:vm_artigos!vm_remissoes_artigo_destino_id_fkey(id,numero,rotulo,lei_id)").in("artigo_origem_id", artigoIds).eq("user_id", user.id)
+          : Promise.resolve({ data: [] }),
       ]);
+
 
       const paragrafosByArtigo = new Map<string, any[]>();
       (paragrafosRes.data ?? []).forEach((p: any) => {
