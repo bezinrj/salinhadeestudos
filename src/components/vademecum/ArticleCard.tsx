@@ -31,6 +31,7 @@ interface Props {
   notasProf: VmNotaProfessor[];
   notaPriv: VmNotaPrivada | undefined;
   canAddProfNote: boolean;
+  subscribed?: boolean;
   autorNome?: string;
   autorId?: string;
   onToggleLido: (artigoId: string, value: boolean) => void;
