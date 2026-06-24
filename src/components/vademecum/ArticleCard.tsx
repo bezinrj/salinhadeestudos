@@ -8,6 +8,7 @@ import { ArticleComments } from "./ArticleComments";
 import { ProfessorNoteCard } from "./ProfessorNoteCard";
 import { PrivateNoteCard } from "./PrivateNoteCard";
 import { CadernoModal } from "@/components/cadernos/CadernoModal";
+import { UnlockPremiumCard } from "./UnlockPremiumCard";
 import { supabase } from "@/integrations/supabase/client";
 import type {
   VmLei,
