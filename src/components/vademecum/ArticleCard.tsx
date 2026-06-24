@@ -66,6 +66,7 @@ export function ArticleCard(props: Props) {
     notasProf,
     notaPriv,
     canAddProfNote,
+    subscribed = false,
     autorNome,
     autorId,
     onToggleLido,
