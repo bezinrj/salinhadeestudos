@@ -21,9 +21,11 @@ export function useVmLeis() {
 }
 
 export function useVmLei(leiId: string | undefined) {
+  const { user } = useAuth();
   return useQuery({
-    queryKey: ["vm-lei", leiId],
+    queryKey: ["vm-lei", leiId, user?.id],
     enabled: !!leiId,
+
     queryFn: async () => {
       const [leiRes, artigosRes] = await Promise.all([
         sb.from("vm_leis").select("*").eq("id", leiId).single(),
