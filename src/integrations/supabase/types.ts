@@ -104,6 +104,62 @@ export type Database = {
         }
         Relationships: []
       }
+      crono_assuntos: {
+        Row: {
+          created_at: string
+          id: string
+          materia_id: string
+          nome: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          materia_id: string
+          nome: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          materia_id?: string
+          nome?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crono_assuntos_materia_id_fkey"
+            columns: ["materia_id"]
+            isOneToOne: false
+            referencedRelation: "crono_materias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crono_materias: {
+        Row: {
+          cor: string
+          created_at: string
+          id: string
+          nome: string
+          user_id: string
+        }
+        Insert: {
+          cor?: string
+          created_at?: string
+          id?: string
+          nome: string
+          user_id: string
+        }
+        Update: {
+          cor?: string
+          created_at?: string
+          id?: string
+          nome?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       cronograma_matriz: {
         Row: {
           assunto: string | null
@@ -1269,12 +1325,16 @@ export type Database = {
           adjusted_total_seconds: number | null
           adjustment_reason: string | null
           assunto: string | null
+          assunto_id: string | null
           created_at: string
           discipline: string | null
           end_time: string | null
           id: string
+          materia_id: string | null
           original_calculated_seconds: number | null
           paused_at: string | null
+          questoes_acertos: number | null
+          questoes_feitas: number | null
           resumed_at: string | null
           start_time: string
           status: Database["public"]["Enums"]["timer_session_status"]
@@ -1288,12 +1348,16 @@ export type Database = {
           adjusted_total_seconds?: number | null
           adjustment_reason?: string | null
           assunto?: string | null
+          assunto_id?: string | null
           created_at?: string
           discipline?: string | null
           end_time?: string | null
           id?: string
+          materia_id?: string | null
           original_calculated_seconds?: number | null
           paused_at?: string | null
+          questoes_acertos?: number | null
+          questoes_feitas?: number | null
           resumed_at?: string | null
           start_time?: string
           status?: Database["public"]["Enums"]["timer_session_status"]
@@ -1307,12 +1371,16 @@ export type Database = {
           adjusted_total_seconds?: number | null
           adjustment_reason?: string | null
           assunto?: string | null
+          assunto_id?: string | null
           created_at?: string
           discipline?: string | null
           end_time?: string | null
           id?: string
+          materia_id?: string | null
           original_calculated_seconds?: number | null
           paused_at?: string | null
+          questoes_acertos?: number | null
+          questoes_feitas?: number | null
           resumed_at?: string | null
           start_time?: string
           status?: Database["public"]["Enums"]["timer_session_status"]
@@ -1320,7 +1388,22 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "study_timer_sessions_assunto_id_fkey"
+            columns: ["assunto_id"]
+            isOneToOne: false
+            referencedRelation: "crono_assuntos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "study_timer_sessions_materia_id_fkey"
+            columns: ["materia_id"]
+            isOneToOne: false
+            referencedRelation: "crono_materias"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       suppressed_emails: {
         Row: {
@@ -2765,6 +2848,7 @@ export type Database = {
         Returns: boolean
       }
       is_absolute_admin: { Args: { _user_id: string }; Returns: boolean }
+      media_horas_geral: { Args: { periodo: string }; Returns: number }
       move_to_dlq: {
         Args: {
           dlq_name: string
