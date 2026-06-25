@@ -2,16 +2,20 @@ import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { useAuth } from "@/contexts/AuthContext";
-import { UserMateriaAssuntoPicker } from "@/components/UserMateriaAssuntoPicker";
 import { supabase } from "@/integrations/supabase/client";
-import { Play, Pause, Square, AlertCircle, RotateCcw, ChevronLeft, ChevronRight } from "lucide-react";
+import { Play, Pause, Square, RotateCcw, Settings2, Share2, TrendingUp, TrendingDown, BookOpen, Target } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
+import { useCronoMaterias, useMediaHorasGeral, Periodo, periodoStart, CronoMateria } from "@/hooks/useCrono";
+import { CronoMateriasManager } from "@/components/cronometro/CronoMateriasManager";
+import { CronoShareCard } from "@/components/cronometro/CronoShareCard";
+import { toPng } from "html-to-image";
 
 type TimerStatus = "running" | "paused" | "completed" | "cancelled";
 
@@ -20,6 +24,8 @@ interface TimerSession {
   user_id: string;
   discipline: string | null;
   assunto: string | null;
+  materia_id: string | null;
+  assunto_id: string | null;
   status: TimerStatus;
   start_time: string;
   paused_at: string | null;
@@ -27,25 +33,12 @@ interface TimerSession {
   end_time: string | null;
   accumulated_seconds: number;
   total_seconds: number | null;
+  questoes_feitas: number | null;
+  questoes_acertos: number | null;
 }
 
 const TABLE = "study_timer_sessions" as const;
-
-const COLORS = [
-  "#EF4444", "#3B82F6", "#10B981", "#F59E0B", "#8B5CF6", 
-  "#EC4899", "#14B8A6", "#F97316", "#6366F1", "#84CC16"
-];
-
-function formatTime(s: number) {
-  const safe = Math.max(0, Math.floor(s));
-  const h = Math.floor(safe / 3600);
-  const m = Math.floor((safe % 3600) / 60);
-  const sec = safe % 60;
-  
-  if (h > 0) return `${h}h ${m}m ${sec}s`;
-  if (m > 0) return `${m}m ${sec}s`;
-  return `${sec}s`;
-}
+const sb = supabase as any;
 
 function formatTimerDisplay(s: number) {
   const safe = Math.max(0, Math.floor(s));
@@ -53,10 +46,6 @@ function formatTimerDisplay(s: number) {
   const m = Math.floor((safe % 3600) / 60);
   const sec = safe % 60;
   return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${sec.toString().padStart(2, "0")}`;
-}
-
-function formatHour(d: Date) {
-  return `${d.getHours().toString().padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}`;
 }
 
 function computeElapsed(session: TimerSession): number {
@@ -69,87 +58,100 @@ function computeElapsed(session: TimerSession): number {
   return acc;
 }
 
-type FilterOption = "Dia" | "Semana" | "Mês" | "Ano" | "Tudo";
+const PERIODOS: Periodo[] = ["Diário", "Mensal", "Anual"];
 
 export default function StudyTimerPage() {
   const { user } = useAuth();
-  
+  const { materias, assuntos } = useCronoMaterias();
+
   const [session, setSession] = useState<TimerSession | null>(null);
   const [seconds, setSeconds] = useState(0);
-  const [selectedDiscipline, setSelectedDiscipline] = useState("");
-  const [selectedAssunto, setSelectedAssunto] = useState("");
+  const [selectedMateriaId, setSelectedMateriaId] = useState("");
+  const [selectedAssuntoId, setSelectedAssuntoId] = useState("");
   const [loadingRestore, setLoadingRestore] = useState(true);
 
-  // Filtros
-  const [filterType, setFilterType] = useState<FilterOption>("Mês");
+  const [periodo, setPeriodo] = useState<Periodo>("Mensal");
 
-  // Modals
   const [showStopModal, setShowStopModal] = useState(false);
-  const [showRectifyModal, setShowRectifyModal] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
-  const [rectifyHours, setRectifyHours] = useState(0);
-  const [rectifyMinutes, setRectifyMinutes] = useState(0);
-  const [rectifyReason, setRectifyReason] = useState("");
+  const [showManager, setShowManager] = useState(false);
+  const [showShare, setShowShare] = useState(false);
+  const [qFeitas, setQFeitas] = useState<string>("");
+  const [qAcertos, setQAcertos] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
 
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const shareRef = useRef<HTMLDivElement | null>(null);
 
-  const { data: allSessions = [], refetch: refetchSessions } = useQuery({
-    queryKey: ["study_timer_sessions", user?.id],
+  // ----- Sessões do usuário -----
+  const { data: allSessions = [], refetch } = useQuery({
+    queryKey: ["crono_sessoes_completed", user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
-      const { data, error } = await supabase
+      const { data, error } = await sb
         .from(TABLE)
         .select("*")
         .eq("user_id", user.id)
         .eq("status", "completed");
       if (error) throw error;
-      return data as TimerSession[];
+      return (data || []) as TimerSession[];
     },
-    enabled: !!user?.id
+    enabled: !!user?.id,
   });
 
   const filteredSessions = useMemo(() => {
-    const now = new Date();
+    const start = periodoStart(periodo);
     return allSessions.filter(s => {
       if (!s.end_time || !s.total_seconds) return false;
-      const end = new Date(s.end_time);
-      if (filterType === "Tudo") return true;
-      if (filterType === "Dia") return end.toDateString() === now.toDateString();
-      if (filterType === "Semana") {
-         const pastWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-         return end >= pastWeek;
-      }
-      if (filterType === "Mês") {
-         return end.getMonth() === now.getMonth() && end.getFullYear() === now.getFullYear();
-      }
-      if (filterType === "Ano") {
-         return end.getFullYear() === now.getFullYear();
-      }
-      return true;
+      return new Date(s.end_time) >= start;
     });
-  }, [allSessions, filterType]);
+  }, [allSessions, periodo]);
+
+  const materiaMap = useMemo(() => {
+    const m = new Map<string, CronoMateria>();
+    materias.forEach(x => m.set(x.id, x));
+    return m;
+  }, [materias]);
 
   const chartData = useMemo(() => {
-    const map = new Map<string, number>();
+    const map = new Map<string, { seconds: number; cor: string }>();
     filteredSessions.forEach(s => {
-      const disc = s.discipline || "Outros";
-      map.set(disc, (map.get(disc) || 0) + (s.total_seconds || 0));
+      const mat = s.materia_id ? materiaMap.get(s.materia_id) : undefined;
+      const nome = mat?.nome || s.discipline || "Outros";
+      const cor = mat?.cor || "#6B7280";
+      const cur = map.get(nome) || { seconds: 0, cor };
+      cur.seconds += s.total_seconds || 0;
+      cur.cor = cor;
+      map.set(nome, cur);
     });
-    
-    return Array.from(map.entries())
-      .map(([name, value]) => ({ name, value }))
-      .sort((a, b) => b.value - a.value);
-  }, [filteredSessions]);
+    const arr = Array.from(map.entries()).map(([nome, v]) => ({
+      nome,
+      cor: v.cor,
+      seconds: v.seconds,
+      horas: v.seconds / 3600,
+    }));
+    arr.sort((a, b) => b.seconds - a.seconds);
+    const total = arr.reduce((a, b) => a + b.seconds, 0) || 1;
+    return arr.map(a => ({ ...a, pct: (a.seconds / total) * 100 }));
+  }, [filteredSessions, materiaMap]);
 
-  const totalFilteredSeconds = chartData.reduce((acc, curr) => acc + curr.value, 0);
+  const totalSeconds = chartData.reduce((a, b) => a + b.seconds, 0);
+  const totalHoras = totalSeconds / 3600;
 
+  const questoesFeitas = filteredSessions.reduce((a, s) => a + (s.questoes_feitas || 0), 0);
+  const questoesAcertos = filteredSessions.reduce((a, s) => a + (s.questoes_acertos || 0), 0);
+  const acertoPct = questoesFeitas > 0 ? (questoesAcertos / questoesFeitas) * 100 : 0;
+
+  // ----- Comparação social -----
+  const { data: mediaGeral = 0 } = useMediaHorasGeral(periodo);
+  const diffHoras = totalHoras - mediaGeral;
+  const acima = diffHoras >= 0;
+  const barPct = mediaGeral > 0 ? Math.min(100, (totalHoras / (mediaGeral * 2)) * 100) : (totalHoras > 0 ? 100 : 0);
+
+  // ----- Restaurar sessão ativa -----
   const loadActive = useCallback(async () => {
-    if (!user?.id) {
-      setLoadingRestore(false);
-      return;
-    }
-    const { data, error } = await supabase
+    if (!user?.id) { setLoadingRestore(false); return; }
+    const { data } = await sb
       .from(TABLE)
       .select("*")
       .eq("user_id", user.id)
@@ -157,521 +159,448 @@ export default function StudyTimerPage() {
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
-
-    if (!error && data) {
+    if (data) {
       const s = data as TimerSession;
       setSession(s);
-      setSelectedDiscipline(s.discipline || "");
-      setSelectedAssunto(s.assunto || "");
+      setSelectedMateriaId(s.materia_id || "");
+      setSelectedAssuntoId(s.assunto_id || "");
       setSeconds(computeElapsed(s));
     }
     setLoadingRestore(false);
   }, [user?.id]);
 
-  useEffect(() => {
-    loadActive();
-  }, [loadActive]);
+  useEffect(() => { loadActive(); }, [loadActive]);
 
   useEffect(() => {
-    if (tickRef.current) {
-      clearInterval(tickRef.current);
-      tickRef.current = null;
-    }
+    if (tickRef.current) { clearInterval(tickRef.current); tickRef.current = null; }
     if (session && session.status === "running") {
       const tick = () => setSeconds(computeElapsed(session));
       tick();
       tickRef.current = setInterval(tick, 1000);
     }
-    return () => {
-      if (tickRef.current) clearInterval(tickRef.current);
-    };
+    return () => { if (tickRef.current) clearInterval(tickRef.current); };
   }, [session]);
 
+  const selectedMateria = materias.find(m => m.id === selectedMateriaId);
+  const filteredAssuntos = assuntos.filter(a => a.materia_id === selectedMateriaId);
+
+  // ----- Ações -----
   const handleStart = async () => {
-    if (!user?.id) {
-      toast.error("Faça login para iniciar o cronômetro.");
-      return;
-    }
-    if (!selectedDiscipline) {
-      toast.error("Selecione uma matéria antes de iniciar.");
-      return;
-    }
+    if (!user?.id) { toast.error("Faça login."); return; }
+    if (!selectedMateriaId) { toast.error("Selecione uma matéria."); return; }
     if (session && (session.status === "running" || session.status === "paused")) {
-      toast.info("Você já tem uma sessão em andamento.");
-      return;
+      toast.info("Já há uma sessão em andamento."); return;
     }
+    const mat = materiaMap.get(selectedMateriaId);
+    const ass = assuntos.find(a => a.id === selectedAssuntoId);
     setSubmitting(true);
-    const nowIso = new Date().toISOString();
-    const { data, error } = await supabase
+    const { data, error } = await sb
       .from(TABLE)
       .insert({
         user_id: user.id,
-        discipline: selectedDiscipline || null,
-        assunto: selectedAssunto || null,
+        materia_id: selectedMateriaId,
+        assunto_id: selectedAssuntoId || null,
+        discipline: mat?.nome || null,
+        assunto: ass?.nome || null,
         status: "running",
-        start_time: nowIso,
+        start_time: new Date().toISOString(),
         accumulated_seconds: 0,
       })
       .select("*")
       .single();
-      
     setSubmitting(false);
-    if (error) {
-      if ((error as any).code === "23505") {
-        toast.info("Sessão ativa detectada. Restaurando...");
-        await loadActive();
-        return;
-      }
-      toast.error("Erro ao iniciar sessão.");
-      return;
-    }
-    const s = data as TimerSession;
-    setSession(s);
+    if (error) { toast.error("Erro ao iniciar."); return; }
+    setSession(data as TimerSession);
     setSeconds(0);
   };
 
   const handlePause = async () => {
     if (!session || session.status !== "running") return;
     const elapsed = computeElapsed(session);
-    const nowIso = new Date().toISOString();
-    const { data, error } = await supabase
-      .from(TABLE)
-      .update({
-        status: "paused",
-        paused_at: nowIso,
-        accumulated_seconds: elapsed,
-      })
-      .eq("id", session.id)
-      .select("*")
-      .single();
-    if (error) {
-      toast.error("Erro ao pausar.");
-      return;
-    }
-    setSession(data as TimerSession);
-    setSeconds(elapsed);
+    const { data, error } = await sb.from(TABLE).update({
+      status: "paused", paused_at: new Date().toISOString(), accumulated_seconds: elapsed,
+    }).eq("id", session.id).select("*").single();
+    if (error) { toast.error("Erro ao pausar."); return; }
+    setSession(data as TimerSession); setSeconds(elapsed);
   };
 
   const handleResume = async () => {
     if (!session || session.status !== "paused") return;
-    const nowIso = new Date().toISOString();
-    const { data, error } = await supabase
-      .from(TABLE)
-      .update({
-        status: "running",
-        resumed_at: nowIso,
-      })
-      .eq("id", session.id)
-      .select("*")
-      .single();
-    if (error) {
-      toast.error("Erro ao retomar.");
-      return;
-    }
+    const { data, error } = await sb.from(TABLE).update({
+      status: "running", resumed_at: new Date().toISOString(),
+    }).eq("id", session.id).select("*").single();
+    if (error) { toast.error("Erro ao retomar."); return; }
     setSession(data as TimerSession);
   };
 
   const handleStopClick = () => {
     if (!session) return;
+    setQFeitas(""); setQAcertos("");
     setShowStopModal(true);
   };
 
-  const finalize = async (opts: {
-    totalSeconds: number;
-    rectified: boolean;
-    originalSeconds?: number;
-    reason?: string;
-  }) => {
+  const handleConfirmStop = async () => {
     if (!session) return;
     setSubmitting(true);
-    const nowIso = new Date().toISOString();
-    const update: Record<string, unknown> = {
-      status: "completed",
-      end_time: nowIso,
-      total_seconds: opts.totalSeconds,
-      accumulated_seconds: opts.totalSeconds,
-      discipline: selectedDiscipline || session.discipline || null,
-      assunto: selectedAssunto || session.assunto || null,
-    };
-    if (opts.rectified) {
-      update.original_calculated_seconds = opts.originalSeconds ?? null;
-      update.adjusted_total_seconds = opts.totalSeconds;
-      update.adjustment_reason = opts.reason || null;
-      update.adjusted_at = nowIso;
-    }
-    const { error } = await supabase.from(TABLE).update(update as any).eq("id", session.id);
-    setSubmitting(false);
-    if (error) {
-      toast.error("Erro ao finalizar sessão.");
-      return;
-    }
-
-    toast.success(opts.rectified ? "Sessão finalizada com tempo retificado." : "Sessão finalizada!");
-    setSession(null);
-    setSeconds(0);
-    setShowStopModal(false);
-    setShowRectifyModal(false);
-    setRectifyHours(0);
-    setRectifyMinutes(0);
-    setRectifyReason("");
-    refetchSessions();
-  };
-
-  const handleFinalizeNow = async () => {
-    if (!session) return;
     const total = computeElapsed(session);
-    await finalize({ totalSeconds: total, rectified: false });
-  };
+    const feitas = qFeitas.trim() ? Math.max(0, parseInt(qFeitas, 10) || 0) : null;
+    let acertos: number | null = qAcertos.trim() ? Math.max(0, parseInt(qAcertos, 10) || 0) : null;
+    if (feitas !== null && acertos !== null && acertos > feitas) acertos = feitas;
 
-  const handleOpenRectify = () => {
-    if (!session) return;
-    const elapsed = computeElapsed(session);
-    setRectifyHours(Math.floor(elapsed / 3600));
-    setRectifyMinutes(Math.floor((elapsed % 3600) / 60));
-    setShowStopModal(false);
-    setShowRectifyModal(true);
-  };
-
-  const handleConfirmRectify = async () => {
-    if (!session) return;
-    const h = Math.max(0, Math.floor(rectifyHours || 0));
-    const m = Math.max(0, Math.min(59, Math.floor(rectifyMinutes || 0)));
-    const total = h * 3600 + m * 60;
-    if (total <= 0) {
-      toast.error("Informe um tempo maior que zero.");
-      return;
-    }
-    const original = computeElapsed(session);
-    await finalize({
-      totalSeconds: total,
-      rectified: true,
-      originalSeconds: original,
-      reason: rectifyReason.trim() || undefined,
-    });
+    const { error } = await sb.from(TABLE).update({
+      status: "completed",
+      end_time: new Date().toISOString(),
+      total_seconds: total,
+      accumulated_seconds: total,
+      questoes_feitas: feitas,
+      questoes_acertos: acertos,
+    }).eq("id", session.id);
+    setSubmitting(false);
+    if (error) { toast.error("Erro ao finalizar."); return; }
+    toast.success("Sessão registrada!");
+    setSession(null); setSeconds(0); setShowStopModal(false);
+    refetch();
   };
 
   const handleResetConfirm = async () => {
-    if (!session) {
-      setShowResetModal(false);
-      return;
-    }
+    if (!session) { setShowResetModal(false); return; }
     setSubmitting(true);
-    const nowIso = new Date().toISOString();
-    const { error } = await supabase
-      .from(TABLE)
-      .update({
-        status: "cancelled",
-        end_time: nowIso,
-        total_seconds: 0,
-      })
-      .eq("id", session.id);
+    const { error } = await sb.from(TABLE).update({
+      status: "cancelled", end_time: new Date().toISOString(), total_seconds: 0,
+    }).eq("id", session.id);
     setSubmitting(false);
-    if (error) {
-      toast.error("Erro ao zerar cronômetro.");
-      return;
-    }
+    if (error) { toast.error("Erro ao zerar."); return; }
     toast.success("Cronômetro zerado.");
-    setSession(null);
-    setSeconds(0);
-    setShowResetModal(false);
-    setShowStopModal(false);
+    setSession(null); setSeconds(0); setShowResetModal(false);
+  };
+
+  const handleShare = async () => {
+    if (!shareRef.current) return;
+    try {
+      const dataUrl = await toPng(shareRef.current, { cacheBust: true, pixelRatio: 1 });
+      const a = document.createElement("a");
+      a.href = dataUrl;
+      a.download = `salinha-progresso-${periodo}-${new Date().toISOString().slice(0,10)}.png`;
+      a.click();
+      toast.success("Imagem baixada! Agora é só postar.");
+    } catch (e) {
+      console.error(e);
+      toast.error("Não consegui gerar a imagem.");
+    }
   };
 
   const isRunning = session?.status === "running";
   const isPaused = session?.status === "paused";
   const hasActive = isRunning || isPaused;
 
-  const currentMonthName = new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+  const nomeAluno = (user?.user_metadata?.full_name as string) || (user?.email?.split("@")[0]) || "Estudante";
 
   return (
-    <div className="space-y-6 max-w-2xl mx-auto pb-24">
-      
-      {/* Aviso Sessão Ativa */}
-      {hasActive && !loadingRestore && (
-        <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-primary">
-          <AlertCircle className="h-4 w-4" />
-          Você possui uma sessão de estudos em andamento.
+    <div className="space-y-6 max-w-5xl mx-auto pb-24">
+      {/* Header com seletor de período */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Cronômetro de Estudos</h1>
+          <p className="text-sm text-muted-foreground">Acompanhe seu tempo, suas questões e seu progresso.</p>
         </div>
-      )}
+        <div className="flex items-center gap-2">
+          <div className="flex bg-card border border-border p-1 rounded-lg">
+            {PERIODOS.map(p => (
+              <button key={p} onClick={() => setPeriodo(p)}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition ${
+                  periodo === p ? "bg-gold text-gold-foreground" : "text-muted-foreground hover:text-foreground"
+                }`}>{p}</button>
+            ))}
+          </div>
+          <Button variant="outline" size="sm" onClick={() => setShowManager(true)}>
+            <Settings2 className="h-4 w-4 mr-2" /> Matérias
+          </Button>
+        </div>
+      </div>
 
-      {/* Timer Section */}
-      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
-        <Card className={`bg-[#11131F] border-border ${isRunning ? "border-primary/30" : ""} transition-all`}>
+      {/* Timer */}
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+        <Card className="bg-card border-border overflow-hidden">
           <CardContent className="p-8 text-center">
-            
-            <div className="flex flex-col gap-3 mb-8 max-w-sm mx-auto">
-              <UserMateriaAssuntoPicker
-                selectedDiscipline={selectedDiscipline}
-                setSelectedDiscipline={setSelectedDiscipline}
-                selectedAssunto={selectedAssunto}
-                setSelectedAssunto={setSelectedAssunto}
-                disabled={hasActive}
-              />
+            <div className="flex flex-col sm:flex-row gap-2 max-w-md mx-auto mb-6">
+              <Select value={selectedMateriaId} onValueChange={(v) => { setSelectedMateriaId(v); setSelectedAssuntoId(""); }} disabled={hasActive}>
+                <SelectTrigger><SelectValue placeholder="Matéria" /></SelectTrigger>
+                <SelectContent>
+                  {materias.length === 0 && <div className="px-2 py-1.5 text-xs text-muted-foreground">Cadastre uma matéria primeiro</div>}
+                  {materias.map(m => (
+                    <SelectItem key={m.id} value={m.id}>
+                      <span className="inline-flex items-center gap-2">
+                        <span className="h-2.5 w-2.5 rounded-full" style={{ background: m.cor }} />
+                        {m.nome}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={selectedAssuntoId} onValueChange={setSelectedAssuntoId} disabled={hasActive || !selectedMateriaId}>
+                <SelectTrigger><SelectValue placeholder="Assunto (opcional)" /></SelectTrigger>
+                <SelectContent>
+                  {filteredAssuntos.map(a => (<SelectItem key={a.id} value={a.id}>{a.nome}</SelectItem>))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div
-              className={`text-6xl md:text-8xl font-display font-bold tracking-wider mb-8 ${
-                isRunning ? "text-blue-500" : "text-white"
-              }`}
+              className="text-6xl md:text-8xl font-display font-bold tracking-wider mb-8"
+              style={{ color: isRunning ? "hsl(var(--gold))" : "white" }}
             >
               {formatTimerDisplay(seconds)}
             </div>
 
             <div className="flex flex-wrap items-center justify-center gap-3">
               {!hasActive && (
-                <Button
-                  size="lg"
-                  onClick={handleStart}
-                  disabled={submitting || loadingRestore}
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8"
-                >
+                <Button size="lg" onClick={handleStart} disabled={submitting || loadingRestore}
+                  className="bg-gold text-gold-foreground hover:opacity-90 font-semibold px-8">
                   <Play className="h-5 w-5 mr-2" /> Iniciar
                 </Button>
               )}
               {isRunning && (
-                <Button
-                  size="lg"
-                  variant="outline"
-                  onClick={handlePause}
-                  className="border-blue-500/30 text-blue-400 px-8 hover:bg-blue-500/10"
-                >
+                <Button size="lg" variant="outline" onClick={handlePause} className="px-8">
                   <Pause className="h-5 w-5 mr-2" /> Pausar
                 </Button>
               )}
               {isPaused && (
-                <Button
-                  size="lg"
-                  onClick={handleResume}
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8"
-                >
-                  <Play className="h-5 w-5 mr-2" /> Continuar
+                <Button size="lg" onClick={handleResume} className="bg-gold text-gold-foreground hover:opacity-90 font-semibold px-8">
+                  <Play className="h-5 w-5 mr-2" /> Retomar
                 </Button>
               )}
               {hasActive && (
-                <Button
-                  size="lg"
-                  variant="outline"
-                  onClick={handleStopClick}
-                  className="border-white/10 text-white/70 hover:bg-white/5"
-                >
-                  <Square className="h-5 w-5 mr-2" /> Finalizar
-                </Button>
-              )}
-              {hasActive && (
-                <Button
-                  size="lg"
-                  variant="outline"
-                  onClick={() => setShowResetModal(true)}
-                  className="border-red-500/40 text-red-400 hover:bg-red-500/10 hover:text-red-400"
-                >
-                  <RotateCcw className="h-5 w-5 mr-2" /> Zerar
-                </Button>
+                <>
+                  <Button size="lg" variant="outline" onClick={handleStopClick}>
+                    <Square className="h-5 w-5 mr-2" /> Finalizar
+                  </Button>
+                  <Button size="lg" variant="outline" onClick={() => setShowResetModal(true)}
+                    className="border-red-500/40 text-red-400 hover:bg-red-500/10 hover:text-red-300">
+                    <RotateCcw className="h-5 w-5 mr-2" /> Zerar
+                  </Button>
+                </>
               )}
             </div>
           </CardContent>
         </Card>
       </motion.div>
 
-      {/* Chart Section */}
-      <Card className="bg-[#11131F] border-border pt-6 pb-2">
-        <div className="px-6 flex flex-col items-center mb-6">
-          <div className="flex items-center justify-between w-full mb-4">
-            <h2 className="text-lg font-bold">Todas as matérias</h2>
-          </div>
-          
-          <div className="text-sm text-white/50 mb-4 capitalize">
-            {currentMonthName}
-          </div>
+      {/* Cards de resumo */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <Card className="bg-card border-border">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs uppercase tracking-wider text-muted-foreground">Total no período</span>
+              {acima
+                ? <TrendingUp className="h-4 w-4 text-emerald-400" />
+                : <TrendingDown className="h-4 w-4 text-amber-400" />}
+            </div>
+            <div className="text-3xl font-bold" style={{ color: "hsl(var(--gold))" }}>
+              {totalHoras.toFixed(1)} <span className="text-base text-muted-foreground">hr</span>
+            </div>
+            <div className="text-xs text-muted-foreground mt-1">
+              {periodo === "Diário" ? "Hoje" : periodo === "Mensal" ? "Este mês" : "Este ano"}
+            </div>
+          </CardContent>
+        </Card>
 
-          <div className="flex bg-[#1B1E2B] p-1 rounded-lg border border-white/5 w-full max-w-md">
-            {(["Dia", "Semana", "Mês", "Ano", "Tudo"] as FilterOption[]).map(f => (
-              <button 
-                key={f}
-                onClick={() => setFilterType(f)}
-                className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                  filterType === f 
-                    ? "bg-white text-black shadow-sm" 
-                    : "text-white/60 hover:text-white"
-                }`}
-              >
-                {f}
-              </button>
-            ))}
-          </div>
-        </div>
+        <Card className="bg-card border-border">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs uppercase tracking-wider text-muted-foreground">Questões feitas</span>
+              <BookOpen className="h-4 w-4 text-blue-400" />
+            </div>
+            <div className="text-3xl font-bold">{questoesFeitas}</div>
+            <div className="text-xs text-muted-foreground mt-1">no período selecionado</div>
+          </CardContent>
+        </Card>
 
-        {totalFilteredSeconds === 0 ? (
-          <div className="py-20 text-center text-white/40 text-sm">
-            Nenhuma sessão registrada neste período.
-          </div>
-        ) : (
-          <div className="px-6 pb-6">
-            <div className="h-[250px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={chartData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={0}
-                    outerRadius={100}
-                    dataKey="value"
-                    stroke="none"
-                  >
-                    {chartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip 
-                    formatter={(value: number) => formatTime(value)}
-                    contentStyle={{ backgroundColor: "#1B1E2B", borderColor: "rgba(255,255,255,0.1)", borderRadius: "8px" }}
-                    itemStyle={{ color: "#fff" }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
+        <Card className="bg-card border-border">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs uppercase tracking-wider text-muted-foreground">% de acerto</span>
+              <Target className="h-4 w-4 text-emerald-400" />
+            </div>
+            <div className="text-3xl font-bold">
+              {questoesFeitas > 0 ? `${acertoPct.toFixed(0)}%` : "—"}
+            </div>
+            <div className="text-xs text-muted-foreground mt-1">
+              {questoesFeitas > 0 ? `${questoesAcertos}/${questoesFeitas}` : "registre questões para ver"}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Donut + Comparação */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <Card className="bg-card border-border lg:col-span-2">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold">Distribuição por matéria</h2>
+              <Button size="sm" variant="outline" onClick={() => setShowShare(true)} disabled={totalSeconds === 0}>
+                <Share2 className="h-4 w-4 mr-2" /> Compartilhar
+              </Button>
             </div>
 
-            <div className="text-center mt-4 mb-8">
-              <div className="text-3xl font-bold font-display">
-                {formatTime(totalFilteredSeconds)}
+            {chartData.length === 0 ? (
+              <div className="h-72 flex items-center justify-center text-sm text-muted-foreground">
+                Nenhuma sessão registrada neste período.
               </div>
-            </div>
-
-            <div className="space-y-3">
-              {chartData.map((entry, index) => {
-                const percentage = Math.round((entry.value / totalFilteredSeconds) * 100);
-                return (
-                  <div key={entry.name} className="flex justify-between items-center text-sm">
-                    <div className="flex items-center gap-2">
-                      <div 
-                        className="w-1.5 h-4 rounded-sm" 
-                        style={{ backgroundColor: COLORS[index % COLORS.length] }} 
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+                <div className="relative h-72">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={chartData} dataKey="seconds" nameKey="nome" innerRadius="60%" outerRadius="90%" paddingAngle={2}
+                        label={(p: any) => p.pct >= 8 ? `${p.pct.toFixed(0)}%` : ""} labelLine={false} stroke="none">
+                        {chartData.map((d, i) => (<Cell key={i} fill={d.cor} />))}
+                      </Pie>
+                      <Tooltip
+                        contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, color: "white" }}
+                        formatter={(v: any, _n, p: any) => [`${(Number(v)/3600).toFixed(2)} hr`, p?.payload?.nome]}
                       />
-                      <span className="text-white/90">{entry.name}</span>
-                    </div>
-                    <div className="flex gap-2 items-center font-medium">
-                      <span>{formatTime(entry.value)}</span>
-                      <span className="text-white/50 w-10 text-right">({percentage}%)</span>
-                    </div>
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                    <div className="text-3xl font-bold" style={{ color: "hsl(var(--gold))" }}>{totalHoras.toFixed(1)}</div>
+                    <div className="text-xs text-muted-foreground uppercase tracking-wider">horas</div>
                   </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-      </Card>
+                </div>
+                <div className="space-y-2 max-h-72 overflow-auto pr-1">
+                  {chartData.map(d => (
+                    <div key={d.nome} className="flex items-center gap-3 text-sm">
+                      <span className="h-3 w-3 rounded-full" style={{ background: d.cor }} />
+                      <span className="flex-1 truncate">{d.nome}</span>
+                      <span className="tabular-nums text-muted-foreground">{d.horas.toFixed(1)}h</span>
+                      <span className="tabular-nums text-xs text-muted-foreground w-10 text-right">{d.pct.toFixed(0)}%</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-      {/* Modals */}
+        <Card className="bg-card border-border">
+          <CardContent className="p-6">
+            <h2 className="text-lg font-bold mb-1">Comparação social</h2>
+            <p className="text-xs text-muted-foreground mb-5">Você vs. média geral dos alunos no período.</p>
+
+            <div className="space-y-4">
+              <div>
+                <div className="flex items-center justify-between text-xs mb-1.5">
+                  <span className="text-muted-foreground">Você</span>
+                  <span className="font-semibold" style={{ color: "hsl(var(--gold))" }}>{totalHoras.toFixed(1)}h</span>
+                </div>
+                <div className="h-2.5 rounded-full bg-white/5 overflow-hidden">
+                  <div className="h-full rounded-full transition-all"
+                    style={{ width: `${barPct}%`, background: "hsl(var(--gold))" }} />
+                </div>
+              </div>
+              <div>
+                <div className="flex items-center justify-between text-xs mb-1.5">
+                  <span className="text-muted-foreground">Média geral</span>
+                  <span>{mediaGeral.toFixed(1)}h</span>
+                </div>
+                <div className="h-2.5 rounded-full bg-white/5 overflow-hidden">
+                  <div className="h-full rounded-full bg-white/30"
+                    style={{ width: `${mediaGeral > 0 ? 50 : 0}%` }} />
+                </div>
+              </div>
+            </div>
+
+            <div className={`mt-5 rounded-lg p-3 text-sm font-medium flex items-center gap-2 ${
+              acima ? "bg-emerald-500/10 text-emerald-300" : "bg-amber-500/10 text-amber-300"
+            }`}>
+              {acima ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+              {mediaGeral === 0
+                ? "Seja o primeiro a estudar neste período!"
+                : acima
+                  ? `Você está ${(diffHoras).toFixed(1)}h acima da média 🔥`
+                  : `Faltam ${Math.abs(diffHoras).toFixed(1)}h para atingir a média`}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Modal: Stop / salvar sessão */}
       <Dialog open={showStopModal} onOpenChange={setShowStopModal}>
-        <DialogContent className="max-w-md bg-[#1B1E2B] border-white/10 text-white">
+        <DialogContent className="bg-card border-border">
           <DialogHeader>
-            <DialogTitle>Finalizar sessão de estudos?</DialogTitle>
-            <DialogDescription className="text-white/60">
-              Você deseja finalizar esta sessão agora ou ajustar manualmente o tempo estudado antes de salvar?
+            <DialogTitle>Salvar sessão</DialogTitle>
+            <DialogDescription>
+              Tempo registrado: <span className="font-semibold text-foreground">{formatTimerDisplay(seconds)}</span>.
+              Você pode informar quantas questões resolveu (opcional).
             </DialogDescription>
           </DialogHeader>
-          <div className="rounded-lg bg-white/5 px-3 py-2 text-center my-4">
-            <p className="text-xs text-white/50">Tempo registrado</p>
-            <p className="font-mono text-2xl font-bold text-blue-400 tabular-nums">
-              {formatTimerDisplay(session ? computeElapsed(session) : 0)}
-            </p>
-          </div>
-          <DialogFooter className="gap-2 sm:gap-2">
-            <Button variant="ghost" onClick={() => setShowStopModal(false)} disabled={submitting}>
-              Cancelar
-            </Button>
-            <Button variant="outline" className="border-white/10 bg-transparent hover:bg-white/5" onClick={handleOpenRectify} disabled={submitting}>
-              Retificar tempo
-            </Button>
-            <Button
-              onClick={handleFinalizeNow}
-              disabled={submitting}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-            >
-              Finalizar agora
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={showRectifyModal} onOpenChange={setShowRectifyModal}>
-        <DialogContent className="max-w-md bg-[#1B1E2B] border-white/10 text-white">
-          <DialogHeader>
-            <DialogTitle>Retificar tempo estudado</DialogTitle>
-            <DialogDescription className="text-white/60">
-              Ajuste o tempo total da sessão. O tempo originalmente cronometrado será preservado para auditoria.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 my-2">
-            <UserMateriaAssuntoPicker
-              selectedDiscipline={selectedDiscipline}
-              setSelectedDiscipline={setSelectedDiscipline}
-              selectedAssunto={selectedAssunto}
-              setSelectedAssunto={setSelectedAssunto}
-            />
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs text-white/50 block mb-1">Horas</label>
-                <Input
-                  type="number"
-                  min={0}
-                  value={rectifyHours}
-                  onChange={e => setRectifyHours(Number(e.target.value))}
-                  className="bg-[#11131F] border-white/10 text-white"
-                />
-              </div>
-              <div>
-                <label className="text-xs text-white/50 block mb-1">Minutos</label>
-                <Input
-                  type="number"
-                  min={0}
-                  max={59}
-                  value={rectifyMinutes}
-                  onChange={e => setRectifyMinutes(Number(e.target.value))}
-                  className="bg-[#11131F] border-white/10 text-white"
-                />
-              </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-xs">Questões feitas</Label>
+              <Input type="number" min={0} value={qFeitas} onChange={(e) => setQFeitas(e.target.value)} placeholder="ex: 20" />
+            </div>
+            <div>
+              <Label className="text-xs">Acertos</Label>
+              <Input type="number" min={0} value={qAcertos} onChange={(e) => setQAcertos(e.target.value)} placeholder="ex: 15" />
             </div>
           </div>
-          <DialogFooter className="gap-2 sm:gap-2">
-            <Button variant="ghost" onClick={() => setShowRectifyModal(false)} disabled={submitting}>
-              Cancelar
-            </Button>
-            <Button
-              onClick={handleConfirmRectify}
-              disabled={submitting}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-            >
-              Salvar tempo ajustado
-            </Button>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowStopModal(false)}>Cancelar</Button>
+            <Button onClick={handleConfirmStop} disabled={submitting}
+              className="bg-gold text-gold-foreground hover:opacity-90">Salvar sessão</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
+      {/* Modal: Reset */}
       <Dialog open={showResetModal} onOpenChange={setShowResetModal}>
-        <DialogContent className="max-w-md bg-[#1B1E2B] border-white/10 text-white">
+        <DialogContent className="bg-card border-border">
           <DialogHeader>
             <DialogTitle>Zerar cronômetro?</DialogTitle>
-            <DialogDescription className="text-white/60">
-              Esta ação descarta a sessão atual sem salvar o tempo. Não é possível desfazer.
+            <DialogDescription>
+              A sessão atual será descartada e o tempo não contará para suas estatísticas.
             </DialogDescription>
           </DialogHeader>
-          <div className="rounded-lg bg-red-500/10 border border-red-500/20 px-3 py-2 text-center my-4">
-            <p className="text-xs text-red-400">Tempo que será descartado</p>
-            <p className="font-mono text-2xl font-bold text-red-400 tabular-nums">
-              {formatTimerDisplay(session ? computeElapsed(session) : 0)}
-            </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowResetModal(false)}>Cancelar</Button>
+            <Button variant="destructive" onClick={handleResetConfirm} disabled={submitting}>Zerar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal: Gerenciar matérias */}
+      <CronoMateriasManager open={showManager} onOpenChange={setShowManager} />
+
+      {/* Modal: Compartilhar */}
+      <Dialog open={showShare} onOpenChange={setShowShare}>
+        <DialogContent className="bg-card border-border max-w-md">
+          <DialogHeader>
+            <DialogTitle>Compartilhar progresso</DialogTitle>
+            <DialogDescription>
+              Vamos gerar uma imagem vertical (1080×1920) prontinha para os stories.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="rounded-lg overflow-hidden border border-border">
+            <div style={{ width: "100%", aspectRatio: "1080 / 1920", position: "relative", overflow: "hidden" }}>
+              <div style={{ position: "absolute", top: 0, left: 0, transform: "scale(0.3)", transformOrigin: "top left" }}>
+                <CronoShareCard
+                  ref={shareRef}
+                  nome={nomeAluno}
+                  periodoLabel={periodo}
+                  totalHoras={totalHoras}
+                  mediaGeral={mediaGeral}
+                  fatias={chartData.map(d => ({ nome: d.nome, cor: d.cor, horas: d.horas, pct: d.pct }))}
+                  questoesFeitas={questoesFeitas}
+                  questoesAcertos={questoesAcertos}
+                />
+              </div>
+            </div>
           </div>
-          <DialogFooter className="gap-2 sm:gap-2">
-            <Button variant="ghost" onClick={() => setShowResetModal(false)} disabled={submitting}>
-              Cancelar
-            </Button>
-            <Button
-              className="bg-red-600 hover:bg-red-700 text-white"
-              onClick={handleResetConfirm}
-              disabled={submitting}
-            >
-              <RotateCcw className="h-4 w-4 mr-2" /> Zerar agora
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowShare(false)}>Fechar</Button>
+            <Button onClick={handleShare} className="bg-gold text-gold-foreground hover:opacity-90">
+              <Share2 className="h-4 w-4 mr-2" /> Baixar imagem
             </Button>
           </DialogFooter>
         </DialogContent>
