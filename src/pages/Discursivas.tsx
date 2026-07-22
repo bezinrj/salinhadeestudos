@@ -16,7 +16,7 @@ import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SubjectTreeSelect } from "@/components/SubjectTreeSelect";
 
-const careers = ["Todas", "Delegado", "Magistratura Estadual", "Magistratura Federal", "Ministério Público", "Defensoria", "Procuradoria", "Analista", "EMERJ", "OAB 2ª Fase", "ENAM"] as const;
+const careers = ["Todas", "Delegado", "Magistratura Estadual", "Magistratura Federal", "Ministério Público", "Defensoria", "Procuradoria", "Analista", "EMERJ", "OAB 2ª Fase"] as const;
 const types = ["Todas", "Gratuitas", "Premium"] as const;
 const bancas = ["Todas", "CEBRASPE", "FGV", "VUNESP", "INÉDITA"] as const;
 const statusOptions = ["Todas", "Resolvidas", "Não resolvidas"] as const;
