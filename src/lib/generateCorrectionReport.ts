@@ -459,8 +459,8 @@ export async function generateCorrectionReport(data: ReportData) {
 </body>
 </html>`;
 
-  const w = window.open("", "_blank");
   if (w) {
+    w.document.open();
     w.document.write(html);
     w.document.close();
   }
