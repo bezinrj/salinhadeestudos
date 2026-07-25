@@ -406,7 +406,7 @@ export async function generateCorrectionReport(data: ReportData) {
     <div class="ideal-card" id="acc-ideal">
       <div class="ideal-header" onclick="toggleIdeal()">
         <span>💡 Resposta ideal</span>
-        <span class="accordion-arrow" id="ideal-arrow">▸</span>
+        <span class="accordion-arrow" id="ideal-arrow">▾</span>
       </div>
       <div class="ideal-body" id="ideal-body">
         <div class="ideal-text">${paragraphize(data.correction.idealAnswer)}</div>
