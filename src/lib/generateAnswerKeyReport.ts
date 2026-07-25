@@ -205,6 +205,14 @@ function renderBaremaTable(barema: any): string {
 }
 
 export async function generateAnswerKeyReport(data: AnswerKeyData) {
+  const w = window.open("", "_blank");
+  if (w) {
+    w.document.open();
+    w.document.write(
+      '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Gerando gabarito...</title></head><body style="font-family:system-ui;padding:40px;text-align:center;color:#475569;">Gerando gabarito…</body></html>'
+    );
+  }
+
   const logoBase64 = await toBase64(logoImg);
   const now = new Date();
   const dateStr = `${now.toLocaleDateString("pt-BR")} às ${now.toLocaleTimeString("pt-BR")}`;
