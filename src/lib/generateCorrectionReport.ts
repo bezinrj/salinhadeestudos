@@ -489,6 +489,7 @@ export async function generateCorrectionReport(data: ReportData) {
           image: { type: "jpeg", quality: 0.95 },
           html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff" },
           jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+          // @ts-ignore
           pagebreak: { mode: ["css", "legacy"] },
         })
         .save();
