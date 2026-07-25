@@ -217,8 +217,9 @@ export async function generateCorrectionReport(data: ReportData) {
   .ideal-card { border: 1px solid #6366f1; border-radius: 12px; overflow: hidden; }
   .ideal-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; cursor: pointer; background: #fff; }
   .ideal-header span { font-size: 14px; font-weight: 600; color: #6366f1; }
-  .ideal-body { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; padding: 0 16px; }
-  .ideal-body.open { max-height: 3000px; padding-bottom: 16px; }
+ .ideal-body { max-height: none; overflow: visible; padding: 0 16px 16px 16px; }
+ .ideal-body.closed { max-height: 0; overflow: hidden; padding-bottom: 0; }
+ @media print { .accordion-body, .ideal-body { max-height: none !important; overflow: visible !important; padding: 0 16px 16px 16px !important; } }
   .ideal-text { font-size: 13px; line-height: 1.8; color: #374151; }
   
   .answer-section { border: 0.5px solid #e2e8f0; border-radius: 12px; padding: 16px; background: #fff; }
