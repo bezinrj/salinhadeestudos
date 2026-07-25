@@ -453,8 +453,8 @@ export async function generateCorrectionReport(data: ReportData) {
   function toggleIdeal() {
     var body = document.getElementById('ideal-body');
     var arrow = document.getElementById('ideal-arrow');
-    body.classList.toggle('open');
-    arrow.textContent = body.classList.contains('open') ? '▾' : '▸';
+    body.classList.toggle('closed');
+    arrow.textContent = body.classList.contains('closed') ? '▸' : '▾';
   }
 </script>
 </body>
