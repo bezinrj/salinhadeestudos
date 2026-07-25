@@ -355,4 +355,36 @@ export async function generateAnswerKeyReport(data: AnswerKeyData) {
     w.document.write(html);
     w.document.close();
   }
+
+  try {
+    // @ts-ignore - biblioteca sem tipos
+    const html2pdf = (await import("html2pdf.js")).default;
+    const iframe = document.createElement("iframe");
+    iframe.style.cssText =
+      "position:fixed;left:-99999px;top:0;width:820px;height:1200px;border:0;";
+    document.body.appendChild(iframe);
+    await new Promise<void>((resolve) => {
+      iframe.onload = () => resolve();
+      iframe.srcdoc = html;
+    });
+    await new Promise((r) => setTimeout(r, 400));
+    const target = iframe.contentDocument?.querySelector(".container") as HTMLElement | null;
+    if (target) {
+      await html2pdf()
+        .from(target)
+        .set({
+          filename: `Gabarito-${qCode}.pdf`,
+          margin: 0,
+          image: { type: "jpeg", quality: 0.95 },
+          html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff" },
+          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+          // @ts-ignore
+          pagebreak: { mode: ["css", "legacy"] },
+        })
+        .save();
+    }
+    iframe.remove();
+  } catch (err) {
+    console.error("Falha ao gerar PDF automático:", err);
+  }
 }
