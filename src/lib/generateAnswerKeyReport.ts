@@ -350,8 +350,8 @@ export async function generateAnswerKeyReport(data: AnswerKeyData) {
 </body>
 </html>`;
 
-  const w = window.open("", "_blank");
   if (w) {
+    w.document.open();
     w.document.write(html);
     w.document.close();
   }
