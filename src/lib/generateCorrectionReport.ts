@@ -67,6 +67,16 @@ function toBase64(url: string): Promise<string> {
 }
 
 export async function generateCorrectionReport(data: ReportData) {
+  // Abrir a janela ANTES de qualquer await — caso contrário o navegador
+  // bloqueia o popup (fora do gesto do usuário) e o PDF sai em branco.
+  const w = window.open("", "_blank");
+  if (w) {
+    w.document.open();
+    w.document.write(
+      '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Gerando relatório...</title></head><body style="font-family:system-ui;padding:40px;text-align:center;color:#475569;">Gerando relatório…</body></html>'
+    );
+  }
+
   const logoBase64 = await toBase64(logoImg);
   const now = new Date();
   const dateStr = `${now.toLocaleDateString("pt-BR")} às ${now.toLocaleTimeString("pt-BR")}`;
