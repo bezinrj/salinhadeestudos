@@ -2779,6 +2779,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_list_question_answer_keys: {
+        Args: never
+        Returns: {
+          barema: Json
+          id: string
+          ideal_answer: string
+          mirror_text: string
+        }[]
+      }
       claim_badge: { Args: { _badge_id: string }; Returns: boolean }
       delete_email: {
         Args: { message_id: number; queue_name: string }
@@ -2806,6 +2815,14 @@ export type Database = {
         }[]
       }
       get_my_phone: { Args: never; Returns: string }
+      get_question_answer_key: {
+        Args: { _question_id: string }
+        Returns: {
+          barema: Json
+          ideal_answer: string
+          mirror_text: string
+        }[]
+      }
       get_turma_ranking_geral: {
         Args: { p_album_id: string }
         Returns: {
