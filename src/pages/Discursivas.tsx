@@ -42,7 +42,7 @@ export default function Discursivas() {
       const [questionsRes, participantsRes] = await Promise.all([
         supabase
           .from("weekly_questions")
-          .select("*")
+          .select("id, public_id, title, career, discipline, subject, disciplines, subjects, statement, difficulty, banca, year, is_active, is_weekly, is_premium, participants, created_at, created_by, deadline, album_id")
           .is("album_id", null)
           .order("created_at", { ascending: false }),
         supabase
@@ -75,8 +75,8 @@ export default function Discursivas() {
         banca: q.banca || null,
         year: q.year || null,
         deadline: q.deadline,
-        barema: q.barema,
       }));
+
     },
   });
 
