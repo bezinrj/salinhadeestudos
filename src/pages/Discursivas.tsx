@@ -75,8 +75,8 @@ export default function Discursivas() {
         banca: q.banca || null,
         year: q.year || null,
         deadline: q.deadline,
-        barema: q.barema,
       }));
+
     },
   });
 
