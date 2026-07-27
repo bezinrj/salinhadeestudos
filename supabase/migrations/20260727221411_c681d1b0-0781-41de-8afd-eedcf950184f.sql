@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS vm_com_select_all ON public.vm_comentarios;
