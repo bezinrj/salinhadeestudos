@@ -51,7 +51,7 @@ export default function TurmaQuestaoDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("weekly_questions")
-        .select("*")
+        .select("id, public_id, title, career, discipline, subject, disciplines, subjects, statement, difficulty, banca, year, is_active, is_weekly, is_premium, participants, created_at, created_by, deadline, album_id")
         .eq("id", questionId!)
         .single();
       if (error) throw error;

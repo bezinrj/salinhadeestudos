@@ -45,10 +45,10 @@ export default function QuestionDetail() {
       const isQCode = id!.match(/^Q-(\d+)$/i);
       let data: any, error: any;
       if (isQCode) {
-        const res = await (supabase.from("weekly_questions") as any).select("*").eq("public_id", parseInt(isQCode[1])).single();
+        const res = await (supabase.from("weekly_questions") as any).select("id, public_id, title, career, discipline, subject, disciplines, subjects, statement, difficulty, banca, year, is_active, is_weekly, is_premium, participants, created_at, created_by, deadline, album_id").eq("public_id", parseInt(isQCode[1])).single();
         data = res.data; error = res.error;
       } else {
-        const res = await supabase.from("weekly_questions").select("*").eq("id", id!).single();
+        const res = await supabase.from("weekly_questions").select("id, public_id, title, career, discipline, subject, disciplines, subjects, statement, difficulty, banca, year, is_active, is_weekly, is_premium, participants, created_at, created_by, deadline, album_id").eq("id", id!).single();
         data = res.data; error = res.error;
       }
       if (error) throw error;

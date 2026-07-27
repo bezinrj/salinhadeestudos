@@ -30,7 +30,7 @@ export default function WeeklyChallenge() {
     queryFn: async () => {
       const { data } = await supabase
         .from("weekly_questions")
-        .select("*")
+        .select("id, public_id, title, career, discipline, subject, disciplines, subjects, statement, difficulty, banca, year, is_active, is_weekly, is_premium, participants, created_at, created_by, deadline, album_id")
         .eq("is_active", true)
         .eq("is_weekly", true)
         .gt("deadline", new Date().toISOString())
