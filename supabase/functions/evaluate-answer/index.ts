@@ -33,7 +33,8 @@ serve(async (req) => {
     }
     const userId = userData.user.id;
 
-    const { answer, baremaText, gabarito, statement, imageBase64, mimeType, directCorrection, questionId } = await req.json();
+    const body = await req.json();
+    const { answer, statement, imageBase64, mimeType, directCorrection, questionId } = body;
 
     const hasImage = !!imageBase64 && directCorrection;
 
@@ -44,12 +45,6 @@ serve(async (req) => {
       });
     }
 
-    if (!baremaText && !gabarito) {
-      return new Response(JSON.stringify({ error: "baremaText or gabarito is required" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
 
     // Server-side subscription / free-tier paywall enforcement
     const supabaseAdmin = createClient(
