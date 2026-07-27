@@ -1304,6 +1304,7 @@ function WeeklyQuestionsTab() {
               <SelectItem value="Procuradoria">Procuradoria</SelectItem>
               <SelectItem value="Analista">Analista</SelectItem>
               <SelectItem value="EMERJ">EMERJ</SelectItem>
+              <SelectItem value="OAB 2ª Fase">OAB 2ª Fase</SelectItem>
             </SelectContent>
           </Select>
           <div className="grid grid-cols-4 gap-3">
@@ -1541,6 +1542,7 @@ function WeeklyQuestionsTab() {
                   <SelectItem value="Procuradoria">Procuradoria</SelectItem>
                   <SelectItem value="Analista">Analista</SelectItem>
                   <SelectItem value="EMERJ">EMERJ</SelectItem>
+                  <SelectItem value="OAB 2ª Fase">OAB 2ª Fase</SelectItem>
                 </SelectContent>
               </Select>
               <div className="grid grid-cols-4 gap-3">
