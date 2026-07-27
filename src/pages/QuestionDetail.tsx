@@ -186,11 +186,10 @@ export default function QuestionDetail() {
 
     try {
       const body: any = {
-        baremaText: question.mirrorText || undefined,
-        gabarito: question.idealAnswer || undefined,
         statement: question.statement || undefined,
         questionId: question.id,
       };
+
 
       if (isDirect) {
         body.imageBase64 = directImageBase64;
