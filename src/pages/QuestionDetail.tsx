@@ -136,14 +136,26 @@ export default function QuestionDetail() {
   const canAnswer = !isPremium || subscribed || freeCanAnswer;
   const isLocked = question.isWeekly && lockedScore !== null;
   const isWeeklyActive = !!question.isWeekly && !!question.deadline && new Date(question.deadline) > new Date();
-  const canDownloadAnswerKey = !isWeeklyActive && (!!question.idealAnswer || !!question.mirrorText || !!question.barema);
+  const canDownloadAnswerKey = !isWeeklyActive;
   const shouldShowUpgrade = !subscribed && isPremium && !question.isWeekly && !freeCanAnswer && !alreadyUsedThis;
 
-  const handleDownloadAnswerKey = () => {
+  const handleDownloadAnswerKey = async () => {
     if (isWeeklyActive) {
       toast({
         title: "Gabarito indisponível",
         description: "O gabarito desta questão ainda não está disponível, pois ela está ativa em Questões da Semana.",
+        variant: "destructive",
+      });
+      return;
+    }
+    const { data: keyRows, error: keyError } = await (supabase as any).rpc("get_question_answer_key", {
+      _question_id: question.id,
+    });
+    const key = Array.isArray(keyRows) ? keyRows[0] : keyRows;
+    if (keyError || !key) {
+      toast({
+        title: "Gabarito indisponível",
+        description: "Não foi possível carregar o gabarito desta questão.",
         variant: "destructive",
       });
       return;
@@ -157,16 +169,16 @@ export default function QuestionDetail() {
       banca: (question as any).banca,
       year: (question as any).year,
       statement: question.statement,
-      barema: question.barema,
-      mirrorText: question.mirrorText,
-      idealAnswer: question.idealAnswer,
+      barema: key.barema,
+      mirrorText: key.mirror_text,
+      idealAnswer: key.ideal_answer,
     });
   };
 
   const handleSubmit = async (directImageBase64?: string, directMimeType?: string) => {
     const isDirect = !!directImageBase64;
     if (!isDirect && answer.trim().length < 50) return;
-    if (!question.mirrorText && !question.idealAnswer) return;
+
     
     setIsEvaluating(true);
     const currentSubmissionType = isDirect ? "correcao_direta" : submissionType;
