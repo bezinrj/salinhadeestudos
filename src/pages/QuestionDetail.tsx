@@ -263,11 +263,9 @@ export default function QuestionDetail() {
         toast({ title: "Resposta registrada!", description: "Sua nota foi salva." });
       }
 
-      const newTotal = (currentProfile?.total_essays ?? 0) + 1;
-      await supabase
-        .from("profiles")
-        .update({ total_essays: newTotal })
-        .eq("id", user.id);
+      const { data: refreshed } = await (supabase as any).rpc("refresh_my_total_essays");
+      const newTotal = (refreshed as number | null) ?? ((currentProfile?.total_essays ?? 0) + 1);
+
 
       await checkAndAward({
         totalEssays: newTotal,
