@@ -33,13 +33,16 @@ export default function ModerationRequestsTab() {
       const questionIds = [...new Set(data.map((r: any) => r.question_id))];
       const allUserIds = [...new Set([...requesterIds, ...deciderIds])];
 
-      const [profilesRes, questionsRes] = await Promise.all([
+      const [profilesRes, questionsRes, keysRes] = await Promise.all([
         supabase.from("profiles").select("id, username, name, avatar_url").in("id", allUserIds),
-        supabase.from("weekly_questions").select("id, title, statement, career, discipline, subject, public_id, banca, year, is_weekly, is_premium, mirror_text, ideal_answer").in("id", questionIds),
+        supabase.from("weekly_questions").select("id, title, statement, career, discipline, subject, public_id, banca, year, is_weekly, is_premium").in("id", questionIds),
+        (supabase as any).rpc("admin_list_question_answer_keys"),
       ]);
 
+      const keyMap = new Map(((keysRes?.data as any[]) || []).map((k: any) => [k.id, k]));
       const profileMap = new Map((profilesRes.data || []).map((p: any) => [p.id, p]));
-      const questionMap = new Map((questionsRes.data || []).map((q: any) => [q.id, q]));
+      const questionMap = new Map((questionsRes.data || []).map((q: any) => [q.id, { ...q, mirror_text: keyMap.get(q.id)?.mirror_text ?? null, ideal_answer: keyMap.get(q.id)?.ideal_answer ?? null }]));
+
 
       return data.map((r: any) => ({
         ...r,
