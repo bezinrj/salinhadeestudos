@@ -265,7 +265,7 @@ export default function TurmaQuestaoDetail() {
   if (isLoading) return <div className="p-8 text-center text-muted-foreground">Carregando...</div>;
   if (!question) return <div className="p-8 text-center text-muted-foreground">Questão não encontrada.</div>;
 
-  const canDownloadAnswerKey = !!(question.idealAnswer || question.mirrorText || question.barema);
+  const canDownloadAnswerKey = true;
 
   return (
     <div className="container max-w-4xl mx-auto px-4 py-6 space-y-6">
