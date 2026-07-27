@@ -63,9 +63,8 @@ export default function TurmaQuestaoDetail() {
         discipline: data.discipline,
         statement: data.statement,
         difficulty: data.difficulty,
-        barema: data.barema as unknown as BaremaItem[] | undefined,
-        mirrorText: (data as any).mirror_text as string | null,
-        idealAnswer: (data as any).ideal_answer as string | null,
+        // Gabarito/espelho/barema são obtidos sob demanda via RPC protegida.
+
         subject: (data as any).subject as string | null,
         banca: (data as any).banca as string | null,
         year: (data as any).year as number | null,
