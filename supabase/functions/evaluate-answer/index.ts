@@ -147,7 +147,7 @@ Ao corrigir a partir de imagem manuscrita:
 ## ENTRADAS FIXAS (cadastradas pelo sistema — NÃO modifique, NÃO reorganize, NÃO converta):
 
 ### ENUNCIADO DA QUESTÃO:
-${statement || "(não informado)"}
+${questionStatement || "(não informado)"}
 
 ### BAREMA OFICIAL (critérios de correção — espelho oficial):
 ${baremaText || "(não informado)"}
