@@ -66,17 +66,33 @@ serve(async (req) => {
 
     let isPremiumQuestion = false;
     let isWeeklyQuestion = false;
+    // The answer key is never accepted from the client — it is loaded server-side
+    // so students cannot read (or tamper with) the gabarito/barema.
+    let baremaText: string | undefined;
+    let gabarito: string | undefined;
+    let questionStatement: string | undefined = statement;
     if (questionId) {
       const { data: q } = await supabaseAdmin
         .from("weekly_questions")
-        .select("is_premium, is_weekly")
+        .select("is_premium, is_weekly, mirror_text, ideal_answer, statement")
         .eq("id", questionId)
         .maybeSingle();
       if (q) {
         isPremiumQuestion = !!q.is_premium || !!q.is_weekly;
         isWeeklyQuestion = !!q.is_weekly;
+        baremaText = q.mirror_text || undefined;
+        gabarito = q.ideal_answer || undefined;
+        questionStatement = q.statement || statement;
       }
     }
+
+    if (!baremaText && !gabarito) {
+      return new Response(JSON.stringify({ error: "questionId válido é obrigatório para a correção" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
 
     const FREE_MONTHLY_LIMIT = 3;
     let shouldLogFreeUsage = false;
