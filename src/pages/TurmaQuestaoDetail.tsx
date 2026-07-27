@@ -211,8 +211,9 @@ export default function TurmaQuestaoDetail() {
           .eq("id", user.id)
           .single();
 
-        const newTotal = (profile?.total_essays ?? 0) + 1;
-        await supabase.from("profiles").update({ total_essays: newTotal }).eq("id", user.id);
+        const { data: refreshed } = await (supabase as any).rpc("refresh_my_total_essays");
+        const newTotal = (refreshed as number | null) ?? ((profile?.total_essays ?? 0) + 1);
+
         await checkAndAward({
           totalEssays: newTotal,
           lastScore: result.grade,
