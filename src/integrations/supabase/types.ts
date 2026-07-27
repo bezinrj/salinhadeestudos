@@ -2888,6 +2888,7 @@ export type Database = {
         Args: { p_album_id: string }
         Returns: undefined
       }
+      refresh_my_total_essays: { Args: never; Returns: number }
       sync_expired_subscriptions: { Args: never; Returns: undefined }
     }
     Enums: {
