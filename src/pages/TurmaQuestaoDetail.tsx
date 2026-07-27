@@ -109,6 +109,14 @@ export default function TurmaQuestaoDetail() {
 
   const handleDownloadAnswerKey = async () => {
     if (!question) return;
+    const { data: keyRows, error: keyError } = await (supabase as any).rpc("get_question_answer_key", {
+      _question_id: question.id,
+    });
+    const key = Array.isArray(keyRows) ? keyRows[0] : keyRows;
+    if (keyError || !key) {
+      toast({ title: "Gabarito indisponível", description: "Não foi possível carregar o gabarito desta questão.", variant: "destructive" });
+      return;
+    }
     if (user && !jabaixouGabarito) {
       await (supabase as any).from("turmas_gabarito_downloads").insert({
         album_id: albumId,
@@ -125,26 +133,25 @@ export default function TurmaQuestaoDetail() {
       banca: question.banca,
       year: question.year,
       statement: question.statement,
-      barema: question.barema,
-      mirrorText: question.mirrorText,
-      idealAnswer: question.idealAnswer,
+      barema: key.barema,
+      mirrorText: key.mirror_text,
+      idealAnswer: key.ideal_answer,
     });
   };
 
   const handleSubmit = async (directImageBase64?: string, directMimeType?: string) => {
     const isDirect = !!directImageBase64;
     if (!isDirect && answer.trim().length < 50) return;
-    if (!question?.mirrorText && !question?.idealAnswer) return;
 
     setIsEvaluating(true);
     const currentSubmissionType = isDirect ? "correcao_direta" : submissionType;
 
     try {
       const body: any = {
-        baremaText: question.mirrorText || undefined,
-        gabarito: question.idealAnswer || undefined,
         statement: question.statement || undefined,
+        questionId: question.id,
       };
+
       if (isDirect) {
         body.imageBase64 = directImageBase64;
         body.mimeType = directMimeType;
