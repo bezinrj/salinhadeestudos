@@ -64,9 +64,9 @@ export default function QuestionDetail() {
         isWeekly: (data as any).is_weekly,
         isPremium: (data as any).is_premium || (data as any).is_weekly,
         deadline: data.deadline,
-        barema: data.barema as unknown as BaremaItem[] | undefined,
-        mirrorText: (data as any).mirror_text as string | null,
-        idealAnswer: (data as any).ideal_answer as string | null,
+        // Gabarito/espelho/barema não são mais enviados ao cliente.
+        // São obtidos sob demanda via RPC protegida `get_question_answer_key`.
+
         subject: (data as any).subject as string | null,
         banca: (data as any).banca as string | null,
         year: (data as any).year as number | null,
