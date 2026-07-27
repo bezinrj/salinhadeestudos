@@ -1082,10 +1082,19 @@ function WeeklyQuestionsTab() {
   const { data: questions } = useQuery({
     queryKey: ["admin-weekly-questions"],
     queryFn: async () => {
-      const { data } = await supabase.from("weekly_questions").select("id, public_id, title, career, discipline, subject, disciplines, subjects, statement, mirror_text, ideal_answer, banca, year, is_active, is_weekly, is_premium, created_at, deadline").order("created_at", { ascending: false });
-      return data || [];
+      const [{ data }, keysRes] = await Promise.all([
+        supabase.from("weekly_questions").select("id, public_id, title, career, discipline, subject, disciplines, subjects, statement, banca, year, is_active, is_weekly, is_premium, created_at, deadline").order("created_at", { ascending: false }),
+        (supabase as any).rpc("admin_list_question_answer_keys"),
+      ]);
+      const keyMap = new Map(((keysRes?.data as any[]) || []).map((k: any) => [k.id, k]));
+      return (data || []).map((q: any) => ({
+        ...q,
+        mirror_text: keyMap.get(q.id)?.mirror_text ?? null,
+        ideal_answer: keyMap.get(q.id)?.ideal_answer ?? null,
+      }));
     },
   });
+
 
   const { data: waitlistCount } = useQuery({
     queryKey: ["admin-waitlist-count"],
