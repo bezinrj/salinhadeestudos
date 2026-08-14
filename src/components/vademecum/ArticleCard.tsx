@@ -164,12 +164,11 @@ export function ArticleCard(props: Props) {
 
   const normalize = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
   const numNorm = normalize(artigo.numero);
-  const isTitle = numNorm.startsWith("TITULO") || 
-                  numNorm === "PREAMBULO" || 
-                  numNorm.startsWith("LIVRO") || 
-                  numNorm.startsWith("CAPITULO") || 
-                  numNorm.startsWith("SECAO") || 
-                  numNorm.startsWith("SUBSECAO");
+  const rotNorm = normalize(artigo.rotulo || "");
+  const ESTRUTURA = /^(PARTE|LIVRO|TITULO|CAPITULO|SECAO|SUBSECAO)\b/;
+  const isTitle = numNorm === "PREAMBULO" ||
+                  ESTRUTURA.test(numNorm.replace(/_/g, " ")) ||
+                  ESTRUTURA.test(rotNorm);
 
   if (isTitle) {
     return (
