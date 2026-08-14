@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { fetchAllByIds } from "@/lib/fetchAll";
 import type {
   VmComentario,
   VmMarcacao,
@@ -10,6 +11,7 @@ import type {
 } from "@/types/vademecum";
 
 const sb = supabase as any;
+
 
 // ============ Comentários ============
 export function useVmComentarios(artigoId: string | undefined) {
