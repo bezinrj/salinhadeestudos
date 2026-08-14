@@ -101,18 +101,23 @@ export function useVmProgresso(leiId: string | undefined) {
     enabled: !!user?.id && !!leiId,
     queryFn: async () => {
       // get all artigos of this lei first
-      const { data: artigos } = await sb.from("vm_artigos").select("id").eq("lei_id", leiId);
-      const ids = (artigos ?? []).map((a: any) => a.id);
+      const artigos = await fetchAllPaged<any>((from, to) =>
+        sb.from("vm_artigos").select("id").eq("lei_id", leiId).range(from, to)
+      );
+      const ids = artigos.map((a: any) => a.id);
       if (ids.length === 0) return new Map<string, VmProgresso>();
-      const { data, error } = await sb
-        .from("vm_progresso")
-        .select("artigo_id,lido,marcado")
-        .eq("user_id", user!.id)
-        .in("artigo_id", ids);
-      if (error) throw error;
+      const data = await fetchAllByIds<any>(ids, (chunk, from, to) =>
+        sb
+          .from("vm_progresso")
+          .select("artigo_id,lido,marcado")
+          .eq("user_id", user!.id)
+          .in("artigo_id", chunk)
+          .range(from, to)
+      );
       const map = new Map<string, VmProgresso>();
-      (data ?? []).forEach((p: any) => map.set(p.artigo_id, p));
+      data.forEach((p: any) => map.set(p.artigo_id, p));
       return map;
+
     },
   });
 
