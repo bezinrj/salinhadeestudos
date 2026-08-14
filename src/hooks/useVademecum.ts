@@ -29,44 +29,56 @@ export function useVmLei(leiId: string | undefined) {
     enabled: !!leiId,
 
     queryFn: async () => {
-      const [leiRes, artigosRes] = await Promise.all([
+      const [leiRes, artigos] = await Promise.all([
         sb.from("vm_leis").select("*").eq("id", leiId).single(),
-        sb.from("vm_artigos").select("*").eq("lei_id", leiId).order("ordem", { ascending: true }),
+        fetchAllPaged<VmArtigo>((from, to) =>
+          sb.from("vm_artigos").select("*").eq("lei_id", leiId).order("ordem", { ascending: true }).range(from, to)
+        ),
       ]);
       if (leiRes.error) throw leiRes.error;
-      if (artigosRes.error) throw artigosRes.error;
 
-      const artigos = (artigosRes.data ?? []) as VmArtigo[];
       const artigoIds = artigos.map((a) => a.id);
 
       if (artigoIds.length === 0) {
         return { lei: leiRes.data as VmLei, artigos: [] as VmArtigo[] };
       }
 
-      const [paragrafosRes, incidenciasRes, remissoesRes] = await Promise.all([
-        sb.from("vm_paragrafos").select("*").in("artigo_id", artigoIds).order("ordem", { ascending: true }),
-        sb.from("vm_incidencias").select("*").in("artigo_id", artigoIds),
+      const [paragrafos, incidencias, remissoes] = await Promise.all([
+        fetchAllByIds<any>(artigoIds, (chunk, from, to) =>
+          sb.from("vm_paragrafos").select("*").in("artigo_id", chunk).order("ordem", { ascending: true }).range(from, to)
+        ),
+        fetchAllByIds<any>(artigoIds, (chunk, from, to) =>
+          sb.from("vm_incidencias").select("*").in("artigo_id", chunk).range(from, to)
+        ),
         user?.id
-          ? sb.from("vm_remissoes").select("*, artigo_destino:vm_artigos!vm_remissoes_artigo_destino_id_fkey(id,numero,rotulo,lei_id)").in("artigo_origem_id", artigoIds).eq("user_id", user.id)
-          : Promise.resolve({ data: [] }),
+          ? fetchAllByIds<any>(artigoIds, (chunk, from, to) =>
+              sb
+                .from("vm_remissoes")
+                .select("*, artigo_destino:vm_artigos!vm_remissoes_artigo_destino_id_fkey(id,numero,rotulo,lei_id)")
+                .in("artigo_origem_id", chunk)
+                .eq("user_id", user.id)
+                .range(from, to)
+            )
+          : Promise.resolve([] as any[]),
       ]);
 
 
       const paragrafosByArtigo = new Map<string, any[]>();
-      (paragrafosRes.data ?? []).forEach((p: any) => {
+      paragrafos.forEach((p: any) => {
         if (!paragrafosByArtigo.has(p.artigo_id)) paragrafosByArtigo.set(p.artigo_id, []);
         paragrafosByArtigo.get(p.artigo_id)!.push(p);
       });
       const incidenciasByArtigo = new Map<string, any[]>();
-      (incidenciasRes.data ?? []).forEach((i: any) => {
+      incidencias.forEach((i: any) => {
         if (!incidenciasByArtigo.has(i.artigo_id)) incidenciasByArtigo.set(i.artigo_id, []);
         incidenciasByArtigo.get(i.artigo_id)!.push(i);
       });
       const remissoesByArtigo = new Map<string, any[]>();
-      (remissoesRes.data ?? []).forEach((r: any) => {
+      remissoes.forEach((r: any) => {
         if (!remissoesByArtigo.has(r.artigo_origem_id)) remissoesByArtigo.set(r.artigo_origem_id, []);
         remissoesByArtigo.get(r.artigo_origem_id)!.push(r);
       });
+
 
       const enriched: VmArtigo[] = artigos.map((a) => ({
         ...a,
