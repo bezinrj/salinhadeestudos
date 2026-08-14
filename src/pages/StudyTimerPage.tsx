@@ -135,6 +135,32 @@ export default function StudyTimerPage() {
     return arr.map(a => ({ ...a, pct: (a.seconds / total) * 100 }));
   }, [filteredSessions, materiaMap]);
 
+  const assuntoData = useMemo(() => {
+    const map = new Map<string, { seconds: number; cor: string; materia: string }>();
+    filteredSessions.forEach(s => {
+      const mat = s.materia_id ? materiaMap.get(s.materia_id) : undefined;
+      const materiaNome = mat?.nome || s.discipline || "Outros";
+      const nome = s.assunto || "Sem assunto";
+      const key = `${materiaNome} • ${nome}`;
+      const cor = mat?.cor || "#6B7280";
+      const cur = map.get(key) || { seconds: 0, cor, materia: materiaNome };
+      cur.seconds += s.total_seconds || 0;
+      cur.cor = cor;
+      map.set(key, cur);
+    });
+    const arr = Array.from(map.entries()).map(([nome, v]) => ({
+      nome,
+      cor: v.cor,
+      seconds: v.seconds,
+      horas: v.seconds / 3600,
+    }));
+    arr.sort((a, b) => b.seconds - a.seconds);
+    const total = arr.reduce((a, b) => a + b.seconds, 0) || 1;
+    return arr.map(a => ({ ...a, pct: (a.seconds / total) * 100 }));
+  }, [filteredSessions, materiaMap]);
+
+  const displayData = agrupamento === "assunto" ? assuntoData : chartData;
+
   const totalSeconds = chartData.reduce((a, b) => a + b.seconds, 0);
   const totalHoras = totalSeconds / 3600;
 
