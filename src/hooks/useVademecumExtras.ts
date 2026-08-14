@@ -281,13 +281,15 @@ export function useVmNotasPrivadas(artigoIds: string[]) {
     queryKey: ["vm-notas-priv", user?.id, ids],
     enabled: !!user?.id && artigoIds.length > 0,
     queryFn: async () => {
-      const { data, error } = await sb
-        .from("vm_notas_privadas")
-        .select("*")
-        .eq("user_id", user!.id)
-        .in("artigo_id", artigoIds);
-      if (error) throw error;
-      return (data ?? []) as VmNotaPrivada[];
+      return await fetchAllByIds<VmNotaPrivada>(artigoIds, (chunk, from, to) =>
+        sb
+          .from("vm_notas_privadas")
+          .select("*")
+          .eq("user_id", user!.id)
+          .in("artigo_id", chunk)
+          .range(from, to)
+      );
+
     },
   });
 
