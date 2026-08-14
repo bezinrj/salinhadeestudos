@@ -1,39 +1,41 @@
-## Objetivo
+# Incluir novas leis no Vade Mecum
 
-A UI do menu **Cadernos** (`/cadernos`) e os hooks (`useCadernoPastas`, `useCadernos`, `useCadernoNotas`) já existem e apontam para 3 tabelas que ainda não existem no banco:
+Sim — basta me enviar os links. O projeto já tem um pipeline pronto de importação de leis, o mesmo usado na CF/88 e no ADCT.
 
-- `vm_caderno_pastas`
-- `vm_cadernos`
-- `vm_caderno_notas`
+## Como funciona hoje
 
-A única coisa que falta é criar essas tabelas com RLS e GRANTs corretos. Nenhuma mudança de código é necessária — o frontend já está pronto.
+```text
+Link (Planalto)  ->  texto bruto (scripts/leis/<sigla>.txt)
+                 ->  parser (scripts/parse-lei.ts)  ->  scripts/leis/<sigla>.ts
+                 ->  importador (scripts/importar-lei.ts)
+                 ->  banco: vm_leis / vm_artigos / vm_paragrafos
+```
 
-## Estrutura das tabelas
+O parser reconhece Preâmbulo, Título, Capítulo, Seção, Subseção, Art., §, Parágrafo único, incisos (I, II, III) e alíneas (a, b, c), preservando a hierarquia e a ordem.
 
-**`vm_caderno_pastas`** (pasta organizadora)
-- `id`, `user_id` (FK `auth.users`), `nome` (text)
-- `criado_em`, `atualizado_em`
+## O que você precisa mandar
 
-**`vm_cadernos`** (caderno, opcionalmente dentro de uma pasta)
-- `id`, `user_id`, `pasta_id` (FK → `vm_caderno_pastas`, nullable, `ON DELETE SET NULL` para que excluir a pasta não apague os cadernos — bate com o aviso da UI "Os cadernos ficarão sem pasta")
-- `titulo` (text)
-- `criado_em`, `atualizado_em`
+Só o link (de preferência do Planalto, versão "texto compilado"). Para cada lei, se quiser, informe também:
 
-**`vm_caderno_notas`** (anotação dentro de um caderno)
-- `id`, `caderno_id` (FK → `vm_cadernos`, `ON DELETE CASCADE`), `user_id`
-- `artigo_id` (FK → `vm_artigos`, nullable, `ON DELETE SET NULL`) — usado quando a anotação vem do Vade Mecum
-- `conteudo_html` (text)
-- `tags` (text[]) — valores usados pela UI: `Legislação`, `Questões`, `Flashcards`, `Julgados`, `Livre`
-- `criado_em`, `atualizado_em`
+- Sigla curta usada no app (ex.: CF88, CP, CPP, CC, CLT)
+- Nome completo
+- Categoria (ex.: Constitucional, Penal, Civil, Trabalhista) — usada no agrupamento da barra lateral
+- Se deve entrar publicada ou como rascunho
 
-## Segurança
+Se não informar, eu preencho a partir do próprio texto oficial.
 
-- `ENABLE ROW LEVEL SECURITY` nas 3 tabelas.
-- Políticas: cada usuário só lê/escreve/atualiza/deleta linhas onde `user_id = auth.uid()`.
-- GRANTs: `SELECT, INSERT, UPDATE, DELETE` para `authenticated`; `ALL` para `service_role`. Sem grant para `anon` (conteúdo privado).
-- Trigger `update_updated_at_column` para manter `atualizado_em` nas 3 tabelas.
-- Índices em `user_id`, `pasta_id` (cadernos) e `caderno_id` (notas) para listagens rápidas.
+## O que eu faço
 
-## Entrega
+1. Busco o conteúdo do link e salvo o texto bruto.
+2. Rodo o parser e reviso o resultado (numeração, artigos com letra como 29-A, revogados, incisos aninhados).
+3. Confiro amostras de artigos contra o texto oficial.
+4. Importo para o banco com a sigla/categoria/ordem corretas.
+5. Verifico no Vade Mecum: navegação por artigos, grifos, notas e remissões funcionando na lei nova.
 
-Uma única migração criando as 3 tabelas, índices, RLS, políticas, GRANTs e triggers de `atualizado_em`. Após aprovação, o menu Cadernos passa a funcionar sem mais alterações.
+## Observações
+
+- Leis muito longas (ex.: CPC, CC) são importadas em lote; a ordenação de artigos é mantida.
+- Textos com muitas notas de rodapé/alterações ("Redação dada pela Lei...") são limpos para não poluir o artigo.
+- Se algum link não estiver acessível, peço o texto colado ou o PDF.
+
+Pode mandar os links em lista, um por linha.
