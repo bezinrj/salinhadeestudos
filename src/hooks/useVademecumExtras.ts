@@ -234,13 +234,15 @@ export function useVmNotasProfessor(artigoIds: string[]) {
     queryKey: ["vm-notas-prof", ids],
     enabled: artigoIds.length > 0,
     queryFn: async () => {
-      const { data, error } = await sb
-        .from("vm_notas_professor")
-        .select("*")
-        .in("artigo_id", artigoIds)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return (data ?? []) as VmNotaProfessor[];
+      return await fetchAllByIds<VmNotaProfessor>(artigoIds, (chunk, from, to) =>
+        sb
+          .from("vm_notas_professor")
+          .select("*")
+          .in("artigo_id", chunk)
+          .order("created_at", { ascending: false })
+          .range(from, to)
+      );
+
     },
   });
 
