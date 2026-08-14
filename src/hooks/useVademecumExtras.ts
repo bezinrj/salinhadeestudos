@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { fetchAllByIds } from "@/lib/fetchAll";
 import type {
   VmComentario,
   VmMarcacao,
@@ -10,6 +11,7 @@ import type {
 } from "@/types/vademecum";
 
 const sb = supabase as any;
+
 
 // ============ Comentários ============
 export function useVmComentarios(artigoId: string | undefined) {
@@ -88,15 +90,18 @@ export function useVmMarcacoes(artigoIds: string[]) {
     queryKey: ["vm-marcacoes", user?.id, ids],
     enabled: !!user?.id && artigoIds.length > 0,
     queryFn: async () => {
-      const { data, error } = await sb
-        .from("vm_marcacoes")
-        .select("*")
-        .eq("user_id", user!.id)
-        .in("artigo_id", artigoIds);
-      if (error) throw error;
-      return (data ?? []) as VmMarcacao[];
+      const data = await fetchAllByIds<VmMarcacao>(artigoIds, (chunk, from, to) =>
+        sb
+          .from("vm_marcacoes")
+          .select("*")
+          .eq("user_id", user!.id)
+          .in("artigo_id", chunk)
+          .range(from, to)
+      );
+      return data;
     },
   });
+
 
   const byBlock = new Map<string, VmMarcacao[]>();
   (query.data ?? []).forEach((m) => {
@@ -229,13 +234,15 @@ export function useVmNotasProfessor(artigoIds: string[]) {
     queryKey: ["vm-notas-prof", ids],
     enabled: artigoIds.length > 0,
     queryFn: async () => {
-      const { data, error } = await sb
-        .from("vm_notas_professor")
-        .select("*")
-        .in("artigo_id", artigoIds)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return (data ?? []) as VmNotaProfessor[];
+      return await fetchAllByIds<VmNotaProfessor>(artigoIds, (chunk, from, to) =>
+        sb
+          .from("vm_notas_professor")
+          .select("*")
+          .in("artigo_id", chunk)
+          .order("created_at", { ascending: false })
+          .range(from, to)
+      );
+
     },
   });
 
@@ -274,15 +281,18 @@ export function useVmNotasPrivadas(artigoIds: string[]) {
     queryKey: ["vm-notas-priv", user?.id, ids],
     enabled: !!user?.id && artigoIds.length > 0,
     queryFn: async () => {
-      const { data, error } = await sb
-        .from("vm_notas_privadas")
-        .select("*")
-        .eq("user_id", user!.id)
-        .in("artigo_id", artigoIds);
-      if (error) throw error;
-      return (data ?? []) as VmNotaPrivada[];
+      return await fetchAllByIds<VmNotaPrivada>(artigoIds, (chunk, from, to) =>
+        sb
+          .from("vm_notas_privadas")
+          .select("*")
+          .eq("user_id", user!.id)
+          .in("artigo_id", chunk)
+          .range(from, to)
+      );
+
     },
   });
+
 
   const byArtigo = new Map<string, VmNotaPrivada>();
   (query.data ?? []).forEach((n) => byArtigo.set(n.artigo_id, n));
