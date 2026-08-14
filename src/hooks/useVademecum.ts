@@ -1,9 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { fetchAllPaged, fetchAllByIds } from "@/lib/fetchAll";
 import type { VmLei, VmArtigo, VmProgresso } from "@/types/vademecum";
 
 const sb = supabase as any;
+
 
 export function useVmLeis() {
   return useQuery({
