@@ -71,6 +71,7 @@ export default function StudyTimerPage() {
   const [loadingRestore, setLoadingRestore] = useState(true);
 
   const [periodo, setPeriodo] = useState<Periodo>("Mensal");
+  const [agrupamento, setAgrupamento] = useState<"materia" | "assunto">("materia");
 
   const [showStopModal, setShowStopModal] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
