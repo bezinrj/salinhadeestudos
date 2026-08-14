@@ -462,14 +462,31 @@ export default function StudyTimerPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <Card className="bg-card border-border lg:col-span-2">
           <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold">Distribuição por matéria</h2>
-              <Button size="sm" variant="outline" onClick={() => setShowShare(true)} disabled={totalSeconds === 0}>
-                <Share2 className="h-4 w-4 mr-2" /> Compartilhar
-              </Button>
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+              <h2 className="text-lg font-bold">
+                Distribuição por {agrupamento === "assunto" ? "assunto" : "matéria"}
+              </h2>
+              <div className="flex items-center gap-2">
+                <div className="flex rounded-lg bg-white/5 p-1">
+                  {(["materia", "assunto"] as const).map(g => (
+                    <button
+                      key={g}
+                      onClick={() => setAgrupamento(g)}
+                      className={`px-3 py-1 text-xs rounded-md transition-colors ${
+                        agrupamento === g ? "bg-gold text-gold-foreground" : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {g === "materia" ? "Matéria" : "Assunto"}
+                    </button>
+                  ))}
+                </div>
+                <Button size="sm" variant="outline" onClick={() => setShowShare(true)} disabled={totalSeconds === 0}>
+                  <Share2 className="h-4 w-4 mr-2" /> Compartilhar
+                </Button>
+              </div>
             </div>
 
-            {chartData.length === 0 ? (
+            {displayData.length === 0 ? (
               <div className="h-72 flex items-center justify-center text-sm text-muted-foreground">
                 Nenhuma sessão registrada neste período.
               </div>
@@ -478,9 +495,9 @@ export default function StudyTimerPage() {
                 <div className="relative h-72">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
-                      <Pie data={chartData} dataKey="seconds" nameKey="nome" innerRadius="60%" outerRadius="90%" paddingAngle={2}
+                      <Pie data={displayData} dataKey="seconds" nameKey="nome" innerRadius="60%" outerRadius="90%" paddingAngle={2}
                         label={(p: any) => p.pct >= 8 ? `${p.pct.toFixed(0)}%` : ""} labelLine={false} stroke="none">
-                        {chartData.map((d, i) => (<Cell key={i} fill={d.cor} />))}
+                        {displayData.map((d, i) => (<Cell key={i} fill={d.cor} />))}
                       </Pie>
                       <Tooltip
                         contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, color: "white" }}
@@ -494,10 +511,10 @@ export default function StudyTimerPage() {
                   </div>
                 </div>
                 <div className="space-y-2 max-h-72 overflow-auto pr-1">
-                  {chartData.map(d => (
+                  {displayData.map(d => (
                     <div key={d.nome} className="flex items-center gap-3 text-sm">
-                      <span className="h-3 w-3 rounded-full" style={{ background: d.cor }} />
-                      <span className="flex-1 truncate">{d.nome}</span>
+                      <span className="h-3 w-3 rounded-full shrink-0" style={{ background: d.cor }} />
+                      <span className="flex-1 truncate" title={d.nome}>{d.nome}</span>
                       <span className="tabular-nums text-muted-foreground">{d.horas.toFixed(1)}h</span>
                       <span className="tabular-nums text-xs text-muted-foreground w-10 text-right">{d.pct.toFixed(0)}%</span>
                     </div>
