@@ -90,15 +90,18 @@ export function useVmMarcacoes(artigoIds: string[]) {
     queryKey: ["vm-marcacoes", user?.id, ids],
     enabled: !!user?.id && artigoIds.length > 0,
     queryFn: async () => {
-      const { data, error } = await sb
-        .from("vm_marcacoes")
-        .select("*")
-        .eq("user_id", user!.id)
-        .in("artigo_id", artigoIds);
-      if (error) throw error;
-      return (data ?? []) as VmMarcacao[];
+      const data = await fetchAllByIds<VmMarcacao>(artigoIds, (chunk, from, to) =>
+        sb
+          .from("vm_marcacoes")
+          .select("*")
+          .eq("user_id", user!.id)
+          .in("artigo_id", chunk)
+          .range(from, to)
+      );
+      return data;
     },
   });
+
 
   const byBlock = new Map<string, VmMarcacao[]>();
   (query.data ?? []).forEach((m) => {
