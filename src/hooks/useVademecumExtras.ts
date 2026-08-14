@@ -291,6 +291,7 @@ export function useVmNotasPrivadas(artigoIds: string[]) {
     },
   });
 
+
   const byArtigo = new Map<string, VmNotaPrivada>();
   (query.data ?? []).forEach((n) => byArtigo.set(n.artigo_id, n));
 
