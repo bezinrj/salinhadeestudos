@@ -423,7 +423,7 @@ IMPORTANTE:
       body: JSON.stringify({
         model: hasImage ? "google/gemini-2.5-flash" : "google/gemini-3-flash-preview",
         messages: [
-          { role: "system", content: systemPrompt },
+          { role: "system", content: finalSystemPrompt },
           { role: "user", content: userContent },
         ],
         tools,
