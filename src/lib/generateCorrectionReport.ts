@@ -152,6 +152,20 @@ export async function generateCorrectionReport(data: ReportData) {
   const hasPositives = data.correction.positives.length > 0 && data.correction.positives[0] !== "Nenhum ponto do espelho foi adequadamente abordado.";
   const hasErrors = data.correction.errors.length > 0;
   const hasOmissions = data.correction.omissions.length > 0;
+  // Leitura crítica (modo intenção — questões da semana)
+  const cr = (data.correction as any).criticalReading;
+  const criticalReadingHTML = cr
+    ? `<div class="section">
+        <div class="section-label">LEITURA CRÍTICA DA RESPOSTA</div>
+        <div style="border:0.5px solid #e2e8f0;border-radius:12px;padding:16px;font-size:12px;color:#374151;line-height:1.7;">
+          ${cr.teseDoAluno ? `<div style="margin-bottom:6px;"><b>Tese sustentada:</b> ${esc(cr.teseDoAluno)}</div>` : ""}
+          ${cr.coerencia ? `<div style="margin-bottom:6px;"><b>Coerência do raciocínio:</b> ${esc(cr.coerencia)}</div>` : ""}
+          ${cr.qualidadeFundamentacao ? `<div style="margin-bottom:6px;"><b>Fundamentação legal:</b> ${esc(cr.qualidadeFundamentacao)}</div>` : ""}
+          ${cr.intencaoGlobal ? `<div><b>Intenção global:</b> ${esc(cr.intencaoGlobal)}</div>` : ""}
+        </div>
+      </div>`
+    : "";
+
 
   // Legibility section
   let legibilityHTML = "";
