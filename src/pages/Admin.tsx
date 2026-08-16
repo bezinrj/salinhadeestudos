@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Shield, Users, MessageSquare, Bell, Trash2, Plus, Activity, Crown, GraduationCap, KeyRound, X, UserCheck, UserX, CreditCard, Ban, Eye, Gift, Clock, CalendarDays, Trophy, Pencil, Check, ArrowUp, ArrowDown, Mail, UserPlus, Phone, Download } from "lucide-react";
+import { Shield, Users, MessageSquare, Bell, Trash2, Plus, Activity, Crown, GraduationCap, KeyRound, X, UserCheck, UserX, CreditCard, Ban, Eye, Gift, Clock, CalendarDays, Trophy, Pencil, Check, ArrowUp, ArrowDown, Mail, UserPlus, Phone, Download, FileText, Calendar, Megaphone, BookOpen, List, Settings } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { getPlanByPriceId } from "@/lib/stripe";
@@ -90,71 +90,188 @@ export default function Admin() {
       </motion.div>
 
       {isAdmin ? (
-         <Tabs defaultValue="overview" className="space-y-4">
-          <TabsList className="flex w-full justify-start gap-1 overflow-x-auto flex-nowrap scrollbar-hide bg-secondary h-auto p-1 md:grid md:grid-cols-[repeat(14,minmax(0,1fr))]">
-            <TabsTrigger value="overview" className="shrink-0 md:shrink">Visão Geral</TabsTrigger>
-            <TabsTrigger value="users" className="shrink-0 md:shrink">Usuários</TabsTrigger>
-            <TabsTrigger value="weekly" className="shrink-0 md:shrink">Questões</TabsTrigger>
-            <TabsTrigger value="weeklyq" className="shrink-0 md:shrink">Questões da Semana</TabsTrigger>
-            <TabsTrigger value="turmas" className="shrink-0 md:shrink">Turmas</TabsTrigger>
-            <TabsTrigger value="alerts" className="relative shrink-0 md:shrink">
-              Alertas
-              {pendingAlerts > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground px-1">
-                  {pendingAlerts > 99 ? "99+" : pendingAlerts}
-                </span>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="requests" className="relative shrink-0 md:shrink">
-              Solicitações
-              {pendingRequests > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground px-1">
-                  {pendingRequests > 99 ? "99+" : pendingRequests}
-                </span>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="announcements" className="shrink-0 md:shrink">Avisos</TabsTrigger>
-            <TabsTrigger value="content" className="shrink-0 md:shrink">Conteúdo</TabsTrigger>
-            <TabsTrigger value="subjects" className="shrink-0 md:shrink">Assuntos</TabsTrigger>
-            <TabsTrigger value="materias" className="shrink-0 md:shrink">Matérias</TabsTrigger>
-            <TabsTrigger value="crono" className="shrink-0 md:shrink">Cronômetro</TabsTrigger>
-            <TabsTrigger value="feedbacks" className="shrink-0 md:shrink">Feedbacks</TabsTrigger>
-            <TabsTrigger value="config" className="shrink-0 md:shrink">Configurações</TabsTrigger>
-          </TabsList>
+        <Tabs defaultValue="overview" className="space-y-4 md:space-y-0 md:grid md:grid-cols-[16rem_1fr] md:gap-6">
+          <DesktopAdminNav isAdmin={isAdmin} pendingAlerts={pendingAlerts} pendingRequests={pendingRequests} />
+          <MobileAdminNav isAdmin={isAdmin} pendingAlerts={pendingAlerts} pendingRequests={pendingRequests} />
 
-          <TabsContent value="overview"><OverviewTab /></TabsContent>
-          <TabsContent value="users"><UsersTab /></TabsContent>
-          <TabsContent value="weekly"><WeeklyQuestionsTab mode="regular" /></TabsContent>
-          <TabsContent value="weeklyq"><WeeklyQuestionsTab mode="weekly" /></TabsContent>
-          <TabsContent value="turmas"><TurmasAdminTab /></TabsContent>
-          <TabsContent value="alerts"><AdminAlertsTab /></TabsContent>
-          <TabsContent value="requests"><ModerationRequestsTab /></TabsContent>
-          <TabsContent value="announcements"><AnnouncementsTab /></TabsContent>
-          <TabsContent value="content"><ContentTab /></TabsContent>
-          <TabsContent value="subjects"><SubjectsTab /></TabsContent>
-          <TabsContent value="materias"><MateriasTab /></TabsContent>
-          <TabsContent value="crono"><CronoCatalogoTab /></TabsContent>
-          <TabsContent value="feedbacks"><FeedbacksAdminTab /></TabsContent>
-          <TabsContent value="config"><SiteConfigTab /></TabsContent>
+          <div className="min-w-0">
+            <TabsContent value="overview"><OverviewTab /></TabsContent>
+            <TabsContent value="users"><UsersTab /></TabsContent>
+            <TabsContent value="weekly"><WeeklyQuestionsTab mode="regular" /></TabsContent>
+            <TabsContent value="weeklyq"><WeeklyQuestionsTab mode="weekly" /></TabsContent>
+            <TabsContent value="turmas"><TurmasAdminTab /></TabsContent>
+            <TabsContent value="alerts"><AdminAlertsTab /></TabsContent>
+            <TabsContent value="requests"><ModerationRequestsTab /></TabsContent>
+            <TabsContent value="announcements"><AnnouncementsTab /></TabsContent>
+            <TabsContent value="content"><ContentTab /></TabsContent>
+            <TabsContent value="subjects"><SubjectsTab /></TabsContent>
+            <TabsContent value="materias"><MateriasTab /></TabsContent>
+            <TabsContent value="crono"><CronoCatalogoTab /></TabsContent>
+            <TabsContent value="feedbacks"><FeedbacksAdminTab /></TabsContent>
+            <TabsContent value="config"><SiteConfigTab /></TabsContent>
+          </div>
         </Tabs>
       ) : (
-        <Tabs defaultValue="weekly" className="space-y-4">
-          <TabsList className="flex w-full justify-start gap-1 overflow-x-auto flex-nowrap scrollbar-hide bg-secondary h-auto p-1 md:grid md:grid-cols-5">
-            <TabsTrigger value="weekly" className="shrink-0 md:shrink">Questões</TabsTrigger>
-            <TabsTrigger value="weeklyq" className="shrink-0 md:shrink">Questões da Semana</TabsTrigger>
-            <TabsTrigger value="turmas" className="shrink-0 md:shrink">Turmas</TabsTrigger>
-            <TabsTrigger value="subjects" className="shrink-0 md:shrink">Assuntos</TabsTrigger>
-            <TabsTrigger value="materias" className="shrink-0 md:shrink">Matérias</TabsTrigger>
-          </TabsList>
+        <Tabs defaultValue="weekly" className="space-y-4 md:space-y-0 md:grid md:grid-cols-[16rem_1fr] md:gap-6">
+          <DesktopAdminNav isAdmin={isAdmin} pendingAlerts={pendingAlerts} pendingRequests={pendingRequests} />
+          <MobileAdminNav isAdmin={isAdmin} pendingAlerts={pendingAlerts} pendingRequests={pendingRequests} />
 
-          <TabsContent value="weekly"><WeeklyQuestionsTab mode="regular" /></TabsContent>
-          <TabsContent value="weeklyq"><WeeklyQuestionsTab mode="weekly" /></TabsContent>
-          <TabsContent value="turmas"><TurmasAdminTab /></TabsContent>
-          <TabsContent value="subjects"><SubjectsTab /></TabsContent>
-          <TabsContent value="materias"><MateriasTab /></TabsContent>
+          <div className="min-w-0">
+            <TabsContent value="weekly"><WeeklyQuestionsTab mode="regular" /></TabsContent>
+            <TabsContent value="weeklyq"><WeeklyQuestionsTab mode="weekly" /></TabsContent>
+            <TabsContent value="turmas"><TurmasAdminTab /></TabsContent>
+            <TabsContent value="subjects"><SubjectsTab /></TabsContent>
+            <TabsContent value="materias"><MateriasTab /></TabsContent>
+          </div>
         </Tabs>
       )}
+
     </div>
+  );
+}
+
+/* ─── Admin Navigation ─── */
+interface AdminNavProps {
+  isAdmin: boolean;
+  pendingAlerts: number;
+  pendingRequests: number;
+}
+
+type NavItem = { value: string; label: string; icon: React.ElementType; badge?: number };
+type NavGroup = { label: string; items: NavItem[] };
+
+function DesktopAdminNav({ isAdmin, pendingAlerts, pendingRequests }: AdminNavProps) {
+  const adminGroups: NavGroup[] = [
+    {
+      label: "Frequentes",
+      items: [
+        { value: "overview", label: "Visão Geral", icon: Activity },
+        { value: "users", label: "Usuários", icon: Users },
+        { value: "weekly", label: "Questões", icon: FileText },
+        { value: "weeklyq", label: "Questões da Semana", icon: Calendar },
+      ],
+    },
+    {
+      label: "Gestão",
+      items: [
+        { value: "turmas", label: "Turmas", icon: Users },
+        { value: "alerts", label: "Alertas", icon: Bell, badge: pendingAlerts },
+        { value: "requests", label: "Solicitações", icon: MessageSquare, badge: pendingRequests },
+        { value: "announcements", label: "Avisos", icon: Megaphone },
+      ],
+    },
+    {
+      label: "Conteúdo",
+      items: [
+        { value: "content", label: "Conteúdo", icon: BookOpen },
+        { value: "subjects", label: "Assuntos", icon: List },
+        { value: "materias", label: "Matérias", icon: GraduationCap },
+        { value: "crono", label: "Cronômetro", icon: Clock },
+      ],
+    },
+    {
+      label: "Sistema",
+      items: [
+        { value: "feedbacks", label: "Feedbacks", icon: Mail },
+        { value: "config", label: "Configurações", icon: Settings },
+      ],
+    },
+  ];
+
+  const modGroups: NavGroup[] = [
+    {
+      label: "Frequentes",
+      items: [
+        { value: "weekly", label: "Questões", icon: FileText },
+        { value: "weeklyq", label: "Questões da Semana", icon: Calendar },
+        { value: "turmas", label: "Turmas", icon: Users },
+      ],
+    },
+    {
+      label: "Catálogo",
+      items: [
+        { value: "subjects", label: "Assuntos", icon: List },
+        { value: "materias", label: "Matérias", icon: GraduationCap },
+      ],
+    },
+  ];
+
+  const groups = isAdmin ? adminGroups : modGroups;
+
+  return (
+    <TabsList className="hidden md:flex flex-col w-full h-auto bg-transparent p-0 gap-6 items-stretch flex-shrink-0">
+      {groups.map((group) => (
+        <div key={group.label} className="flex flex-col gap-1">
+          <span className="px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            {group.label}
+          </span>
+          {group.items.map((item) => (
+            <TabsTrigger
+              key={item.value}
+              value={item.value}
+              className="justify-start gap-2 w-full px-3 py-2 text-sm font-normal text-muted-foreground hover:text-foreground transition-all rounded-none border-l-2 border-transparent data-[state=active]:text-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-primary"
+            >
+              <item.icon className="h-4 w-4" />
+              <span className="flex-1 text-left">{item.label}</span>
+              {item.badge ? (
+                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground px-1">
+                  {item.badge > 99 ? "99+" : item.badge}
+                </span>
+              ) : null}
+            </TabsTrigger>
+          ))}
+        </div>
+      ))}
+    </TabsList>
+  );
+}
+
+function MobileAdminNav({ isAdmin, pendingAlerts, pendingRequests }: AdminNavProps) {
+  const adminItems: NavItem[] = [
+    { value: "overview", label: "Visão Geral", icon: Activity },
+    { value: "users", label: "Usuários", icon: Users },
+    { value: "weekly", label: "Questões", icon: FileText },
+    { value: "weeklyq", label: "Semana", icon: Calendar },
+    { value: "turmas", label: "Turmas", icon: Users },
+    { value: "alerts", label: "Alertas", icon: Bell, badge: pendingAlerts },
+    { value: "requests", label: "Solicitações", icon: MessageSquare, badge: pendingRequests },
+    { value: "announcements", label: "Avisos", icon: Megaphone },
+    { value: "content", label: "Conteúdo", icon: BookOpen },
+    { value: "subjects", label: "Assuntos", icon: List },
+    { value: "materias", label: "Matérias", icon: GraduationCap },
+    { value: "crono", label: "Cronômetro", icon: Clock },
+    { value: "feedbacks", label: "Feedbacks", icon: Mail },
+    { value: "config", label: "Config", icon: Settings },
+  ];
+
+  const modItems: NavItem[] = [
+    { value: "weekly", label: "Questões", icon: FileText },
+    { value: "weeklyq", label: "Semana", icon: Calendar },
+    { value: "turmas", label: "Turmas", icon: Users },
+    { value: "subjects", label: "Assuntos", icon: List },
+    { value: "materias", label: "Matérias", icon: GraduationCap },
+  ];
+
+  const items = isAdmin ? adminItems : modItems;
+
+  return (
+    <TabsList className="md:hidden flex w-full gap-2 overflow-x-auto flex-nowrap scrollbar-hide bg-transparent p-0 h-auto items-stretch">
+      {items.map((item) => (
+        <TabsTrigger
+          key={item.value}
+          value={item.value}
+          className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-normal text-muted-foreground hover:text-foreground transition-all rounded-md border border-transparent data-[state=active]:text-foreground data-[state=active]:bg-secondary/60 data-[state=active]:shadow-none data-[state=active]:border-border"
+        >
+          <item.icon className="h-4 w-4" />
+          <span>{item.label}</span>
+          {item.badge ? (
+            <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground px-1">
+              {item.badge > 99 ? "99+" : item.badge}
+            </span>
+          ) : null}
+        </TabsTrigger>
+      ))}
+    </TabsList>
   );
 }
 
