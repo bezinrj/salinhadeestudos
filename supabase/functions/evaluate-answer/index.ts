@@ -485,7 +485,10 @@ IMPORTANTE:
       maxScoreFeedback: correction.maxScoreFeedback || null,
       createdAt: new Date().toISOString().split("T")[0],
       baremaBreakdown: correction.baremaBreakdown,
+      criticalReading: correction.criticalReading || null,
+      evaluationMode: isWeeklyQuestion ? "intencao" : "estrito",
     };
+
 
     if (hasImage) {
       result.handwritingNote = correction.handwritingNote || null;
