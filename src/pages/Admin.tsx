@@ -244,7 +244,7 @@ function MobileAdminNav({ isAdmin, pendingAlerts, pendingRequests }: AdminNavPro
     { value: "config", label: "Config", icon: Settings },
   ];
 
-  const modItems = [
+  const modItems: NavItem[] = [
     { value: "weekly", label: "Questões", icon: FileText },
     { value: "weeklyq", label: "Semana", icon: Calendar },
     { value: "turmas", label: "Turmas", icon: Users },
