@@ -17,6 +17,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useCronoMaterias, useMediaHorasGeral, Periodo, periodoStart, CronoMateria } from "@/hooks/useCrono";
 import { CronoMateriasManager } from "@/components/cronometro/CronoMateriasManager";
 import { CronoShareCard } from "@/components/cronometro/CronoShareCard";
+import { CronoComparacaoDetalhada } from "@/components/cronometro/CronoComparacaoDetalhada";
+
 import { toPng } from "html-to-image";
 
 type TimerStatus = "running" | "paused" | "completed" | "cancelled";
