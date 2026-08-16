@@ -255,7 +255,7 @@ function MobileAdminNav({ isAdmin, pendingAlerts, pendingRequests }: AdminNavPro
   const items = isAdmin ? adminItems : modItems;
 
   return (
-    <TabsList className="md:hidden flex w-full gap-2 overflow-x-auto flex-nowrap scrollbar-hide bg-transparent p-0 h-auto items-stretch">
+    <TabsList className="md:hidden sticky top-0 z-30 flex w-full gap-2 overflow-x-auto flex-nowrap scrollbar-hide bg-background/95 backdrop-blur-sm border-b border-border py-2 px-0 h-auto items-stretch">
       {items.map((item) => (
         <TabsTrigger
           key={item.value}
