@@ -315,6 +315,7 @@ IMPORTANTE:
                   justification: { type: "string" },
                 },
                 required: ["description", "maxScore", "earnedScore", "status", "justification"],
+
               },
             },
           },
