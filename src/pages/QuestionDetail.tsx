@@ -545,13 +545,38 @@ export default function QuestionDetail() {
                   </div>
                   <Progress value={(item.earnedScore / item.maxScore) * 100} className="h-1.5 mb-3" />
                   <div className="space-y-2">
-                    {item.subitems.map((sub, i) => (
-                      <div key={i} className={cn("flex items-start gap-2 rounded-md border px-3 py-2 text-xs", getStatusBg(sub.status))}>
-                        {getStatusIcon(sub.status)}
-                        <span className="flex-1 text-foreground/80">{sub.description}</span>
-                        <span className={cn("font-bold shrink-0", sub.status === "full" ? "text-green-400" : sub.status === "partial" ? "text-yellow-400" : "text-destructive")}>
-                          {sub.earnedScore.toFixed(1)}/{sub.maxScore.toFixed(1)}
-                        </span>
+                    {item.subitems.map((sub: any, i: number) => (
+                      <div key={i} className={cn("rounded-md border px-3 py-2 text-xs", getStatusBg(sub.status))}>
+                        <div className="flex items-start gap-2">
+                          {getStatusIcon(sub.status)}
+                          <span className="flex-1 text-foreground/80">{sub.description}</span>
+                          <span className={cn("font-bold shrink-0", sub.status === "full" ? "text-green-400" : sub.status === "partial" ? "text-yellow-400" : "text-destructive")}>
+                            {sub.earnedScore.toFixed(1)}/{sub.maxScore.toFixed(1)}
+                          </span>
+                        </div>
+                        {(sub.intencaoExigida || sub.intencaoDemonstrada || sub.fundamentacao) && (
+                          <div className="mt-2 space-y-1 border-t border-border/50 pt-2 text-[11px] leading-relaxed text-muted-foreground">
+                            {sub.intencaoExigida && (
+                              <p><span className="font-semibold text-foreground/70">Intenção exigida:</span> {sub.intencaoExigida}</p>
+                            )}
+                            {sub.intencaoDemonstrada && (
+                              <p><span className="font-semibold text-foreground/70">Intenção demonstrada:</span> {sub.intencaoDemonstrada}</p>
+                            )}
+                            {sub.fundamentacao && (
+                              <p><span className="font-semibold text-foreground/70">Fundamentação:</span> {sub.fundamentacao}</p>
+                            )}
+                            {sub.julgamento && (
+                              <span className={cn(
+                                "inline-block mt-1 rounded-full px-2 py-0.5 text-[10px] font-semibold",
+                                sub.julgamento === "equivalente" ? "bg-green-500/15 text-green-400"
+                                  : sub.julgamento === "parcialmente_equivalente" ? "bg-yellow-500/15 text-yellow-400"
+                                  : "bg-destructive/15 text-destructive"
+                              )}>
+                                {sub.julgamento === "equivalente" ? "Equivalente" : sub.julgamento === "parcialmente_equivalente" ? "Parcialmente equivalente" : "Divergente"}
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -559,6 +584,24 @@ export default function QuestionDetail() {
               ))}
             </CardContent>
           </Card>
+
+          {/* Leitura crítica (modo intenção — questões da semana) */}
+          {correction.criticalReading && (
+            <Card className="gradient-card border-primary/20">
+              <CardHeader>
+                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <Lightbulb className="h-4 w-4 text-primary" /> Leitura Crítica da Resposta
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm text-foreground/85">
+                <p><span className="font-semibold text-foreground">Tese sustentada:</span> {correction.criticalReading.teseDoAluno}</p>
+                <p><span className="font-semibold text-foreground">Coerência do raciocínio:</span> {correction.criticalReading.coerencia}</p>
+                <p><span className="font-semibold text-foreground">Fundamentação legal:</span> {correction.criticalReading.qualidadeFundamentacao}</p>
+                <p><span className="font-semibold text-foreground">Intenção global:</span> {correction.criticalReading.intencaoGlobal}</p>
+              </CardContent>
+            </Card>
+          )}
+
 
           {/* Mirror */}
           <Card className="gradient-card border-border">
