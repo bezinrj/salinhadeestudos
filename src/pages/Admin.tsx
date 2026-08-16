@@ -199,7 +199,7 @@ function DesktopAdminNav({ isAdmin, pendingAlerts, pendingRequests }: AdminNavPr
   const groups = isAdmin ? adminGroups : modGroups;
 
   return (
-    <TabsList className="hidden md:flex flex-col w-full h-auto bg-transparent p-0 gap-6 items-stretch flex-shrink-0">
+    <TabsList className="hidden md:flex flex-col w-full h-auto bg-transparent p-0 gap-6 items-stretch flex-shrink-0 self-start sticky top-4 max-h-[calc(100vh-6rem)] overflow-y-auto pr-1">
       {groups.map((group) => (
         <div key={group.label} className="flex flex-col gap-1">
           <span className="px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
