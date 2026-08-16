@@ -500,9 +500,16 @@ export default function StudyTimerPage() {
                         {displayData.map((d, i) => (<Cell key={i} fill={d.cor} />))}
                       </Pie>
                       <Tooltip
-                        contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, color: "white" }}
-                        formatter={(v: any, _n, p: any) => [`${(Number(v)/3600).toFixed(2)} hr`, p?.payload?.nome]}
+                        cursor={{ fill: "hsl(var(--muted) / 0.3)" }}
+                        content={
+                          <ChartTooltip
+                            labelKey="nome"
+                            valueFormatter={(v) => `${(v / 3600).toFixed(2)} hr`}
+                            subFormatter={(item) => (item?.pct != null ? `(${Number(item.pct).toFixed(0)}%)` : null)}
+                          />
+                        }
                       />
+
                     </PieChart>
                   </ResponsiveContainer>
                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
