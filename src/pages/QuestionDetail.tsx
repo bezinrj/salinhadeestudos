@@ -84,7 +84,7 @@ export default function QuestionDetail() {
     queryFn: async () => {
       const { data } = await supabase
         .from("weekly_answers" as any)
-        .select("score")
+        .select("score, answer_text, created_at")
         .eq("user_id", user!.id)
         .eq("question_id", id!)
         .maybeSingle();
@@ -136,6 +136,7 @@ export default function QuestionDetail() {
   const canAnswer = !isPremium || subscribed || freeCanAnswer;
   const isLocked = question.isWeekly && lockedScore !== null;
   const isWeeklyActive = !!question.isWeekly && !!question.deadline && new Date(question.deadline) > new Date();
+  const isWeeklyPast = !!question.isWeekly && !!question.deadline && !isWeeklyActive;
   const canDownloadAnswerKey = !isWeeklyActive;
   const shouldShowUpgrade = !subscribed && isPremium && !question.isWeekly && !freeCanAnswer && !alreadyUsedThis;
 
@@ -432,8 +433,15 @@ export default function QuestionDetail() {
         </DialogContent>
       </Dialog>
 
-      {/* Locked state - already answered weekly */}
-      {isLocked && !correction ? (
+      {/* Questão da semana encerrada: modo leitura */}
+      {isWeeklyPast ? (
+        <PastWeeklyView
+          questionId={question.id}
+          myAnswer={(existingAnswer as any) || null}
+          canView={subscribed || !!existingAnswer || (freeUsage?.length ?? 0) < FREE_MONTHLY_LIMIT}
+          onUpgrade={() => navigate("/meu-plano")}
+        />
+      ) : isLocked && !correction ? (
         <Card className="gradient-card border-green-500/20">
           <CardContent className="p-8 text-center space-y-4">
             <CheckCircle2 className="h-10 w-10 text-green-400 mx-auto" />
@@ -730,6 +738,144 @@ export default function QuestionDetail() {
 
       {/* Comments section - always visible */}
       {question?.id && <QuestionComments questionId={question.id} />}
+    </div>
+  );
+}
+
+function PastWeeklyView({
+  questionId,
+  myAnswer,
+  canView,
+  onUpgrade,
+}: {
+  questionId: string;
+  myAnswer: { score: number; answer_text?: string | null; created_at?: string } | null;
+  canView: boolean;
+  onUpgrade: () => void;
+}) {
+  const { data: answerKey, isLoading } = useQuery({
+    queryKey: ["past-weekly-answer-key", questionId],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).rpc("get_question_answer_key", { _question_id: questionId });
+      if (error) throw error;
+      return (Array.isArray(data) ? data[0] : data) as { barema: any; mirror_text: string | null; ideal_answer: string | null } | null;
+    },
+    enabled: canView,
+  });
+
+  if (!canView) {
+    return (
+      <Card className="gradient-card border-gold/20">
+        <CardContent className="p-8 text-center space-y-4">
+          <Lock className="h-10 w-10 text-gold mx-auto" />
+          <p className="text-lg font-display font-bold">Questão da Semana encerrada</p>
+          <p className="text-sm text-muted-foreground">
+            Você usou suas correções gratuitas do mês. Assine para acessar o acervo completo das questões anteriores com gabarito.
+          </p>
+          <Button onClick={onUpgrade} className="gradient-electric text-white font-semibold">Ver planos</Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const barema = Array.isArray(answerKey?.barema) ? (answerKey!.barema as any[]) : [];
+
+  return (
+    <div className="space-y-4">
+      {myAnswer ? (
+        <>
+          <Card className="gradient-card border-primary/20 glow-electric">
+            <CardContent className="p-6 text-center">
+              <p className="text-sm text-muted-foreground mb-2 uppercase tracking-wider">Sua nota nesta semana</p>
+              <p className="text-5xl font-display font-bold text-primary">{Number(myAnswer.score).toFixed(1)}</p>
+              <p className="text-sm text-muted-foreground">de 10</p>
+              <p className="text-xs text-muted-foreground mt-3">
+                Questões da semana podem ser respondidas apenas uma vez.
+              </p>
+            </CardContent>
+          </Card>
+          <Card className="gradient-card border-border">
+            <CardHeader>
+              <CardTitle className="text-base font-display flex items-center gap-2">
+                <FileText className="h-4 w-4 text-primary" /> Sua Resposta
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-foreground/85 leading-relaxed whitespace-pre-line">
+                {myAnswer.answer_text || "Resposta enviada por imagem/PDF."}
+              </p>
+            </CardContent>
+          </Card>
+        </>
+      ) : (
+        <Card className="gradient-card border-border">
+          <CardContent className="p-6 text-center space-y-2">
+            <Eye className="h-8 w-8 text-muted-foreground mx-auto" />
+            <p className="font-display font-bold">Questão encerrada — modo leitura</p>
+            <p className="text-sm text-muted-foreground">
+              O prazo desta questão da semana já passou. Ela não pode mais ser respondida, mas você pode estudar o gabarito completo abaixo.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {isLoading ? (
+        <p className="text-center py-6 text-sm text-muted-foreground">Carregando gabarito...</p>
+      ) : (
+        <>
+          {barema.length > 0 && (
+            <Card className="gradient-card border-border">
+              <CardHeader><CardTitle className="text-base font-display">📊 Barema</CardTitle></CardHeader>
+              <CardContent className="space-y-3">
+                {barema.map((item: any, idx: number) => (
+                  <div key={idx} className="rounded-lg border border-border bg-secondary/20 p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium">
+                        {item.letter || String.fromCharCode(65 + idx)}) {item.title || item.criterio || item.description || ""}
+                      </span>
+                      <span className="text-sm font-bold font-display text-primary">
+                        {Number(item.maxScore ?? item.pontuacao ?? item.score ?? 0).toFixed(1)}
+                      </span>
+                    </div>
+                    {Array.isArray(item.subitems) && item.subitems.length > 0 && (
+                      <ul className="space-y-1.5">
+                        {item.subitems.map((sub: any, i: number) => (
+                          <li key={i} className="text-xs text-foreground/80 flex items-start gap-2">
+                            <span className="text-primary mt-0.5">•</span>
+                            <span className="flex-1">{sub.description || sub.descricao || String(sub)}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+
+          {answerKey?.mirror_text && (
+            <Card className="gradient-card border-border">
+              <CardHeader><CardTitle className="text-sm font-medium text-muted-foreground">📋 Espelho de Correção</CardTitle></CardHeader>
+              <CardContent>
+                <p className="text-sm text-foreground/85 leading-relaxed whitespace-pre-line">{answerKey.mirror_text}</p>
+              </CardContent>
+            </Card>
+          )}
+
+          {answerKey?.ideal_answer && (
+            <Card className="gradient-card border-primary/20">
+              <CardHeader>
+                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <Lightbulb className="h-4 w-4 text-primary" /> Resposta Ideal
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-foreground/85 leading-relaxed whitespace-pre-line">{answerKey.ideal_answer}</p>
+              </CardContent>
+            </Card>
+          )}
+        </>
+      )}
     </div>
   );
 }
