@@ -380,6 +380,10 @@ export async function generateCorrectionReport(data: ReportData) {
     ${criteriaHTML}
   </div>` : ""}
 
+  <!-- LEITURA CRÍTICA (modo intenção) -->
+  ${criticalReadingHTML}
+
+
   <!-- PONTOS / ERROS / OMISSÕES -->
   ${(hasPositives || hasErrors || hasOmissions) ? `
   <div class="section">
