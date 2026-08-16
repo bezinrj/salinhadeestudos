@@ -576,6 +576,10 @@ export default function StudyTimerPage() {
         </Card>
       </div>
 
+      {/* Comparação por matéria / assunto */}
+      <CronoComparacaoDetalhada periodo={periodo} />
+
+
       {/* Modal: Stop / salvar sessão */}
       <Dialog open={showStopModal} onOpenChange={setShowStopModal}>
         <DialogContent className="bg-card border-border">
