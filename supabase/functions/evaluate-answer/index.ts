@@ -370,6 +370,22 @@ IMPORTANTE:
 
     const requiredFields = ["baremaBreakdown", "mirror", "positives", "errors", "omissions", "idealAnswer", "feedback", "maxScoreFeedback"];
 
+    if (isWeeklyQuestion) {
+      toolProperties.criticalReading = {
+        type: "object",
+        description: "Leitura crítica geral da resposta (modo intenção — questão da semana).",
+        properties: {
+          teseDoAluno: { type: "string", description: "Qual tese o aluno efetivamente sustentou" },
+          coerencia: { type: "string", description: "Coerência e encadeamento lógico do raciocínio do aluno" },
+          qualidadeFundamentacao: { type: "string", description: "Avaliação da fundamentação legal apresentada: dispositivos/súmulas/jurisprudência pertinentes citados, ausências e impertinências" },
+          intencaoGlobal: { type: "string", description: "Se a intenção global da resposta atende ao que o enunciado pediu" },
+        },
+        required: ["teseDoAluno", "coerencia", "qualidadeFundamentacao", "intencaoGlobal"],
+      };
+      requiredFields.push("criticalReading");
+    }
+
+
     if (hasImage) {
       toolProperties.handwritingNote = {
         type: "string",
