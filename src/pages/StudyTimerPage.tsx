@@ -17,6 +17,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useCronoMaterias, useMediaHorasGeral, Periodo, periodoStart, CronoMateria } from "@/hooks/useCrono";
 import { CronoMateriasManager } from "@/components/cronometro/CronoMateriasManager";
 import { CronoShareCard } from "@/components/cronometro/CronoShareCard";
+import { CronoComparacaoDetalhada } from "@/components/cronometro/CronoComparacaoDetalhada";
+
 import { toPng } from "html-to-image";
 
 type TimerStatus = "running" | "paused" | "completed" | "cancelled";
@@ -575,6 +577,10 @@ export default function StudyTimerPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Comparação por matéria / assunto */}
+      <CronoComparacaoDetalhada periodo={periodo} />
+
 
       {/* Modal: Stop / salvar sessão */}
       <Dialog open={showStopModal} onOpenChange={setShowStopModal}>

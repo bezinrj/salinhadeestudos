@@ -34,6 +34,7 @@ import MateriasTab from "@/components/MateriasTab";
 import TurmasAdminTab from "@/components/TurmasAdminTab";
 import FeedbacksAdminTab from "@/components/admin/FeedbacksAdminTab";
 import SiteConfigTab from "@/components/admin/SiteConfigTab";
+import CronoCatalogoTab from "@/components/cronometro/CronoCatalogoTab";
 
 
 const ABSOLUTE_ADMIN_ID = "ffdb2f38-0e5b-4f29-8cb8-712fcfde53f6";
@@ -115,6 +116,7 @@ export default function Admin() {
             <TabsTrigger value="content" className="shrink-0 md:shrink">Conteúdo</TabsTrigger>
             <TabsTrigger value="subjects" className="shrink-0 md:shrink">Assuntos</TabsTrigger>
             <TabsTrigger value="materias" className="shrink-0 md:shrink">Matérias</TabsTrigger>
+            <TabsTrigger value="crono" className="shrink-0 md:shrink">Cronômetro</TabsTrigger>
             <TabsTrigger value="feedbacks" className="shrink-0 md:shrink">Feedbacks</TabsTrigger>
             <TabsTrigger value="config" className="shrink-0 md:shrink">Configurações</TabsTrigger>
           </TabsList>
@@ -129,6 +131,7 @@ export default function Admin() {
           <TabsContent value="content"><ContentTab /></TabsContent>
           <TabsContent value="subjects"><SubjectsTab /></TabsContent>
           <TabsContent value="materias"><MateriasTab /></TabsContent>
+          <TabsContent value="crono"><CronoCatalogoTab /></TabsContent>
           <TabsContent value="feedbacks"><FeedbacksAdminTab /></TabsContent>
           <TabsContent value="config"><SiteConfigTab /></TabsContent>
         </Tabs>

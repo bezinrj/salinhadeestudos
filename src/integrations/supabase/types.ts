@@ -104,8 +104,33 @@ export type Database = {
         }
         Relationships: []
       }
+      crono_aliases: {
+        Row: {
+          canon_id: string
+          criado_em: string
+          id: string
+          texto_norm: string
+          tipo: string
+        }
+        Insert: {
+          canon_id: string
+          criado_em?: string
+          id?: string
+          texto_norm: string
+          tipo: string
+        }
+        Update: {
+          canon_id?: string
+          criado_em?: string
+          id?: string
+          texto_norm?: string
+          tipo?: string
+        }
+        Relationships: []
+      }
       crono_assuntos: {
         Row: {
+          assunto_canon_id: string | null
           created_at: string
           id: string
           materia_id: string
@@ -113,6 +138,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          assunto_canon_id?: string | null
           created_at?: string
           id?: string
           materia_id: string
@@ -120,6 +146,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          assunto_canon_id?: string | null
           created_at?: string
           id?: string
           materia_id?: string
@@ -127,6 +154,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "crono_assuntos_assunto_canon_id_fkey"
+            columns: ["assunto_canon_id"]
+            isOneToOne: false
+            referencedRelation: "crono_assuntos_canon"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "crono_assuntos_materia_id_fkey"
             columns: ["materia_id"]
@@ -136,11 +170,50 @@ export type Database = {
           },
         ]
       }
+      crono_assuntos_canon: {
+        Row: {
+          ativo: boolean
+          atualizado_em: string
+          criado_em: string
+          id: string
+          materia_canon_id: string
+          nome: string
+          ordem: number
+        }
+        Insert: {
+          ativo?: boolean
+          atualizado_em?: string
+          criado_em?: string
+          id?: string
+          materia_canon_id: string
+          nome: string
+          ordem?: number
+        }
+        Update: {
+          ativo?: boolean
+          atualizado_em?: string
+          criado_em?: string
+          id?: string
+          materia_canon_id?: string
+          nome?: string
+          ordem?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crono_assuntos_canon_materia_canon_id_fkey"
+            columns: ["materia_canon_id"]
+            isOneToOne: false
+            referencedRelation: "crono_materias_canon"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crono_materias: {
         Row: {
           cor: string
           created_at: string
           id: string
+          materia_canon_id: string | null
           nome: string
           user_id: string
         }
@@ -148,6 +221,7 @@ export type Database = {
           cor?: string
           created_at?: string
           id?: string
+          materia_canon_id?: string | null
           nome: string
           user_id: string
         }
@@ -155,8 +229,47 @@ export type Database = {
           cor?: string
           created_at?: string
           id?: string
+          materia_canon_id?: string | null
           nome?: string
           user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crono_materias_materia_canon_id_fkey"
+            columns: ["materia_canon_id"]
+            isOneToOne: false
+            referencedRelation: "crono_materias_canon"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crono_materias_canon: {
+        Row: {
+          ativo: boolean
+          atualizado_em: string
+          cor: string
+          criado_em: string
+          id: string
+          nome: string
+          ordem: number
+        }
+        Insert: {
+          ativo?: boolean
+          atualizado_em?: string
+          cor?: string
+          criado_em?: string
+          id?: string
+          nome: string
+          ordem?: number
+        }
+        Update: {
+          ativo?: boolean
+          atualizado_em?: string
+          cor?: string
+          criado_em?: string
+          id?: string
+          nome?: string
+          ordem?: number
         }
         Relationships: []
       }
@@ -2789,6 +2902,25 @@ export type Database = {
         }[]
       }
       claim_badge: { Args: { _badge_id: string }; Returns: boolean }
+      crono_match_assunto: {
+        Args: { _materia_canon_id: string; _texto: string }
+        Returns: string
+      }
+      crono_match_materia: { Args: { _texto: string }; Returns: string }
+      crono_norm: { Args: { _txt: string }; Returns: string }
+      crono_pendencias: {
+        Args: never
+        Returns: {
+          alunos: number
+          materia_canon_id: string
+          materia_nome: string
+          texto: string
+          texto_norm: string
+          tipo: string
+        }[]
+      }
+      crono_periodo_start: { Args: { _periodo: string }; Returns: string }
+      crono_relink_all: { Args: never; Returns: number }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
@@ -2803,6 +2935,31 @@ export type Database = {
         Returns: {
           total_score: number
           user_id: string
+        }[]
+      }
+      get_media_horas_por_assunto: {
+        Args: { _materia_canon_id?: string; periodo: string }
+        Returns: {
+          alunos: number
+          assunto_canon_id: string
+          assunto_nome: string
+          materia_canon_id: string
+          materia_nome: string
+          media_horas: number
+          minhas_horas: number
+          percentil: number
+        }[]
+      }
+      get_media_horas_por_materia: {
+        Args: { periodo: string }
+        Returns: {
+          alunos: number
+          cor: string
+          materia_canon_id: string
+          materia_nome: string
+          media_horas: number
+          minhas_horas: number
+          percentil: number
         }[]
       }
       get_my_billing: {
