@@ -35,6 +35,10 @@ serve(async (req) => {
 
     const body = await req.json();
     const { answer, statement, imageBase64, mimeType, directCorrection, questionId } = body;
+    // Only used for the admin "Teste de Correção" panel (validated below).
+    const clientBaremaText: string | undefined = body.baremaText;
+    const clientGabarito: string | undefined = body.gabarito;
+
 
     const hasImage = !!imageBase64 && directCorrection;
 
