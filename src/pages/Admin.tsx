@@ -137,8 +137,11 @@ interface AdminNavProps {
   pendingRequests: number;
 }
 
+type NavItem = { value: string; label: string; icon: React.ElementType; badge?: number };
+type NavGroup = { label: string; items: NavItem[] };
+
 function DesktopAdminNav({ isAdmin, pendingAlerts, pendingRequests }: AdminNavProps) {
-  const adminGroups = [
+  const adminGroups: NavGroup[] = [
     {
       label: "Frequentes",
       items: [
