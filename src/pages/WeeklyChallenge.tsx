@@ -3,7 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { RankingTable } from "@/components/RankingTable";
 import { useNavigate } from "react-router-dom";
-import { Clock, Users, Trophy, Hourglass, Check } from "lucide-react";
+import { Clock, Users, Trophy, Hourglass, Check, History, Search, ArrowLeft } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { motion } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,6 +25,7 @@ export default function WeeklyChallenge() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [waitlistCount, setWaitlistCount] = useState(0);
+  const [showArchive, setShowArchive] = useState(false);
 
   // Fetch active weekly question (deadline in the future)
   const { data: activeQuestion, isLoading } = useQuery({
@@ -99,10 +102,24 @@ export default function WeeklyChallenge() {
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
-      <div>
-        <h1 className="text-2xl font-display font-bold">Questões da Semana</h1>
-        <p className="text-sm text-muted-foreground mt-1">Desafios semanais que geram pontuação para o ranking</p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-display font-bold">Questões da Semana</h1>
+          <p className="text-sm text-muted-foreground mt-1">Desafios semanais que geram pontuação para o ranking</p>
+        </div>
+        <Button
+          variant="outline"
+          className="gap-2 border-gold/30 hover:border-gold/50 hover:bg-gold/5"
+          onClick={() => setShowArchive((v) => !v)}
+        >
+          {showArchive ? <><ArrowLeft className="h-4 w-4" /> Voltar ao desafio</> : <><History className="h-4 w-4 text-gold" /> Questões anteriores</>}
+        </Button>
       </div>
+
+      {showArchive ? (
+        <PastQuestionsSection />
+      ) : (
+      <>
 
       {activeQuestion ? (
         <>
@@ -178,6 +195,127 @@ export default function WeeklyChallenge() {
 
       {/* Weekly Ranking */}
       <WeeklyRankingSection />
+      </>
+      )}
+    </div>
+  );
+}
+
+function PastQuestionsSection() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [search, setSearch] = useState("");
+  const [discipline, setDiscipline] = useState("Todas");
+
+  const { data: questions = [], isLoading } = useQuery({
+    queryKey: ["weekly-past-questions"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("weekly_questions")
+        .select("id, public_id, title, career, discipline, subject, disciplines, subjects, statement, banca, year, deadline")
+        .eq("is_weekly", true)
+        .lte("deadline", new Date().toISOString())
+        .order("deadline", { ascending: false });
+      return (data || []) as any[];
+    },
+  });
+
+  const { data: myAnswers = [] } = useQuery({
+    queryKey: ["weekly-past-my-answers", user?.id],
+    queryFn: async () => {
+      const { data } = await (supabase.from("weekly_answers" as any) as any)
+        .select("question_id, score")
+        .eq("user_id", user!.id);
+      return (data || []) as Array<{ question_id: string; score: number }>;
+    },
+    enabled: !!user,
+  });
+
+  const disciplines = Array.from(
+    new Set(questions.flatMap((q) => [q.discipline, ...((q.disciplines as string[]) || [])]).filter(Boolean))
+  ).sort();
+
+  const term = search.trim().toLowerCase();
+  const filtered = questions.filter((q) => {
+    if (discipline !== "Todas" && q.discipline !== discipline && !((q.disciplines as string[]) || []).includes(discipline)) return false;
+    if (!term) return true;
+    const code = `q-${String(q.public_id).padStart(3, "0")}`;
+    const haystack = [q.title, q.statement, q.discipline, q.subject, q.career, q.banca, code, ...(q.disciplines || []), ...(q.subjects || [])]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+    return haystack.includes(term);
+  });
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Pesquisar por título, enunciado, matéria ou código (Q-001)"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9 bg-secondary border-border"
+          />
+        </div>
+        <Select value={discipline} onValueChange={setDiscipline}>
+          <SelectTrigger className="sm:w-56 bg-secondary border-border">
+            <SelectValue placeholder="Matéria" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="Todas">Todas as matérias</SelectItem>
+            {disciplines.map((d) => (
+              <SelectItem key={d} value={d}>{d}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {isLoading ? (
+        <p className="text-center py-10 text-muted-foreground text-sm">Carregando...</p>
+      ) : filtered.length === 0 ? (
+        <Card className="gradient-card border-border">
+          <CardContent className="py-12 text-center text-sm text-muted-foreground">
+            Nenhuma questão anterior encontrada.
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {filtered.map((q) => {
+            const mine = myAnswers.find((a) => a.question_id === q.id);
+            return (
+              <Card
+                key={q.id}
+                className="gradient-card border-border hover:border-gold/30 transition-colors cursor-pointer"
+                onClick={() => navigate(`/semanal/${q.id}`)}
+              >
+                <CardContent className="p-4 space-y-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-[10px] font-mono text-muted-foreground">Q-{String(q.public_id).padStart(3, "0")}</span>
+                    <Badge variant="outline" className="text-[10px] text-white border-white/20 bg-white/10">{q.career}</Badge>
+                    <Badge variant="outline" className="text-[10px] text-muted-foreground border-border">{q.discipline}</Badge>
+                    {mine ? (
+                      <Badge className="bg-green-500/10 text-green-400 border-green-500/20 text-[10px]">
+                        Nota {Number(mine.score).toFixed(1)}
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-[10px] text-muted-foreground border-border">Não respondida</Badge>
+                    )}
+                  </div>
+                  <p className="font-display font-semibold text-sm leading-snug">{q.title}</p>
+                  <p className="text-xs text-muted-foreground line-clamp-2">{q.statement}</p>
+                  {q.deadline && (
+                    <p className="text-[10px] text-muted-foreground">
+                      Encerrada em {new Date(q.deadline).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
