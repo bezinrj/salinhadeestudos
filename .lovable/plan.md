@@ -36,7 +36,8 @@ O modo é decidido no backend a partir do próprio cadastro da questão (a funç
 
 Além do que já existe hoje (barema detalhado, nota, pontos positivos, erros, omissões, resposta ideal personalizada, feedback de nota máxima), cada subitem passa a trazer uma justificativa no formato:
 
-- **Intenção exigida** → **Intenção demonstrada** → **Julgamento crítico** (equivalente / parcialmente equivalente / divergente).
+- **Intenção exigida** → **Intenção demonstrada** → **Fundamentação apresentada** (com/sem base normativa pertinente) → **Julgamento crítico** (equivalente / parcialmente equivalente / divergente).
+
 
 E um bloco geral de leitura crítica da resposta: tese sustentada pelo aluno, coerência do raciocínio e se a intenção global atende ao que o enunciado pediu.
 
