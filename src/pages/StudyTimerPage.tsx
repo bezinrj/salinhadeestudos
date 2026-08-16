@@ -9,6 +9,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Play, Pause, Square, RotateCcw, Settings2, Share2, TrendingUp, TrendingDown, BookOpen, Target } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { ChartTooltip } from "@/components/charts/ChartTooltip";
+
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
@@ -500,9 +502,16 @@ export default function StudyTimerPage() {
                         {displayData.map((d, i) => (<Cell key={i} fill={d.cor} />))}
                       </Pie>
                       <Tooltip
-                        contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, color: "white" }}
-                        formatter={(v: any, _n, p: any) => [`${(Number(v)/3600).toFixed(2)} hr`, p?.payload?.nome]}
+                        cursor={{ fill: "hsl(var(--muted) / 0.3)" }}
+                        content={
+                          <ChartTooltip
+                            labelKey="nome"
+                            valueFormatter={(v) => `${(v / 3600).toFixed(2)} hr`}
+                            subFormatter={(item) => (item?.pct != null ? `(${Number(item.pct).toFixed(0)}%)` : null)}
+                          />
+                        }
                       />
+
                     </PieChart>
                   </ResponsiveContainer>
                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">

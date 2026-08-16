@@ -8,6 +8,8 @@ import { Trophy, FileText, Timer, TrendingUp, Flame, Target, X } from "lucide-re
 import { Badge } from "@/components/ui/badge";
 import { recentCorrections, weeklyStudyData } from "@/data/mockData";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
+import { ChartTooltip } from "@/components/charts/ChartTooltip";
+
 import { Progress } from "@/components/ui/progress";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
@@ -301,7 +303,11 @@ export default function Dashboard() {
               <BarChart data={answersStats?.weekly ?? []}>
                 <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: "hsl(215, 15%, 55%)", fontSize: 12 }} />
                 <YAxis allowDecimals={false} axisLine={false} tickLine={false} tick={{ fill: "hsl(215, 15%, 55%)", fontSize: 12 }} />
-                <Tooltip contentStyle={{ backgroundColor: "hsl(220, 18%, 11%)", border: "1px solid hsl(220, 14%, 18%)", borderRadius: "8px", color: "hsl(210, 20%, 92%)" }} />
+                <Tooltip
+                  cursor={{ fill: "hsl(var(--muted) / 0.3)" }}
+                  content={<ChartTooltip valueFormatter={(v) => `${v} ${v === 1 ? "questão" : "questões"}`} />}
+                />
+
                 <Bar dataKey="count" fill="hsl(217, 91%, 60%)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
