@@ -1045,7 +1045,8 @@ function AnnouncementsTab() {
 }
 
 /* ─── Weekly Questions Tab ─── */
-function WeeklyQuestionsTab() {
+function WeeklyQuestionsTab({ mode = "regular" }: { mode?: "regular" | "weekly" }) {
+  const weeklyMode = mode === "weekly";
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { disciplines } = useDisciplines();
@@ -1063,7 +1064,7 @@ function WeeklyQuestionsTab() {
   const [testAnswer, setTestAnswer] = useState("");
   const [testResult, setTestResult] = useState<any>(null);
   const [showTest, setShowTest] = useState(false);
-  const [isWeekly, setIsWeekly] = useState(true);
+  const isWeekly = weeklyMode;
   const [isPremiumQ, setIsPremiumQ] = useState(false);
   const [mirrorText, setMirrorText] = useState("");
   const [idealAnswer, setIdealAnswer] = useState("");
