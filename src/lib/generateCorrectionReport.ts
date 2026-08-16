@@ -105,13 +105,28 @@ export async function generateCorrectionReport(data: ReportData) {
         const iconColor = isOk ? "#16a34a" : isPartial ? "#d97706" : "#dc2626";
         const bg = isOk ? "#f0fdf4" : "#fef2f2";
         const scoreColor = isOk ? "#16a34a" : isPartial ? "#d97706" : "#dc2626";
+        const s = sub as any;
+        const julgamentoLabel = s.julgamento === "equivalente" ? "Equivalente"
+          : s.julgamento === "parcialmente_equivalente" ? "Parcialmente equivalente"
+          : s.julgamento === "divergente" ? "Divergente" : "";
+        let intentHTML = "";
+        if (s.intencaoExigida || s.intencaoDemonstrada || s.fundamentacao || julgamentoLabel) {
+          intentHTML = `
+            <div style="margin:0 0 8px 26px;padding:8px 10px;border-left:2px solid #cbd5e1;font-size:11px;color:#475569;line-height:1.6;">
+              ${s.intencaoExigida ? `<div><b>Intenção exigida:</b> ${esc(s.intencaoExigida)}</div>` : ""}
+              ${s.intencaoDemonstrada ? `<div><b>Intenção demonstrada:</b> ${esc(s.intencaoDemonstrada)}</div>` : ""}
+              ${s.fundamentacao ? `<div><b>Fundamentação:</b> ${esc(s.fundamentacao)}</div>` : ""}
+              ${julgamentoLabel ? `<div><b>Julgamento:</b> ${julgamentoLabel}</div>` : ""}
+            </div>`;
+        }
         subitemsHTML += `
           <div style="display:flex;align-items:center;gap:8px;background:${bg};border-radius:8px;padding:8px 10px;margin-bottom:5px;">
             <span style="font-size:13px;font-weight:700;color:${iconColor};flex-shrink:0;width:18px;text-align:center;">${icon}</span>
             <span style="flex:1;font-size:12px;color:#374151;line-height:1.5;">${esc(sub.description)}</span>
             <span style="font-size:11px;font-weight:600;color:${scoreColor};flex-shrink:0;">${sub.earnedScore.toFixed(1)}/${sub.maxScore.toFixed(1)}</span>
-          </div>`;
+          </div>${intentHTML}`;
       }
+
 
       criteriaHTML += `
         <div style="border:0.5px solid #e2e8f0;border-radius:12px;padding:16px;margin-bottom:10px;">
@@ -137,6 +152,20 @@ export async function generateCorrectionReport(data: ReportData) {
   const hasPositives = data.correction.positives.length > 0 && data.correction.positives[0] !== "Nenhum ponto do espelho foi adequadamente abordado.";
   const hasErrors = data.correction.errors.length > 0;
   const hasOmissions = data.correction.omissions.length > 0;
+  // Leitura crítica (modo intenção — questões da semana)
+  const cr = (data.correction as any).criticalReading;
+  const criticalReadingHTML = cr
+    ? `<div class="section">
+        <div class="section-label">LEITURA CRÍTICA DA RESPOSTA</div>
+        <div style="border:0.5px solid #e2e8f0;border-radius:12px;padding:16px;font-size:12px;color:#374151;line-height:1.7;">
+          ${cr.teseDoAluno ? `<div style="margin-bottom:6px;"><b>Tese sustentada:</b> ${esc(cr.teseDoAluno)}</div>` : ""}
+          ${cr.coerencia ? `<div style="margin-bottom:6px;"><b>Coerência do raciocínio:</b> ${esc(cr.coerencia)}</div>` : ""}
+          ${cr.qualidadeFundamentacao ? `<div style="margin-bottom:6px;"><b>Fundamentação legal:</b> ${esc(cr.qualidadeFundamentacao)}</div>` : ""}
+          ${cr.intencaoGlobal ? `<div><b>Intenção global:</b> ${esc(cr.intencaoGlobal)}</div>` : ""}
+        </div>
+      </div>`
+    : "";
+
 
   // Legibility section
   let legibilityHTML = "";
@@ -364,6 +393,10 @@ export async function generateCorrectionReport(data: ReportData) {
     <div class="section-label">ANÁLISE POR CRITÉRIO</div>
     ${criteriaHTML}
   </div>` : ""}
+
+  <!-- LEITURA CRÍTICA (modo intenção) -->
+  ${criticalReadingHTML}
+
 
   <!-- PONTOS / ERROS / OMISSÕES -->
   ${(hasPositives || hasErrors || hasOmissions) ? `

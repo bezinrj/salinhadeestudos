@@ -219,6 +219,48 @@ Regras inegociáveis:
 - Não apenas repetir o gabarito — transformá-lo em orientação prática de melhoria.
 - O campo "modelSentence" deve trazer um trecho curto no estilo de prova discursiva (1 a 3 frases) que o aluno poderia usar como modelo.${handwritingSection}`;
 
+    // ── MODO INTENÇÃO — exclusivo das QUESTÕES DA SEMANA ────────────────────
+    // Nas questões da semana o gabarito é uma SUGESTÃO de resposta esperada,
+    // não um texto taxativo. Avalia-se a intenção/sentido jurídico, com senso
+    // crítico, valorizando quem fundamenta em base normativa pertinente.
+    const intentSection = `
+
+## MODO DE AVALIAÇÃO: POR INTENÇÃO (QUESTÃO DA SEMANA)
+
+Esta é uma QUESTÃO DA SEMANA. Aqui o GABARITO é apenas uma SUGESTÃO de resposta esperada — NÃO é texto taxativo nem obrigatório. O BAREMA continua sendo a estrutura oficial de pontos (itens e divisão de pontos NÃO mudam).
+
+### Como avaliar cada critério:
+1. Identifique a INTENÇÃO EXIGIDA pelo critério (o raciocínio jurídico que o item cobra).
+2. Identifique a INTENÇÃO DEMONSTRADA pelo aluno (o que ele efetivamente quis dizer, mesmo com outras palavras, outra ordem ou outro caminho argumentativo).
+3. Julgue criticamente se são equivalentes, parcialmente equivalentes ou divergentes.
+4. Se o aluno chega ao MESMO RESULTADO JURÍDICO por outro caminho, fundamento alternativo válido ou nomenclatura diversa, o critério é considerado atendido no mérito.
+
+### FUNDAMENTAÇÃO LEGAL PESA NA NOTA (regra decisiva):
+Dentro de cada critério, gradue assim:
+- Raciocínio correto **E** fundamentado em dispositivo legal, súmula ou jurisprudência PERTINENTE → status "full" (pontuação INTEGRAL do item).
+- Raciocínio correto, mas apenas na ordem lógica/intuitiva, SEM indicar a base normativa → status "partial" com pontuação ALTA (tipicamente 60% a 85% do item), NUNCA integral. Diga expressamente na justificativa que faltou a fundamentação normativa.
+- Fundamento citado ERRADO ou impertinente → não soma nada por ele e conta como imprecisão em "errors".
+Critério do que vale como fundamentação: a PERTINÊNCIA, não a citação decorada. Descrever corretamente a norma aplicável ("o Código Penal pune tal conduta como..."; "a Constituição assegura...") VALE como fundamentação. Citar número de artigo errado NÃO vale.
+
+### Pontuação parcial (graduação real):
+- Intenção correta com desenvolvimento incompleto → parcial alto.
+- Intenção correta apenas insinuada/tangencial → parcial baixo.
+- Raciocínio ausente → "missed" (zero).
+
+### NÃO penalizar:
+ordem diferente dos argumentos, estilo e redação, terminologia sinônima, ausência do número exato do artigo quando a norma é corretamente identificada pelo conteúdo, palavras diferentes das do gabarito.
+
+### CONTINUA penalizando:
+tese central errada, erro material de direito, conclusão contrária ao caso concreto, omissão real de um eixo do barema.
+
+### Campos obrigatórios adicionais neste modo:
+- Em CADA subitem preencha "intencaoExigida", "intencaoDemonstrada", "fundamentacao" (descreva a base normativa citada pelo aluno, ou diga que não houve) e "julgamento" ("equivalente" | "parcialmente_equivalente" | "divergente").
+- Preencha "criticalReading" com a leitura crítica geral: tese sustentada pelo aluno, coerência do raciocínio, qualidade da fundamentação legal e se a intenção global atende ao que o enunciado pediu.`;
+
+    const finalSystemPrompt = isWeeklyQuestion ? systemPrompt + intentSection : systemPrompt;
+
+
+
     // Build user message content
     const userContent: any[] = [];
     
@@ -271,9 +313,20 @@ IMPORTANTE:
                   earnedScore: { type: "number" },
                   status: { type: "string", enum: ["full", "partial", "missed"] },
                   justification: { type: "string" },
+                  ...(isWeeklyQuestion
+                    ? {
+                        intencaoExigida: { type: "string", description: "Qual raciocínio/intenção este critério exige" },
+                        intencaoDemonstrada: { type: "string", description: "Qual intenção o aluno efetivamente demonstrou" },
+                        fundamentacao: { type: "string", description: "Base normativa pertinente citada pelo aluno, ou indicação de que não houve fundamentação legal" },
+                        julgamento: { type: "string", enum: ["equivalente", "parcialmente_equivalente", "divergente"] },
+                      }
+                    : {}),
                 },
-                required: ["description", "maxScore", "earnedScore", "status", "justification"],
+                required: isWeeklyQuestion
+                  ? ["description", "maxScore", "earnedScore", "status", "justification", "intencaoExigida", "intencaoDemonstrada", "fundamentacao", "julgamento"]
+                  : ["description", "maxScore", "earnedScore", "status", "justification"],
               },
+
             },
           },
           required: ["letter", "title", "maxScore", "earnedScore", "subitems"],
@@ -317,6 +370,22 @@ IMPORTANTE:
 
     const requiredFields = ["baremaBreakdown", "mirror", "positives", "errors", "omissions", "idealAnswer", "feedback", "maxScoreFeedback"];
 
+    if (isWeeklyQuestion) {
+      toolProperties.criticalReading = {
+        type: "object",
+        description: "Leitura crítica geral da resposta (modo intenção — questão da semana).",
+        properties: {
+          teseDoAluno: { type: "string", description: "Qual tese o aluno efetivamente sustentou" },
+          coerencia: { type: "string", description: "Coerência e encadeamento lógico do raciocínio do aluno" },
+          qualidadeFundamentacao: { type: "string", description: "Avaliação da fundamentação legal apresentada: dispositivos/súmulas/jurisprudência pertinentes citados, ausências e impertinências" },
+          intencaoGlobal: { type: "string", description: "Se a intenção global da resposta atende ao que o enunciado pediu" },
+        },
+        required: ["teseDoAluno", "coerencia", "qualidadeFundamentacao", "intencaoGlobal"],
+      };
+      requiredFields.push("criticalReading");
+    }
+
+
     if (hasImage) {
       toolProperties.handwritingNote = {
         type: "string",
@@ -354,7 +423,7 @@ IMPORTANTE:
       body: JSON.stringify({
         model: hasImage ? "google/gemini-2.5-flash" : "google/gemini-3-flash-preview",
         messages: [
-          { role: "system", content: systemPrompt },
+          { role: "system", content: finalSystemPrompt },
           { role: "user", content: userContent },
         ],
         tools,
@@ -416,7 +485,10 @@ IMPORTANTE:
       maxScoreFeedback: correction.maxScoreFeedback || null,
       createdAt: new Date().toISOString().split("T")[0],
       baremaBreakdown: correction.baremaBreakdown,
+      criticalReading: correction.criticalReading || null,
+      evaluationMode: isWeeklyQuestion ? "intencao" : "estrito",
     };
+
 
     if (hasImage) {
       result.handwritingNote = correction.handwritingNote || null;
