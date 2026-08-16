@@ -91,10 +91,11 @@ export default function Admin() {
 
       {isAdmin ? (
          <Tabs defaultValue="overview" className="space-y-4">
-          <TabsList className="flex w-full justify-start gap-1 overflow-x-auto flex-nowrap scrollbar-hide bg-secondary h-auto p-1 md:grid md:grid-cols-[repeat(13,minmax(0,1fr))]">
+          <TabsList className="flex w-full justify-start gap-1 overflow-x-auto flex-nowrap scrollbar-hide bg-secondary h-auto p-1 md:grid md:grid-cols-[repeat(14,minmax(0,1fr))]">
             <TabsTrigger value="overview" className="shrink-0 md:shrink">Visão Geral</TabsTrigger>
             <TabsTrigger value="users" className="shrink-0 md:shrink">Usuários</TabsTrigger>
-            <TabsTrigger value="weekly" className="shrink-0 md:shrink">Semanal</TabsTrigger>
+            <TabsTrigger value="weekly" className="shrink-0 md:shrink">Questões</TabsTrigger>
+            <TabsTrigger value="weeklyq" className="shrink-0 md:shrink">Questões da Semana</TabsTrigger>
             <TabsTrigger value="turmas" className="shrink-0 md:shrink">Turmas</TabsTrigger>
             <TabsTrigger value="alerts" className="relative shrink-0 md:shrink">
               Alertas
@@ -123,7 +124,8 @@ export default function Admin() {
 
           <TabsContent value="overview"><OverviewTab /></TabsContent>
           <TabsContent value="users"><UsersTab /></TabsContent>
-          <TabsContent value="weekly"><WeeklyQuestionsTab /></TabsContent>
+          <TabsContent value="weekly"><WeeklyQuestionsTab mode="regular" /></TabsContent>
+          <TabsContent value="weeklyq"><WeeklyQuestionsTab mode="weekly" /></TabsContent>
           <TabsContent value="turmas"><TurmasAdminTab /></TabsContent>
           <TabsContent value="alerts"><AdminAlertsTab /></TabsContent>
           <TabsContent value="requests"><ModerationRequestsTab /></TabsContent>
@@ -137,14 +139,16 @@ export default function Admin() {
         </Tabs>
       ) : (
         <Tabs defaultValue="weekly" className="space-y-4">
-          <TabsList className="flex w-full justify-start gap-1 overflow-x-auto flex-nowrap scrollbar-hide bg-secondary h-auto p-1 md:grid md:grid-cols-4">
-            <TabsTrigger value="weekly" className="shrink-0 md:shrink">Semanal</TabsTrigger>
+          <TabsList className="flex w-full justify-start gap-1 overflow-x-auto flex-nowrap scrollbar-hide bg-secondary h-auto p-1 md:grid md:grid-cols-5">
+            <TabsTrigger value="weekly" className="shrink-0 md:shrink">Questões</TabsTrigger>
+            <TabsTrigger value="weeklyq" className="shrink-0 md:shrink">Questões da Semana</TabsTrigger>
             <TabsTrigger value="turmas" className="shrink-0 md:shrink">Turmas</TabsTrigger>
             <TabsTrigger value="subjects" className="shrink-0 md:shrink">Assuntos</TabsTrigger>
             <TabsTrigger value="materias" className="shrink-0 md:shrink">Matérias</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="weekly"><WeeklyQuestionsTab /></TabsContent>
+          <TabsContent value="weekly"><WeeklyQuestionsTab mode="regular" /></TabsContent>
+          <TabsContent value="weeklyq"><WeeklyQuestionsTab mode="weekly" /></TabsContent>
           <TabsContent value="turmas"><TurmasAdminTab /></TabsContent>
           <TabsContent value="subjects"><SubjectsTab /></TabsContent>
           <TabsContent value="materias"><MateriasTab /></TabsContent>
@@ -1041,7 +1045,8 @@ function AnnouncementsTab() {
 }
 
 /* ─── Weekly Questions Tab ─── */
-function WeeklyQuestionsTab() {
+function WeeklyQuestionsTab({ mode = "regular" }: { mode?: "regular" | "weekly" }) {
+  const weeklyMode = mode === "weekly";
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { disciplines } = useDisciplines();
@@ -1059,7 +1064,7 @@ function WeeklyQuestionsTab() {
   const [testAnswer, setTestAnswer] = useState("");
   const [testResult, setTestResult] = useState<any>(null);
   const [showTest, setShowTest] = useState(false);
-  const [isWeekly, setIsWeekly] = useState(true);
+  const isWeekly = weeklyMode;
   const [isPremiumQ, setIsPremiumQ] = useState(false);
   const [mirrorText, setMirrorText] = useState("");
   const [idealAnswer, setIdealAnswer] = useState("");
@@ -1156,7 +1161,7 @@ function WeeklyQuestionsTab() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-weekly-questions"] });
       queryClient.invalidateQueries({ queryKey: ["discursivas-questions"] });
-      setTitle(""); setCareer("Delegado"); setDiscipline(""); setSubject(""); setExtraDisciplines([]); setExtraSubjects([]); setStatement(""); setTestResult(null); setTestAnswer(""); setShowTest(false); setIsWeekly(true); setIsPremiumQ(false); setMirrorText(""); setIdealAnswer(""); setBanca("INÉDITA"); setYear(String(new Date().getFullYear()));
+      setTitle(""); setCareer("Delegado"); setDiscipline(""); setSubject(""); setExtraDisciplines([]); setExtraSubjects([]); setStatement(""); setTestResult(null); setTestAnswer(""); setShowTest(false); setIsPremiumQ(false); setMirrorText(""); setIdealAnswer(""); setBanca("INÉDITA"); setYear(String(new Date().getFullYear()));
       toast({ title: isWeekly ? "Questão semanal publicada!" : "Questão discursiva publicada!", description: isWeekly ? "Os usuários na lista de espera serão notificados." : undefined });
     },
     onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
@@ -1274,36 +1279,33 @@ function WeeklyQuestionsTab() {
 
   return (
     <div className="space-y-6">
-      {/* Waitlist info */}
-      <Card className="gradient-card border-border">
-        <CardContent className="p-5 flex items-center gap-3">
-          <div className="rounded-lg bg-gold/10 p-2.5">
-            <Users className="h-5 w-5 text-gold" />
-          </div>
-          <div>
-            <p className="font-display font-bold text-lg">{waitlistCount}</p>
-            <p className="text-xs text-muted-foreground">Pessoas na lista de espera</p>
-          </div>
-        </CardContent>
-      </Card>
+      {weeklyMode && (
+        <Card className="gradient-card border-border">
+          <CardContent className="p-5 flex items-center gap-3">
+            <div className="rounded-lg bg-gold/10 p-2.5">
+              <Users className="h-5 w-5 text-gold" />
+            </div>
+            <div>
+              <p className="font-display font-bold text-lg">{waitlistCount}</p>
+              <p className="text-xs text-muted-foreground">Pessoas na lista de espera</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="gradient-card border-border">
         <CardHeader>
-          <CardTitle className="text-sm font-medium flex items-center gap-2"><Plus className="h-4 w-4" /> Nova Questão</CardTitle>
+          <CardTitle className="text-sm font-medium flex items-center gap-2"><Plus className="h-4 w-4" /> {weeklyMode ? "Nova Questão da Semana" : "Nova Questão"}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="flex items-center gap-4 p-3 rounded-lg bg-secondary/50">
-            <div className="flex items-center gap-2">
-              <Switch checked={isWeekly} onCheckedChange={setIsWeekly} />
-              <span className="text-sm font-medium">{isWeekly ? "Questão Semanal" : "Questão Regular"}</span>
-            </div>
-            {!isWeekly && (
+          {!weeklyMode && (
+            <div className="flex items-center gap-4 p-3 rounded-lg bg-secondary/50">
               <div className="flex items-center gap-2">
                 <Switch checked={isPremiumQ} onCheckedChange={setIsPremiumQ} />
-                <span className="text-sm">Premium</span>
+                <span className="text-sm font-medium">{isPremiumQ ? "Questão Premium" : "Questão Regular"}</span>
               </div>
-            )}
-          </div>
+            </div>
+          )}
           <Input placeholder="Título da questão" value={title} onChange={(e) => setTitle(e.target.value)} />
           <Select value={career} onValueChange={setCareer}>
             <SelectTrigger><SelectValue placeholder="Carreira" /></SelectTrigger>
@@ -1468,7 +1470,7 @@ function WeeklyQuestionsTab() {
       {/* Existing questions */}
       <Card className="gradient-card border-border">
         <CardHeader className="flex flex-row items-center justify-between gap-2">
-          <CardTitle className="text-sm font-medium">Todas as Questões</CardTitle>
+          <CardTitle className="text-sm font-medium">{weeklyMode ? "Questões da Semana" : "Todas as Questões"}</CardTitle>
           <Input
             placeholder="Buscar por ID ou título..."
             className="max-w-xs h-8 text-xs"
@@ -1478,10 +1480,12 @@ function WeeklyQuestionsTab() {
         </CardHeader>
         <CardContent className="space-y-3">
           {(questions || []).filter((q: any) => {
+            if (!!q.is_weekly !== weeklyMode) return false;
             if (!searchQuery.trim()) return true;
             const s = searchQuery.toLowerCase();
             return q.id.toLowerCase().includes(s) || q.title.toLowerCase().includes(s);
           }).length ? (questions || []).filter((q: any) => {
+            if (!!q.is_weekly !== weeklyMode) return false;
             if (!searchQuery.trim()) return true;
             const s = searchQuery.toLowerCase();
             return q.id.toLowerCase().includes(s) || q.title.toLowerCase().includes(s);
