@@ -8,6 +8,7 @@ export type CronoMateria = {
   nome: string;
   cor: string;
   created_at: string;
+  materia_canon_id?: string | null;
 };
 
 export type CronoAssunto = {
@@ -16,6 +17,7 @@ export type CronoAssunto = {
   materia_id: string;
   nome: string;
   created_at: string;
+  assunto_canon_id?: string | null;
 };
 
 export type Periodo = "Diário" | "Mensal" | "Anual";
@@ -75,11 +77,11 @@ export function useCronoMaterias() {
   };
 
   const createMateria = useMutation({
-    mutationFn: async ({ nome, cor }: { nome: string; cor: string }) => {
+    mutationFn: async ({ nome, cor, materia_canon_id }: { nome: string; cor: string; materia_canon_id?: string | null }) => {
       if (!user?.id) throw new Error("Sem usuário");
       const { data, error } = await sb
         .from("crono_materias")
-        .insert({ user_id: user.id, nome, cor })
+        .insert({ user_id: user.id, nome, cor, ...(materia_canon_id ? { materia_canon_id } : {}) })
         .select("*")
         .single();
       if (error) throw error;
@@ -89,10 +91,11 @@ export function useCronoMaterias() {
   });
 
   const updateMateria = useMutation({
-    mutationFn: async ({ id, nome, cor }: { id: string; nome?: string; cor?: string }) => {
+    mutationFn: async ({ id, nome, cor, materia_canon_id }: { id: string; nome?: string; cor?: string; materia_canon_id?: string | null }) => {
       const patch: Record<string, unknown> = {};
       if (nome !== undefined) patch.nome = nome;
       if (cor !== undefined) patch.cor = cor;
+      if (materia_canon_id !== undefined) patch.materia_canon_id = materia_canon_id;
       const { error } = await sb.from("crono_materias").update(patch).eq("id", id);
       if (error) throw error;
     },
@@ -108,11 +111,11 @@ export function useCronoMaterias() {
   });
 
   const createAssunto = useMutation({
-    mutationFn: async ({ materia_id, nome }: { materia_id: string; nome: string }) => {
+    mutationFn: async ({ materia_id, nome, assunto_canon_id }: { materia_id: string; nome: string; assunto_canon_id?: string | null }) => {
       if (!user?.id) throw new Error("Sem usuário");
       const { data, error } = await sb
         .from("crono_assuntos")
-        .insert({ user_id: user.id, materia_id, nome })
+        .insert({ user_id: user.id, materia_id, nome, ...(assunto_canon_id ? { assunto_canon_id } : {}) })
         .select("*")
         .single();
       if (error) throw error;
@@ -122,8 +125,11 @@ export function useCronoMaterias() {
   });
 
   const updateAssunto = useMutation({
-    mutationFn: async ({ id, nome }: { id: string; nome: string }) => {
-      const { error } = await sb.from("crono_assuntos").update({ nome }).eq("id", id);
+    mutationFn: async ({ id, nome, assunto_canon_id }: { id: string; nome?: string; assunto_canon_id?: string | null }) => {
+      const patch: Record<string, unknown> = {};
+      if (nome !== undefined) patch.nome = nome;
+      if (assunto_canon_id !== undefined) patch.assunto_canon_id = assunto_canon_id;
+      const { error } = await sb.from("crono_assuntos").update(patch).eq("id", id);
       if (error) throw error;
     },
     onSuccess: invalidate,
