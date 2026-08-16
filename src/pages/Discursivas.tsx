@@ -109,7 +109,8 @@ export default function Discursivas() {
   });
 
   const filtered = allQuestions.filter(q => {
-    if (q.isWeekly && q.deadline && new Date(q.deadline) > new Date()) return false;
+    // Questões da semana ficam exclusivas do arquivo em /semanal
+    if (q.isWeekly) return false;
     // Search by ID or title
     if (searchQuery.trim()) {
       const query = searchQuery.trim().toLowerCase();
