@@ -82,6 +82,15 @@ export interface CorrectionResult {
     howToImprove: string;
     modelSentence: string;
   };
+  /** Modo de avaliação usado pelo servidor: "intencao" nas questões da semana. */
+  evaluationMode?: "intencao" | "estrito";
+  /** Leitura crítica geral — apenas no modo intenção (questões da semana). */
+  criticalReading?: {
+    teseDoAluno: string;
+    coerencia: string;
+    qualidadeFundamentacao: string;
+    intencaoGlobal: string;
+  } | null;
 }
 
 export interface BaremaScore {
@@ -89,8 +98,19 @@ export interface BaremaScore {
   title: string;
   maxScore: number;
   earnedScore: number;
-  subitems: { description: string; maxScore: number; earnedScore: number; status: "full" | "partial" | "missed" }[];
+  subitems: {
+    description: string;
+    maxScore: number;
+    earnedScore: number;
+    status: "full" | "partial" | "missed";
+    justification?: string;
+    intencaoExigida?: string;
+    intencaoDemonstrada?: string;
+    fundamentacao?: string;
+    julgamento?: "equivalente" | "parcialmente_equivalente" | "divergente";
+  }[];
 }
+
 
 export interface Subscription {
   planId: string;
