@@ -1230,15 +1230,16 @@ function WeeklyQuestionsTab({ mode = "regular" }: { mode?: "regular" | "weekly" 
   });
 
 
-  function getNextSundayDeadline(): string {
+  function getNextFridayDeadline(): string {
+    // Próxima sexta-feira 00:00 no horário de Brasília (UTC-3) → 03:00 UTC
     const now = new Date();
     const brt = new Date(now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
-    const dayOfWeek = brt.getDay();
-    const daysUntilSunday = dayOfWeek === 0 ? 7 : 7 - dayOfWeek;
-    const nextSunday = new Date(brt);
-    nextSunday.setDate(nextSunday.getDate() + daysUntilSunday);
-    nextSunday.setHours(0, 0, 0, 0);
-    const utcTime = new Date(nextSunday.getTime() + 3 * 60 * 60 * 1000);
+    const dayOfWeek = brt.getDay(); // 5 = sexta
+    const daysUntilFriday = ((5 - dayOfWeek) + 7) % 7 || 7;
+    const nextFriday = new Date(brt);
+    nextFriday.setDate(nextFriday.getDate() + daysUntilFriday);
+    nextFriday.setHours(0, 0, 0, 0);
+    const utcTime = new Date(nextFriday.getTime() + 3 * 60 * 60 * 1000);
     return utcTime.toISOString();
   }
 
