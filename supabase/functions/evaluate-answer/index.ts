@@ -313,10 +313,20 @@ IMPORTANTE:
                   earnedScore: { type: "number" },
                   status: { type: "string", enum: ["full", "partial", "missed"] },
                   justification: { type: "string" },
+                  ...(isWeeklyQuestion
+                    ? {
+                        intencaoExigida: { type: "string", description: "Qual raciocínio/intenção este critério exige" },
+                        intencaoDemonstrada: { type: "string", description: "Qual intenção o aluno efetivamente demonstrou" },
+                        fundamentacao: { type: "string", description: "Base normativa pertinente citada pelo aluno, ou indicação de que não houve fundamentação legal" },
+                        julgamento: { type: "string", enum: ["equivalente", "parcialmente_equivalente", "divergente"] },
+                      }
+                    : {}),
                 },
-                required: ["description", "maxScore", "earnedScore", "status", "justification"],
-
+                required: isWeeklyQuestion
+                  ? ["description", "maxScore", "earnedScore", "status", "justification", "intencaoExigida", "intencaoDemonstrada", "fundamentacao", "julgamento"]
+                  : ["description", "maxScore", "earnedScore", "status", "justification"],
               },
+
             },
           },
           required: ["letter", "title", "maxScore", "earnedScore", "subitems"],
