@@ -8,6 +8,8 @@ import { Trophy, FileText, Timer, TrendingUp, Flame, Target, X } from "lucide-re
 import { Badge } from "@/components/ui/badge";
 import { recentCorrections, weeklyStudyData } from "@/data/mockData";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
+import { ChartTooltip } from "@/components/charts/ChartTooltip";
+
 import { Progress } from "@/components/ui/progress";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
