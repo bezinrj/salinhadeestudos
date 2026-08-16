@@ -1161,7 +1161,7 @@ function WeeklyQuestionsTab({ mode = "regular" }: { mode?: "regular" | "weekly" 
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-weekly-questions"] });
       queryClient.invalidateQueries({ queryKey: ["discursivas-questions"] });
-      setTitle(""); setCareer("Delegado"); setDiscipline(""); setSubject(""); setExtraDisciplines([]); setExtraSubjects([]); setStatement(""); setTestResult(null); setTestAnswer(""); setShowTest(false); setIsWeekly(true); setIsPremiumQ(false); setMirrorText(""); setIdealAnswer(""); setBanca("INÉDITA"); setYear(String(new Date().getFullYear()));
+      setTitle(""); setCareer("Delegado"); setDiscipline(""); setSubject(""); setExtraDisciplines([]); setExtraSubjects([]); setStatement(""); setTestResult(null); setTestAnswer(""); setShowTest(false); setIsPremiumQ(false); setMirrorText(""); setIdealAnswer(""); setBanca("INÉDITA"); setYear(String(new Date().getFullYear()));
       toast({ title: isWeekly ? "Questão semanal publicada!" : "Questão discursiva publicada!", description: isWeekly ? "Os usuários na lista de espera serão notificados." : undefined });
     },
     onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
@@ -1294,21 +1294,17 @@ function WeeklyQuestionsTab({ mode = "regular" }: { mode?: "regular" | "weekly" 
 
       <Card className="gradient-card border-border">
         <CardHeader>
-          <CardTitle className="text-sm font-medium flex items-center gap-2"><Plus className="h-4 w-4" /> Nova Questão</CardTitle>
+          <CardTitle className="text-sm font-medium flex items-center gap-2"><Plus className="h-4 w-4" /> {weeklyMode ? "Nova Questão da Semana" : "Nova Questão"}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="flex items-center gap-4 p-3 rounded-lg bg-secondary/50">
-            <div className="flex items-center gap-2">
-              <Switch checked={isWeekly} onCheckedChange={setIsWeekly} />
-              <span className="text-sm font-medium">{isWeekly ? "Questão Semanal" : "Questão Regular"}</span>
-            </div>
-            {!isWeekly && (
+          {!weeklyMode && (
+            <div className="flex items-center gap-4 p-3 rounded-lg bg-secondary/50">
               <div className="flex items-center gap-2">
                 <Switch checked={isPremiumQ} onCheckedChange={setIsPremiumQ} />
-                <span className="text-sm">Premium</span>
+                <span className="text-sm font-medium">{isPremiumQ ? "Questão Premium" : "Questão Regular"}</span>
               </div>
-            )}
-          </div>
+            </div>
+          )}
           <Input placeholder="Título da questão" value={title} onChange={(e) => setTitle(e.target.value)} />
           <Select value={career} onValueChange={setCareer}>
             <SelectTrigger><SelectValue placeholder="Carreira" /></SelectTrigger>
