@@ -227,7 +227,7 @@ function DesktopAdminNav({ isAdmin, pendingAlerts, pendingRequests }: AdminNavPr
 }
 
 function MobileAdminNav({ isAdmin, pendingAlerts, pendingRequests }: AdminNavProps) {
-  const adminItems = [
+  const adminItems: NavItem[] = [
     { value: "overview", label: "Visão Geral", icon: Activity },
     { value: "users", label: "Usuários", icon: Users },
     { value: "weekly", label: "Questões", icon: FileText },
