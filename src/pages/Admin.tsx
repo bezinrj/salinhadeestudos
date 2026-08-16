@@ -91,10 +91,11 @@ export default function Admin() {
 
       {isAdmin ? (
          <Tabs defaultValue="overview" className="space-y-4">
-          <TabsList className="flex w-full justify-start gap-1 overflow-x-auto flex-nowrap scrollbar-hide bg-secondary h-auto p-1 md:grid md:grid-cols-[repeat(13,minmax(0,1fr))]">
+          <TabsList className="flex w-full justify-start gap-1 overflow-x-auto flex-nowrap scrollbar-hide bg-secondary h-auto p-1 md:grid md:grid-cols-[repeat(14,minmax(0,1fr))]">
             <TabsTrigger value="overview" className="shrink-0 md:shrink">Visão Geral</TabsTrigger>
             <TabsTrigger value="users" className="shrink-0 md:shrink">Usuários</TabsTrigger>
-            <TabsTrigger value="weekly" className="shrink-0 md:shrink">Semanal</TabsTrigger>
+            <TabsTrigger value="weekly" className="shrink-0 md:shrink">Questões</TabsTrigger>
+            <TabsTrigger value="weeklyq" className="shrink-0 md:shrink">Questões da Semana</TabsTrigger>
             <TabsTrigger value="turmas" className="shrink-0 md:shrink">Turmas</TabsTrigger>
             <TabsTrigger value="alerts" className="relative shrink-0 md:shrink">
               Alertas
@@ -123,7 +124,8 @@ export default function Admin() {
 
           <TabsContent value="overview"><OverviewTab /></TabsContent>
           <TabsContent value="users"><UsersTab /></TabsContent>
-          <TabsContent value="weekly"><WeeklyQuestionsTab /></TabsContent>
+          <TabsContent value="weekly"><WeeklyQuestionsTab mode="regular" /></TabsContent>
+          <TabsContent value="weeklyq"><WeeklyQuestionsTab mode="weekly" /></TabsContent>
           <TabsContent value="turmas"><TurmasAdminTab /></TabsContent>
           <TabsContent value="alerts"><AdminAlertsTab /></TabsContent>
           <TabsContent value="requests"><ModerationRequestsTab /></TabsContent>
@@ -137,14 +139,16 @@ export default function Admin() {
         </Tabs>
       ) : (
         <Tabs defaultValue="weekly" className="space-y-4">
-          <TabsList className="flex w-full justify-start gap-1 overflow-x-auto flex-nowrap scrollbar-hide bg-secondary h-auto p-1 md:grid md:grid-cols-4">
-            <TabsTrigger value="weekly" className="shrink-0 md:shrink">Semanal</TabsTrigger>
+          <TabsList className="flex w-full justify-start gap-1 overflow-x-auto flex-nowrap scrollbar-hide bg-secondary h-auto p-1 md:grid md:grid-cols-5">
+            <TabsTrigger value="weekly" className="shrink-0 md:shrink">Questões</TabsTrigger>
+            <TabsTrigger value="weeklyq" className="shrink-0 md:shrink">Questões da Semana</TabsTrigger>
             <TabsTrigger value="turmas" className="shrink-0 md:shrink">Turmas</TabsTrigger>
             <TabsTrigger value="subjects" className="shrink-0 md:shrink">Assuntos</TabsTrigger>
             <TabsTrigger value="materias" className="shrink-0 md:shrink">Matérias</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="weekly"><WeeklyQuestionsTab /></TabsContent>
+          <TabsContent value="weekly"><WeeklyQuestionsTab mode="regular" /></TabsContent>
+          <TabsContent value="weeklyq"><WeeklyQuestionsTab mode="weekly" /></TabsContent>
           <TabsContent value="turmas"><TurmasAdminTab /></TabsContent>
           <TabsContent value="subjects"><SubjectsTab /></TabsContent>
           <TabsContent value="materias"><MateriasTab /></TabsContent>
