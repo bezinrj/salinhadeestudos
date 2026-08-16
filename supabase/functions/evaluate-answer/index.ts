@@ -35,6 +35,10 @@ serve(async (req) => {
 
     const body = await req.json();
     const { answer, statement, imageBase64, mimeType, directCorrection, questionId } = body;
+    // Only used for the admin "Teste de Correção" panel (validated below).
+    const clientBaremaText: string | undefined = body.baremaText;
+    const clientGabarito: string | undefined = body.gabarito;
+
 
     const hasImage = !!imageBase64 && directCorrection;
 
@@ -74,15 +78,27 @@ serve(async (req) => {
     if (questionId) {
       const { data: q } = await supabaseAdmin
         .from("weekly_questions")
-        .select("is_premium, is_weekly, mirror_text, ideal_answer, statement")
+        .select("is_premium, is_weekly, mirror_text, ideal_answer, statement, barema")
         .eq("id", questionId)
         .maybeSingle();
       if (q) {
         isPremiumQuestion = !!q.is_premium || !!q.is_weekly;
         isWeeklyQuestion = !!q.is_weekly;
-        baremaText = q.mirror_text || undefined;
+        baremaText = q.mirror_text || (q.barema ? JSON.stringify(q.barema, null, 2) : undefined);
         gabarito = q.ideal_answer || undefined;
         questionStatement = q.statement || statement;
+      }
+    }
+
+    // Admin test panel: no questionId, answer key comes from the form being edited.
+    if (!baremaText && !gabarito && (clientBaremaText || clientGabarito)) {
+      const { data: isAdmin } = await supabaseAdmin.rpc("has_role", {
+        _user_id: userId,
+        _role: "admin",
+      });
+      if (isAdmin) {
+        baremaText = clientBaremaText || undefined;
+        gabarito = clientGabarito || undefined;
       }
     }
 
@@ -92,6 +108,8 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+
 
 
     const FREE_MONTHLY_LIMIT = 3;
