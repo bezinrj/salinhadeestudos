@@ -178,7 +178,7 @@ function DesktopAdminNav({ isAdmin, pendingAlerts, pendingRequests }: AdminNavPr
     },
   ];
 
-  const modGroups = [
+  const modGroups: NavGroup[] = [
     {
       label: "Frequentes",
       items: [
