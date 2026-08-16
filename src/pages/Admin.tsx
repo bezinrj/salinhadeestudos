@@ -1279,18 +1279,19 @@ function WeeklyQuestionsTab({ mode = "regular" }: { mode?: "regular" | "weekly" 
 
   return (
     <div className="space-y-6">
-      {/* Waitlist info */}
-      <Card className="gradient-card border-border">
-        <CardContent className="p-5 flex items-center gap-3">
-          <div className="rounded-lg bg-gold/10 p-2.5">
-            <Users className="h-5 w-5 text-gold" />
-          </div>
-          <div>
-            <p className="font-display font-bold text-lg">{waitlistCount}</p>
-            <p className="text-xs text-muted-foreground">Pessoas na lista de espera</p>
-          </div>
-        </CardContent>
-      </Card>
+      {weeklyMode && (
+        <Card className="gradient-card border-border">
+          <CardContent className="p-5 flex items-center gap-3">
+            <div className="rounded-lg bg-gold/10 p-2.5">
+              <Users className="h-5 w-5 text-gold" />
+            </div>
+            <div>
+              <p className="font-display font-bold text-lg">{waitlistCount}</p>
+              <p className="text-xs text-muted-foreground">Pessoas na lista de espera</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="gradient-card border-border">
         <CardHeader>
