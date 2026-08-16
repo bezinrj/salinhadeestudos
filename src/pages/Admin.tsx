@@ -1470,7 +1470,7 @@ function WeeklyQuestionsTab({ mode = "regular" }: { mode?: "regular" | "weekly" 
       {/* Existing questions */}
       <Card className="gradient-card border-border">
         <CardHeader className="flex flex-row items-center justify-between gap-2">
-          <CardTitle className="text-sm font-medium">Todas as Questões</CardTitle>
+          <CardTitle className="text-sm font-medium">{weeklyMode ? "Questões da Semana" : "Todas as Questões"}</CardTitle>
           <Input
             placeholder="Buscar por ID ou título..."
             className="max-w-xs h-8 text-xs"
@@ -1480,10 +1480,12 @@ function WeeklyQuestionsTab({ mode = "regular" }: { mode?: "regular" | "weekly" 
         </CardHeader>
         <CardContent className="space-y-3">
           {(questions || []).filter((q: any) => {
+            if (!!q.is_weekly !== weeklyMode) return false;
             if (!searchQuery.trim()) return true;
             const s = searchQuery.toLowerCase();
             return q.id.toLowerCase().includes(s) || q.title.toLowerCase().includes(s);
           }).length ? (questions || []).filter((q: any) => {
+            if (!!q.is_weekly !== weeklyMode) return false;
             if (!searchQuery.trim()) return true;
             const s = searchQuery.toLowerCase();
             return q.id.toLowerCase().includes(s) || q.title.toLowerCase().includes(s);
