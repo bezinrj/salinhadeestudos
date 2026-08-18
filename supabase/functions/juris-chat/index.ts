@@ -9,20 +9,21 @@ const corsHeaders = {
 
 const DAILY_LIMIT = 20;
 
+const cut = (v: unknown, n: number) => String(v ?? "").replace(/\s+/g, " ").trim().slice(0, n);
+
+// Contexto enxuto: apenas o essencial do julgado, para manter o custo mínimo.
 function buildContext(j: any) {
-  return `JULGADO: ${j.titulo} | ${j.tribunal} ${j.numero} | ${j.relator} | ${j.data} | ${j.info}
-ÁREA: ${j.area}
-NOÇÕES: ${j.nocoes?.frase ?? ""} | ${j.nocoes?.contexto ?? ""}
-RESULTADO — Constitucional: ${j.nocoes?.ok ?? ""} | Inconstitucional: ${j.nocoes?.ko ?? ""}
-CONCEITUAL: ${j.conceitual}
-PROBLEMA: ${j.problema} | SOLUÇÃO: ${j.solucao}
-ANTES: ${j.antes} | DEPOIS: ${j.depois}
-CONCLUSÕES: ${j.conclusoes}
-PRINCÍPIOS: ${j.principios}
-DOUTRINA: ${j.doutrina}
-JURISPRUDÊNCIA: ${j.jurisprudencia}
-ABERTURA: ${j.abertura} | TESE: ${j.tese}
-ÍNTEGRA: ${j.integra_texto} | REF: ${j.integra_ref}`;
+  const parts = [
+    `JULGADO: ${cut(j.titulo, 200)} | ${cut(j.tribunal, 20)} ${cut(j.numero, 40)} | ${cut(j.data, 30)} ${cut(j.info, 40)}`,
+    `ÁREA: ${cut((j.areas?.length ? j.areas.join(", ") : j.area), 120)}`,
+    `NOÇÕES: ${cut(j.nocoes?.frase, 400)} ${cut(j.nocoes?.contexto, 400)}`,
+    `TESE: ${cut(j.tese, 600)}`,
+    `PROBLEMA: ${cut(j.problema, 500)}`,
+    `SOLUÇÃO: ${cut(j.solucao, 600)}`,
+    `CONCLUSÕES: ${cut(j.conclusoes, 600)}`,
+    `PRINCÍPIOS: ${cut(j.principios, 400)}`,
+  ].filter((p) => p.split(": ").slice(1).join(": ").trim().length > 0);
+  return parts.join("\n");
 }
 
 serve(async (req) => {
