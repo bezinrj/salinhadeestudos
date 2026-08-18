@@ -34,6 +34,7 @@ import MateriasTab from "@/components/MateriasTab";
 import TurmasAdminTab from "@/components/TurmasAdminTab";
 import FeedbacksAdminTab from "@/components/admin/FeedbacksAdminTab";
 import SiteConfigTab from "@/components/admin/SiteConfigTab";
+import { CouponsTab } from "@/components/admin/CouponsTab";
 import CronoCatalogoTab from "@/components/cronometro/CronoCatalogoTab";
 
 
@@ -108,6 +109,7 @@ export default function Admin() {
             <TabsContent value="materias"><MateriasTab /></TabsContent>
             <TabsContent value="crono"><CronoCatalogoTab /></TabsContent>
             <TabsContent value="feedbacks"><FeedbacksAdminTab /></TabsContent>
+            <TabsContent value="coupons"><CouponsTab /></TabsContent>
             <TabsContent value="config"><SiteConfigTab /></TabsContent>
           </div>
         </Tabs>
@@ -173,6 +175,7 @@ function DesktopAdminNav({ isAdmin, pendingAlerts, pendingRequests }: AdminNavPr
       label: "Sistema",
       items: [
         { value: "feedbacks", label: "Feedbacks", icon: Mail },
+        { value: "coupons", label: "Cupons", icon: Ticket },
         { value: "config", label: "Configurações", icon: Settings },
       ],
     },
