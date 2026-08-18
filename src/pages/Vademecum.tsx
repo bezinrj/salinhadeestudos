@@ -70,6 +70,17 @@ export default function Vademecum() {
     });
   }, [artigos, progressoMap, status, cargo]);
 
+  // Degustação: usuários sem o plano veem apenas os 10 primeiros artigos de cada lei
+  const allowedIds = useMemo(
+    () => new Set(artigos.slice(0, FREE_PREVIEW_ARTICLES).map((a) => a.id)),
+    [artigos]
+  );
+  const visibleArtigos = useMemo(
+    () => (hasVade ? filtered : filtered.filter((a) => allowedIds.has(a.id))),
+    [hasVade, filtered, allowedIds]
+  );
+  const showPaywall = !hasVade && artigos.length > FREE_PREVIEW_ARTICLES;
+
   const artigosContaveis = useMemo(() => {
     return artigos.filter((a) => a.rotulo && /^Art\.?\s*\d+/i.test(a.rotulo.trim()));
   }, [artigos]);
