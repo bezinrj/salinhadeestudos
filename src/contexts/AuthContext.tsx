@@ -24,12 +24,29 @@ export interface Profile {
   created_at: string;
 }
 
+export interface Entitlements {
+  discursivas: boolean;
+  vade: boolean;
+  juris: boolean;
+  cadernos: boolean;
+  staff: boolean;
+}
+
+const NO_ENTITLEMENTS: Entitlements = {
+  discursivas: false,
+  vade: false,
+  juris: false,
+  cadernos: false,
+  staff: false,
+};
+
 interface AuthContextType {
   user: SupabaseUser | null;
   profile: Profile | null;
   isAuthenticated: boolean;
   loading: boolean;
   subscribed: boolean;
+  entitlements: Entitlements;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   register: (username: string, email: string, password: string, phone: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
