@@ -215,5 +215,21 @@ export function PricingCards({
         );
       })}
     </div>
+    </section>
+
+    <section className="space-y-4">
+      <div className="text-center">
+        <h3 className="font-display text-xl font-bold">Planos de Conteúdo</h3>
+        <p className="text-sm text-muted-foreground">
+          Vade Digital, Salinha Juris, Cadernos e o pacote completo
+        </p>
+      </div>
+      <ContentPlanCards
+        currentPriceId={currentPriceId}
+        isAuthenticated={isAuthenticated}
+        onSelectUnauthenticated={onSelectUnauthenticated}
+      />
+    </section>
+    </div>
   );
 }
