@@ -53,7 +53,14 @@ export function PricingCards({
   const isFreeCurrent = isAuthenticated && !currentPriceId;
 
   return (
+    <div className="space-y-12">
+    <section className="space-y-4">
+      <div className="text-center">
+        <h3 className="font-display text-xl font-bold">Plano Discursivas</h3>
+        <p className="text-sm text-muted-foreground">Correção de discursivas, ranking e gamificação</p>
+      </div>
     <div className="grid md:grid-cols-4 gap-6 max-w-6xl mx-auto">
+
       {/* Free / Degustação card */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
