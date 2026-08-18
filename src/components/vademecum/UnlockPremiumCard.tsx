@@ -7,7 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
-type Variant = "professor" | "private" | "remissao";
+type Variant = "professor" | "private" | "remissao" | "lei";
 
 const VARIANT_STYLES: Record<Variant, { border: string; bg: string; text: string; label: string }> = {
   professor: {
@@ -28,10 +28,18 @@ const VARIANT_STYLES: Record<Variant, { border: string; bg: string; text: string
     text: "text-sky-300",
     label: "Adicionar remissão",
   },
+  lei: {
+    border: "border-gold/40",
+    bg: "bg-gold/5 hover:bg-gold/10",
+    text: "text-gold",
+    label: "Ver a lei completa",
+  },
 };
 
 interface Props {
   variant: Variant;
+  /** Texto adicional exibido na variante "lei" */
+  description?: string;
 }
 
 export function UnlockPremiumCard({ variant }: Props) {
