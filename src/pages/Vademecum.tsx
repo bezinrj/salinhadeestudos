@@ -225,6 +225,8 @@ export default function Vademecum() {
                         })
                       }
                       onRemoveProfNote={(id) => notasProf.remove.mutate(id)}
+                      onUpdateProfNote={(id, conteudo) => notasProf.update.mutateAsync({ id, conteudo })}
+
                       onSavePrivNote={(artigoId, conteudo) =>
                         notasPriv.upsert.mutateAsync({ artigo_id: artigoId, conteudo })
                       }

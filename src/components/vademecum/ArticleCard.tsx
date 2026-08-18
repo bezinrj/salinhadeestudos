@@ -51,6 +51,8 @@ interface Props {
   onRemoveMarcacao: (id: string) => void;
   onCreateProfNote: (artigoId: string, conteudo: string) => Promise<void> | void;
   onRemoveProfNote: (id: string) => void;
+  onUpdateProfNote?: (id: string, conteudo: string) => Promise<void> | void;
+
   onSavePrivNote: (artigoId: string, conteudo: string) => Promise<void> | void;
   onRemovePrivNote: (id: string) => Promise<void> | void;
   leis?: VmLei[];
@@ -78,6 +80,8 @@ export function ArticleCard(props: Props) {
     onRemoveMarcacao,
     onCreateProfNote,
     onRemoveProfNote,
+    onUpdateProfNote,
+
     onSavePrivNote,
     onRemovePrivNote,
     leis = [],
@@ -228,6 +232,8 @@ export function ArticleCard(props: Props) {
             nota={n}
             canDelete={canAddProfNote}
             onDelete={() => onRemoveProfNote(n.id)}
+            onUpdate={onUpdateProfNote ? (c) => onUpdateProfNote(n.id, c) : undefined}
+
           />
         ))}
 
