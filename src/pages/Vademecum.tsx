@@ -184,7 +184,7 @@ export default function Vademecum() {
                       notasProf={notasProf.byArtigo.get(a.id) ?? []}
                       notaPriv={notasPriv.byArtigo.get(a.id)}
                       canAddProfNote={canEdit}
-                      subscribed={subscribed}
+                      subscribed={hasVade}
                       autorId={user?.id}
                       autorNome={profile?.name || profile?.username || "Professor"}
                       onToggleLido={(id, v) => handleToggle(id, "lido", v)}
