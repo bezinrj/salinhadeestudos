@@ -6,9 +6,10 @@ import { Plus, Download, FileText, Trash2, FolderPlus, Edit2 } from "lucide-reac
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { CadernoModal } from "@/components/cadernos/CadernoModal";
+import { UnlockPremiumCard } from "@/components/vademecum/UnlockPremiumCard";
 
 export default function CadernosPage() {
-  const { profile } = useAuth();
+  const { profile, entitlements } = useAuth();
   const userName = profile?.name || profile?.username || "Deltinha";
 
   const { pastas, create: createPasta, remove: removePasta } = useCadernoPastas();
@@ -98,6 +99,17 @@ export default function CadernosPage() {
     : activePastaId === "none"
       ? cadernos.filter(c => !c.pasta_id)
       : cadernos.filter(c => c.pasta_id === activePastaId);
+
+  if (!entitlements.cadernos) {
+    return (
+      <div className="container mx-auto max-w-2xl px-4 py-12">
+        <UnlockPremiumCard
+          variant="lei"
+          description="Os Cadernos fazem parte do Vade Digital, do Combo e da Salinha PRO. Assine para criar pastas, cadernos e salvar suas anotações."
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-card border border-border rounded-lg text-white p-6 pb-24">

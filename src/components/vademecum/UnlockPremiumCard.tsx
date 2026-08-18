@@ -7,7 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
-type Variant = "professor" | "private" | "remissao";
+type Variant = "professor" | "private" | "remissao" | "lei";
 
 const VARIANT_STYLES: Record<Variant, { border: string; bg: string; text: string; label: string }> = {
   professor: {
@@ -28,13 +28,21 @@ const VARIANT_STYLES: Record<Variant, { border: string; bg: string; text: string
     text: "text-sky-300",
     label: "Adicionar remissão",
   },
+  lei: {
+    border: "border-gold/40",
+    bg: "bg-gold/5 hover:bg-gold/10",
+    text: "text-gold",
+    label: "Ver a lei completa",
+  },
 };
 
 interface Props {
   variant: Variant;
+  /** Texto adicional exibido na variante "lei" */
+  description?: string;
 }
 
-export function UnlockPremiumCard({ variant }: Props) {
+export function UnlockPremiumCard({ variant, description }: Props) {
   const [open, setOpen] = useState(false);
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
@@ -47,6 +55,42 @@ export function UnlockPremiumCard({ variant }: Props) {
     }
     setOpen(true);
   };
+
+  const dialog = (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="font-display text-2xl">Desbloqueie sua Assinatura</DialogTitle>
+          <DialogDescription>
+            Escolha o plano ideal para liberar notas, remissões e todos os recursos premium.
+          </DialogDescription>
+        </DialogHeader>
+        <PricingCards isAuthenticated />
+      </DialogContent>
+    </Dialog>
+  );
+
+  if (variant === "lei") {
+    return (
+      <>
+        <div className="rounded-xl border border-dashed border-gold/40 bg-gold/5 p-8 text-center space-y-3">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-gold/10 ring-1 ring-gold/30">
+            <Lock className="h-5 w-5 text-gold" />
+          </div>
+          <h3 className="font-display text-lg font-bold">Degustação encerrada</h3>
+          <p className="mx-auto max-w-md text-sm text-muted-foreground">
+            {description ??
+              "Você está vendo apenas os 10 primeiros artigos desta lei. Assine o Vade Digital para liberar todas as leis, notas, grifos, remissões e cadernos."}
+          </p>
+          <Button onClick={handleClick} className="bg-gold text-background hover:bg-gold/90">
+            <Crown className="mr-2 h-4 w-4" />
+            Desbloqueie sua Assinatura
+          </Button>
+        </div>
+        {dialog}
+      </>
+    );
+  }
 
   return (
     <>

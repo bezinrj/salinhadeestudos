@@ -18,11 +18,6 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const supabaseClient = createClient(
-    Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_ANON_KEY") ?? ""
-  );
-
   try {
     logStep("Function started");
 
@@ -32,17 +27,66 @@ serve(async (req) => {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) throw new Error("No authorization header provided");
 
+    const supabaseClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
     const token = authHeader.replace("Bearer ", "");
     const { data } = await supabaseClient.auth.getUser(token);
     const user = data.user;
     if (!user?.email) throw new Error("User not authenticated or email not available");
-    logStep("User authenticated", { userId: user.id, email: user.email });
+    logStep("User authenticated", { userId: user.id });
 
-    const { priceId } = await req.json();
+    const body = await req.json();
+    const priceId: string | undefined = body?.priceId;
+    const couponCode: string | undefined = body?.couponCode?.toString().trim() || undefined;
+    const planKey: string | undefined = body?.planKey;
     if (!priceId) throw new Error("priceId is required");
-    logStep("Price ID received", { priceId });
+    logStep("Payload received", { priceId, planKey, hasCoupon: !!couponCode });
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
+
+    // ---- Coupon handling (validated server-side) ----
+    let percentOff = 0;
+    if (couponCode) {
+      const { data: validation, error: valErr } = await supabaseClient.rpc("validate_coupon", {
+        _code: couponCode,
+        _plan_key: planKey ?? "combo",
+      });
+      if (valErr) throw new Error(valErr.message);
+      const row = Array.isArray(validation) ? validation[0] : validation;
+      if (!row?.valid) {
+        return new Response(
+          JSON.stringify({ error: row?.reason ?? "Cupom inválido." }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+        );
+      }
+      percentOff = Number(row.percent_off) || 0;
+      logStep("Coupon validated", { percentOff });
+
+      // 100% off: grant access directly, no Stripe checkout needed
+      if (percentOff >= 100) {
+        const { data: redeem, error: redeemErr } = await supabaseClient.rpc("redeem_full_coupon", {
+          _code: couponCode,
+          _plan_key: planKey ?? "combo",
+        });
+        if (redeemErr) throw new Error(redeemErr.message);
+        const result = redeem as { success?: boolean; message?: string; expires_at?: string };
+        if (!result?.success) {
+          return new Response(
+            JSON.stringify({ error: result?.message ?? "Não foi possível resgatar o cupom." }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+          );
+        }
+        logStep("Full coupon redeemed", { expires_at: result.expires_at });
+        return new Response(
+          JSON.stringify({ granted: true, expires_at: result.expires_at }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+        );
+      }
+    }
 
     // Check if customer already exists
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
@@ -52,6 +96,16 @@ serve(async (req) => {
       logStep("Existing Stripe customer found", { customerId });
     }
 
+    let discounts: { coupon: string }[] | undefined;
+    if (percentOff > 0) {
+      const stripeCoupon = await stripe.coupons.create({
+        percent_off: percentOff,
+        duration: "once",
+        name: `Cupom ${couponCode}`,
+      });
+      discounts = [{ coupon: stripeCoupon.id }];
+    }
+
     const SITE_URL = "https://salinhadeestudos.com.br";
 
     const session = await stripe.checkout.sessions.create({
@@ -59,6 +113,7 @@ serve(async (req) => {
       customer_email: customerId ? undefined : user.email,
       line_items: [{ price: priceId, quantity: 1 }],
       mode: "subscription",
+      discounts,
       success_url: `${SITE_URL}/checkout-success`,
       cancel_url: `${SITE_URL}/meu-plano`,
     });

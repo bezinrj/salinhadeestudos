@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Shield, Users, MessageSquare, Bell, Trash2, Plus, Activity, Crown, GraduationCap, KeyRound, X, UserCheck, UserX, CreditCard, Ban, Eye, Gift, Clock, CalendarDays, Trophy, Pencil, Check, ArrowUp, ArrowDown, Mail, UserPlus, Phone, Download, FileText, Calendar, Megaphone, BookOpen, List, Settings } from "lucide-react";
+import { Shield, Users, MessageSquare, Bell, Trash2, Plus, Activity, Crown, GraduationCap, KeyRound, X, UserCheck, UserX, CreditCard, Ban, Eye, Gift, Clock, CalendarDays, Trophy, Pencil, Check, ArrowUp, ArrowDown, Mail, UserPlus, Phone, Download, FileText, Calendar, Megaphone, BookOpen, List, Settings, Ticket } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { getPlanByPriceId } from "@/lib/stripe";
@@ -34,6 +34,7 @@ import MateriasTab from "@/components/MateriasTab";
 import TurmasAdminTab from "@/components/TurmasAdminTab";
 import FeedbacksAdminTab from "@/components/admin/FeedbacksAdminTab";
 import SiteConfigTab from "@/components/admin/SiteConfigTab";
+import { CouponsTab } from "@/components/admin/CouponsTab";
 import CronoCatalogoTab from "@/components/cronometro/CronoCatalogoTab";
 
 
@@ -108,6 +109,7 @@ export default function Admin() {
             <TabsContent value="materias"><MateriasTab /></TabsContent>
             <TabsContent value="crono"><CronoCatalogoTab /></TabsContent>
             <TabsContent value="feedbacks"><FeedbacksAdminTab /></TabsContent>
+            <TabsContent value="coupons"><CouponsTab /></TabsContent>
             <TabsContent value="config"><SiteConfigTab /></TabsContent>
           </div>
         </Tabs>
@@ -173,6 +175,7 @@ function DesktopAdminNav({ isAdmin, pendingAlerts, pendingRequests }: AdminNavPr
       label: "Sistema",
       items: [
         { value: "feedbacks", label: "Feedbacks", icon: Mail },
+        { value: "coupons", label: "Cupons", icon: Ticket },
         { value: "config", label: "Configurações", icon: Settings },
       ],
     },

@@ -8,6 +8,7 @@ import { STRIPE_PLANS_LIST } from "@/lib/stripe";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { ContentPlanCards } from "@/components/ContentPlanCards";
 
 interface PricingCardsProps {
   currentPriceId?: string | null;
@@ -53,7 +54,14 @@ export function PricingCards({
   const isFreeCurrent = isAuthenticated && !currentPriceId;
 
   return (
+    <div className="space-y-12">
+    <section className="space-y-4">
+      <div className="text-center">
+        <h3 className="font-display text-xl font-bold">Plano Discursivas</h3>
+        <p className="text-sm text-muted-foreground">Correção de discursivas, ranking e gamificação</p>
+      </div>
     <div className="grid md:grid-cols-4 gap-6 max-w-6xl mx-auto">
+
       {/* Free / Degustação card */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -207,6 +215,22 @@ export function PricingCards({
           </motion.div>
         );
       })}
+    </div>
+    </section>
+
+    <section className="space-y-4">
+      <div className="text-center">
+        <h3 className="font-display text-xl font-bold">Planos de Conteúdo</h3>
+        <p className="text-sm text-muted-foreground">
+          Vade Digital, Salinha Juris, Cadernos e o pacote completo
+        </p>
+      </div>
+      <ContentPlanCards
+        currentPriceId={currentPriceId}
+        isAuthenticated={isAuthenticated}
+        onSelectUnauthenticated={onSelectUnauthenticated}
+      />
+    </section>
     </div>
   );
 }

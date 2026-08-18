@@ -104,6 +104,104 @@ export type Database = {
         }
         Relationships: []
       }
+      content_access: {
+        Row: {
+          area: string
+          created_at: string
+          expires_at: string
+          id: string
+          source: string
+          user_id: string
+        }
+        Insert: {
+          area: string
+          created_at?: string
+          expires_at: string
+          id?: string
+          source?: string
+          user_id: string
+        }
+        Update: {
+          area?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          source?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      coupon_redemptions: {
+        Row: {
+          coupon_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          coupon_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          coupon_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupon_redemptions_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "coupons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coupons: {
+        Row: {
+          code: string
+          created_at: string
+          created_by: string | null
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          max_uses: number | null
+          notes: string | null
+          percent_off: number
+          plan_key: string
+          used_count: number
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          notes?: string | null
+          percent_off: number
+          plan_key?: string
+          used_count?: number
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          notes?: string | null
+          percent_off?: number
+          plan_key?: string
+          used_count?: number
+        }
+        Relationships: []
+      }
       crono_aliases: {
         Row: {
           canon_id: string
@@ -2971,6 +3069,7 @@ export type Database = {
           subscription_tier: string
         }[]
       }
+      get_my_entitlements: { Args: never; Returns: Json }
       get_my_phone: { Args: never; Returns: string }
       get_question_answer_key: {
         Args: { _question_id: string }
@@ -3033,6 +3132,7 @@ export type Database = {
         }
         Returns: number
       }
+      plan_areas: { Args: { _plan_key: string }; Returns: string[] }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
         Returns: {
@@ -3045,8 +3145,20 @@ export type Database = {
         Args: { p_album_id: string }
         Returns: undefined
       }
+      redeem_full_coupon: {
+        Args: { _code: string; _plan_key: string }
+        Returns: Json
+      }
       refresh_my_total_essays: { Args: never; Returns: number }
       sync_expired_subscriptions: { Args: never; Returns: undefined }
+      validate_coupon: {
+        Args: { _code: string; _plan_key: string }
+        Returns: {
+          percent_off: number
+          reason: string
+          valid: boolean
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"

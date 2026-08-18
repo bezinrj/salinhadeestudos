@@ -24,12 +24,29 @@ export interface Profile {
   created_at: string;
 }
 
+export interface Entitlements {
+  discursivas: boolean;
+  vade: boolean;
+  juris: boolean;
+  cadernos: boolean;
+  staff: boolean;
+}
+
+const NO_ENTITLEMENTS: Entitlements = {
+  discursivas: false,
+  vade: false,
+  juris: false,
+  cadernos: false,
+  staff: false,
+};
+
 interface AuthContextType {
   user: SupabaseUser | null;
   profile: Profile | null;
   isAuthenticated: boolean;
   loading: boolean;
   subscribed: boolean;
+  entitlements: Entitlements;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   register: (username: string, email: string, password: string, phone: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
@@ -45,12 +62,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [subscribed, setSubscribed] = useState(false);
+  const [entitlements, setEntitlements] = useState<Entitlements>(NO_ENTITLEMENTS);
   const isAuthenticated = !!user;
+
+  const fetchEntitlements = async () => {
+    try {
+      const { data, error } = await supabase.rpc("get_my_entitlements");
+      if (error || !data) { setEntitlements(NO_ENTITLEMENTS); return; }
+      setEntitlements({ ...NO_ENTITLEMENTS, ...(data as unknown as Partial<Entitlements>) });
+    } catch {
+      setEntitlements(NO_ENTITLEMENTS);
+    }
+  };
 
   const checkSubscription = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { setSubscribed(false); return; }
+      if (!session) { setSubscribed(false); setEntitlements(NO_ENTITLEMENTS); return; }
       const { data, error } = await supabase.functions.invoke("check-subscription", {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
@@ -59,8 +87,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         setSubscribed(false);
       }
+      await fetchEntitlements();
     } catch {
       setSubscribed(false);
+      await fetchEntitlements();
     }
   };
 
@@ -137,6 +167,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
     setUser(null);
     setProfile(null);
+    setEntitlements(NO_ENTITLEMENTS);
   };
 
   const updateProfile = async (updates: Partial<Pick<Profile, "name" | "bio" | "avatar_url" | "target_career" | "username">>) => {
@@ -151,7 +182,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, profile, isAuthenticated, loading, subscribed, login, register, logout, updateProfile, refreshProfile, checkSubscription }}>
+    <AuthContext.Provider value={{ user, profile, isAuthenticated, loading, subscribed, entitlements, login, register, logout, updateProfile, refreshProfile, checkSubscription }}>
       {children}
     </AuthContext.Provider>
   );

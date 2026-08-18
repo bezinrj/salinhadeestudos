@@ -19,7 +19,7 @@ import type { JurisJulgado } from "@/types/juris";
 
 export default function Juris() {
   const navigate = useNavigate();
-  const { subscribed } = useAuth();
+  const { entitlements } = useAuth();
   const { isAdmin } = useIsAdmin();
   const { isModerator } = useIsModerator();
   const canManage = isAdmin || isModerator;
@@ -141,7 +141,7 @@ export default function Juris() {
             </Button>
           )}
         </div>
-        {!subscribed && (
+        {!(entitlements.juris || canManage) && (
           <div className="mt-5 flex items-center gap-2 rounded-xl border border-gold/30 bg-gold/5 px-4 py-2.5 text-sm text-gold">
             <Crown className="h-4 w-4" />
             <span>Versão gratuita mostra apenas as Noções de cada julgado. Para o conteúdo completo, assine Premium.</span>

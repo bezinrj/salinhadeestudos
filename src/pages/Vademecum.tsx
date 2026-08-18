@@ -20,15 +20,18 @@ import { ArticleCard } from "@/components/vademecum/ArticleCard";
 import { ArticleFilters } from "@/components/vademecum/ArticleFilters";
 import { MarkedArticlesDrawer } from "@/components/vademecum/MarkedArticlesDrawer";
 import { RemissaoDrawer } from "@/components/vademecum/RemissaoDrawer";
+import { UnlockPremiumCard } from "@/components/vademecum/UnlockPremiumCard";
 import type { VmFiltroCargo, VmFiltroStatus } from "@/types/vademecum";
 
 export default function Vademecum() {
   const { leiId } = useParams<{ leiId?: string }>();
   const navigate = useNavigate();
-  const { user, profile, subscribed } = useAuth();
+  const { user, profile, entitlements } = useAuth();
   const { isAdmin } = useIsAdmin();
   const { isModerator } = useIsModerator();
   const canEdit = isAdmin || isModerator;
+  const hasVade = entitlements.vade || canEdit;
+  const FREE_PREVIEW_ARTICLES = 10;
 
   const { data: leis = [], isLoading: leisLoading } = useVmLeis();
 
@@ -67,6 +70,17 @@ export default function Vademecum() {
       return true;
     });
   }, [artigos, progressoMap, status, cargo]);
+
+  // Degustação: usuários sem o plano veem apenas os 10 primeiros artigos de cada lei
+  const allowedIds = useMemo(
+    () => new Set(artigos.slice(0, FREE_PREVIEW_ARTICLES).map((a) => a.id)),
+    [artigos]
+  );
+  const visibleArtigos = useMemo(
+    () => (hasVade ? filtered : filtered.filter((a) => allowedIds.has(a.id))),
+    [hasVade, filtered, allowedIds]
+  );
+  const showPaywall = !hasVade && artigos.length > FREE_PREVIEW_ARTICLES;
 
   const artigosContaveis = useMemo(() => {
     return artigos.filter((a) => a.rotulo && /^Art\.?\s*\d+/i.test(a.rotulo.trim()));
@@ -167,12 +181,12 @@ export default function Vademecum() {
               />
 
               <div className="mt-4 space-y-4">
-                {filtered.length === 0 ? (
+                {visibleArtigos.length === 0 ? (
                   <p className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
                     Nenhum artigo corresponde ao filtro selecionado.
                   </p>
                 ) : (
-                  filtered.map((a) => (
+                  visibleArtigos.map((a) => (
                     <ArticleCard
                       key={a.id}
                       artigo={a}
@@ -182,7 +196,7 @@ export default function Vademecum() {
                       notasProf={notasProf.byArtigo.get(a.id) ?? []}
                       notaPriv={notasPriv.byArtigo.get(a.id)}
                       canAddProfNote={canEdit}
-                      subscribed={subscribed}
+                      subscribed={hasVade}
                       autorId={user?.id}
                       autorNome={profile?.name || profile?.username || "Professor"}
                       onToggleLido={(id, v) => handleToggle(id, "lido", v)}
@@ -221,6 +235,7 @@ export default function Vademecum() {
                     />
                   ))
                 )}
+                {showPaywall && <UnlockPremiumCard variant="lei" />}
               </div>
             </>
           )}

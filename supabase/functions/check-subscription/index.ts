@@ -14,9 +14,19 @@ const logStep = (step: string, details?: unknown) => {
 };
 
 const planByPriceId: Record<string, { tier: string; months: number }> = {
+  // Legacy discursivas prices
   price_1TBMTPLy0axdgWvJblk2ZJjZ: { tier: "monthly", months: 1 },
   price_1TBMTpLy0axdgWvJjbmiZ92u: { tier: "quarterly", months: 3 },
   price_1TBMUHLy0axdgWvJInHob9Il: { tier: "annual", months: 12 },
+  // Discursivas
+  price_1TZtxTQ4whpSK2DUbG7Rt4CO: { tier: "monthly", months: 1 },
+  price_1TZtyRQ4whpSK2DULWuMkqyY: { tier: "quarterly", months: 3 },
+  price_1TZtzSQ4whpSK2DUVFLcsM0g: { tier: "annual", months: 12 },
+  // Planos de conteúdo
+  price_1U5caXQ4whpSK2DUhjXypqSP: { tier: "vade", months: 1 },
+  price_1U5cbZQ4whpSK2DUgAHVfPaN: { tier: "juris", months: 1 },
+  price_1U5cboQ4whpSK2DUM2PGGAm1: { tier: "combo", months: 1 },
+  price_1U5cm5Q4whpSK2DUHla0Vump: { tier: "pro", months: 1 },
 };
 
 const addMonths = (base: Date, months: number) => {
