@@ -80,6 +80,8 @@ export function ArticleCard(props: Props) {
     onRemoveMarcacao,
     onCreateProfNote,
     onRemoveProfNote,
+    onUpdateProfNote,
+
     onSavePrivNote,
     onRemovePrivNote,
     leis = [],
