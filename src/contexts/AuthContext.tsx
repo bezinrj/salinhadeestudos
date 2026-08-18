@@ -167,6 +167,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
     setUser(null);
     setProfile(null);
+    setEntitlements(NO_ENTITLEMENTS);
   };
 
   const updateProfile = async (updates: Partial<Pick<Profile, "name" | "bio" | "avatar_url" | "target_career" | "username">>) => {
@@ -181,7 +182,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, profile, isAuthenticated, loading, subscribed, login, register, logout, updateProfile, refreshProfile, checkSubscription }}>
+    <AuthContext.Provider value={{ user, profile, isAuthenticated, loading, subscribed, entitlements, login, register, logout, updateProfile, refreshProfile, checkSubscription }}>
       {children}
     </AuthContext.Provider>
   );
