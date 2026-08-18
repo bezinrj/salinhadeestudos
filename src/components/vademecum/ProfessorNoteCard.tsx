@@ -21,7 +21,7 @@ export function ProfessorNoteCard({ nota, canDelete, onDelete }: Props) {
         <span className="font-bold text-amber-300">Prof. {nota.autor_nome}</span>
         <span className="text-muted-foreground">{ago}</span>
       </div>
-      <p className="whitespace-pre-wrap text-sm text-foreground/90">{nota.conteudo}</p>
+      <NoteContent content={nota.conteudo} />
       {canDelete && (
         <Button
           size="icon"
