@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import type { VmNotaProfessor } from "@/types/vademecum";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { NoteContent } from "./NoteContent";
+
 
 interface Props {
   nota: VmNotaProfessor;
