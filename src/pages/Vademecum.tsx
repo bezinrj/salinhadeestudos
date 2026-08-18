@@ -234,6 +234,7 @@ export default function Vademecum() {
                     />
                   ))
                 )}
+                {showPaywall && <UnlockPremiumCard variant="lei" />}
               </div>
             </>
           )}
