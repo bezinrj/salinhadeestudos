@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { Check, Bookmark, BookmarkCheck, BookOpen, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { IncidenciaBadge, CARGO_BORDER } from "./IncidenciaBadge";
 import { ArticleText } from "./ArticleText";
 import { ArticleComments } from "./ArticleComments";
 import { ProfessorNoteCard } from "./ProfessorNoteCard";
 import { PrivateNoteCard } from "./PrivateNoteCard";
+import { NoteEditor, isNoteEmpty } from "./NoteEditor";
 import { CadernoModal } from "@/components/cadernos/CadernoModal";
 import { UnlockPremiumCard } from "./UnlockPremiumCard";
 import { supabase } from "@/integrations/supabase/client";
@@ -155,8 +155,8 @@ export function ArticleCard(props: Props) {
   }
 
   const submitProfNote = async () => {
-    if (!profText.trim() || !autorId || !autorNome) return;
-    await onCreateProfNote(artigo.id, profText.trim());
+    if (isNoteEmpty(profText) || !autorId || !autorNome) return;
+    await onCreateProfNote(artigo.id, profText);
     setProfText("");
     setAddingProf(false);
     toast.success("Nota publicada");
@@ -245,12 +245,10 @@ export function ArticleCard(props: Props) {
         )}
         {addingProf && (
           <div className="rounded-lg border-l-4 border-amber-500 bg-amber-500/5 p-3">
-            <Textarea
+            <NoteEditor
               value={profText}
-              onChange={(e) => setProfText(e.target.value)}
-              rows={3}
+              onChange={setProfText}
               placeholder="Comentário do professor visível para todos os alunos..."
-              className="text-sm"
             />
             <div className="mt-2 flex gap-1">
               <Button size="sm" onClick={submitProfNote}>Publicar</Button>
