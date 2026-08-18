@@ -20,6 +20,7 @@ import { ArticleCard } from "@/components/vademecum/ArticleCard";
 import { ArticleFilters } from "@/components/vademecum/ArticleFilters";
 import { MarkedArticlesDrawer } from "@/components/vademecum/MarkedArticlesDrawer";
 import { RemissaoDrawer } from "@/components/vademecum/RemissaoDrawer";
+import { UnlockPremiumCard } from "@/components/vademecum/UnlockPremiumCard";
 import type { VmFiltroCargo, VmFiltroStatus } from "@/types/vademecum";
 
 export default function Vademecum() {
