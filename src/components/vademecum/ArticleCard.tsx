@@ -232,6 +232,8 @@ export function ArticleCard(props: Props) {
             nota={n}
             canDelete={canAddProfNote}
             onDelete={() => onRemoveProfNote(n.id)}
+            onUpdate={onUpdateProfNote ? (c) => onUpdateProfNote(n.id, c) : undefined}
+
           />
         ))}
 
