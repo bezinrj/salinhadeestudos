@@ -260,6 +260,14 @@ export function useVmNotasProfessor(artigoIds: string[]) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["vm-notas-prof"] }),
   });
 
+  const update = useMutation({
+    mutationFn: async ({ id, conteudo }: { id: string; conteudo: string }) => {
+      const { error } = await sb.from("vm_notas_professor").update({ conteudo }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["vm-notas-prof"] }),
+  });
+
   const remove = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await sb.from("vm_notas_professor").delete().eq("id", id);
@@ -268,7 +276,8 @@ export function useVmNotasProfessor(artigoIds: string[]) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["vm-notas-prof"] }),
   });
 
-  return { byArtigo, create, remove };
+  return { byArtigo, create, update, remove };
+
 }
 
 // ============ Nota Privada (única por usuário/artigo) ============
