@@ -180,12 +180,12 @@ export default function Vademecum() {
               />
 
               <div className="mt-4 space-y-4">
-                {filtered.length === 0 ? (
+                {visibleArtigos.length === 0 ? (
                   <p className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
                     Nenhum artigo corresponde ao filtro selecionado.
                   </p>
                 ) : (
-                  filtered.map((a) => (
+                  visibleArtigos.map((a) => (
                     <ArticleCard
                       key={a.id}
                       artigo={a}
