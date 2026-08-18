@@ -29,6 +29,8 @@ export default function Vademecum() {
   const { isAdmin } = useIsAdmin();
   const { isModerator } = useIsModerator();
   const canEdit = isAdmin || isModerator;
+  const hasVade = entitlements.vade || canEdit;
+  const FREE_PREVIEW_ARTICLES = 10;
 
   const { data: leis = [], isLoading: leisLoading } = useVmLeis();
 
