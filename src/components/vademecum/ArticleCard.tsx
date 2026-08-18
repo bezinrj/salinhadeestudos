@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { Check, Bookmark, BookmarkCheck, BookOpen, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { IncidenciaBadge, CARGO_BORDER } from "./IncidenciaBadge";
 import { ArticleText } from "./ArticleText";
 import { ArticleComments } from "./ArticleComments";
