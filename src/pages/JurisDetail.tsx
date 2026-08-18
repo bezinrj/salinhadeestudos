@@ -31,7 +31,7 @@ const TABS = [
 export default function JurisDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { subscribed } = useAuth();
+  const { entitlements } = useAuth();
   const { isAdmin } = useIsAdmin();
   const { isModerator } = useIsModerator();
   const canManage = isAdmin || isModerator;
@@ -54,7 +54,7 @@ export default function JurisDetail() {
   if (isLoading) return <div className="container mx-auto p-8"><Skeleton className="h-96" /></div>;
   if (!j) return <div className="container mx-auto p-8 text-center text-muted-foreground">Julgado não encontrado.</div>;
 
-  const canSeeFull = subscribed || canManage;
+  const canSeeFull = entitlements.juris || canManage;
   const linesOf = (s: string) => (s || "").split("\n").map((x) => x.trim()).filter(Boolean);
 
   return (
