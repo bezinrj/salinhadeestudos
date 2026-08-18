@@ -62,12 +62,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [subscribed, setSubscribed] = useState(false);
+  const [entitlements, setEntitlements] = useState<Entitlements>(NO_ENTITLEMENTS);
   const isAuthenticated = !!user;
+
+  const fetchEntitlements = async () => {
+    try {
+      const { data, error } = await supabase.rpc("get_my_entitlements");
+      if (error || !data) { setEntitlements(NO_ENTITLEMENTS); return; }
+      setEntitlements({ ...NO_ENTITLEMENTS, ...(data as unknown as Partial<Entitlements>) });
+    } catch {
+      setEntitlements(NO_ENTITLEMENTS);
+    }
+  };
 
   const checkSubscription = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { setSubscribed(false); return; }
+      if (!session) { setSubscribed(false); setEntitlements(NO_ENTITLEMENTS); return; }
       const { data, error } = await supabase.functions.invoke("check-subscription", {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
@@ -76,8 +87,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         setSubscribed(false);
       }
+      await fetchEntitlements();
     } catch {
       setSubscribed(false);
+      await fetchEntitlements();
     }
   };
 
