@@ -1,36 +1,25 @@
-# Repaginação premium/gamificada da página de Planos
+# Formatação de texto nas notas do Vade Mecum
 
-Mesmos planos, preços, textos e fluxo de checkout. Muda apenas a apresentação visual das duas seções (Plano Discursivas e Planos de Conteúdo).
+Adicionar uma barra de formatação nas **notas do professor** e nas **notas privadas** dos artigos, com negrito, itálico, sublinhado, tachado, cores de texto, marca-texto e listas (com bolinhas e numeradas).
 
-## Direção visual
+## O que muda para o usuário
 
-Grafite/preto do app + ouro para VIP e azul elétrico para ação (tokens já existentes). Sem roxo genérico, sem gradiente arco-íris. Estética "destravar nível": cada plano é um tier, com selo de patente e brilho ao subir.
-
-## O que muda em cada card
-
-- Cabeçalho de tier: ícone dentro de um selo hexagonal/circular com anel luminoso, mais o rótulo do nível ("Nível 1 · Base", "Nível 2 · Avançado", "Nível Máximo").
-- Preço com maior peso tipográfico, moeda e "/mês" discretos, e faixa de economia ("Economize 33%") em pílula dourada onde já existe desconto.
-- Lista de benefícios com marcadores luminosos (ponto com glow) no lugar dos checks simples; itens herdados ("Tudo do plano X") ganham destaque em itálico com marcador diferente.
-- Borda animada: cards comuns com glow suave no hover; card recomendado (Trimestral) e o Salinha PRO com borda pulsante contínua e leve elevação.
-- Selos flutuantes no topo — "Mais popular", "Plano atual", "Aceita cupom" — com ícone e sombra, posicionados sem sobrepor o título.
-- Botões: primário com gradiente ouro nos planos premium, azul elétrico nos demais, brilho varrendo a superfície no hover e microescala no clique.
-
-## O que muda nas seções
-
-- Título de cada categoria com faixa lateral em degradê e subtítulo curto, mantendo os textos atuais.
-- Fundo com halo radial suave atrás dos cards em destaque, para separar as duas categorias visualmente.
-- Grid mantém 4 colunas no desktop, 2 em tablet e 1 no mobile; o card em destaque cresce levemente apenas onde há espaço.
-
-## Gatilhos de conversão (sem inventar dados)
-
-- Barra de comparação "o que você desbloqueia" derivada das features já cadastradas.
-- Destaque do valor por dia calculado a partir do preço mensal existente (ex.: "menos de R$ 0,50 por dia").
-- Selo "cancele quando quiser" e "acesso imediato" como microcopy de segurança abaixo dos botões.
+- Ao criar ou editar uma nota (professor ou privada), aparece uma pequena barra de ferramentas acima do campo de texto com:
+  - Negrito, itálico, sublinhado, tachado
+  - Paleta de cores do texto (branco, dourado, âmbar, verde, azul, rosa, vermelho)
+  - Marca-texto (amarelo, verde, azul, rosa)
+  - Lista com bolinhas e lista numerada
+  - Limpar formatação
+- O texto salvo passa a exibir essa formatação na visualização da nota.
+- Notas antigas (texto simples) continuam aparecendo normalmente, com as quebras de linha preservadas.
+- As demais regras seguem iguais: nota privada só o dono vê, nota do professor é pública, bloqueio para quem não tem assinatura permanece.
 
 ## Detalhes técnicos
 
-- Novos tokens/utilitários em `src/index.css`: `--glow-gold-strong`, animação `pulse-ring`, `border-shimmer` e `btn-sheen`; nada de cores hardcoded nos componentes.
-- `src/components/PricingCards.tsx` e `src/components/ContentPlanCards.tsx` recebem a nova estrutura de card (selo de tier, preço, lista, badges, CTA). Props e handlers de checkout ficam intactos.
-- Animações com Framer Motion (já usado) para entrada em cascata e hover; pulso do card recomendado via CSS para não pesar.
-- Respeitar `prefers-reduced-motion` desativando pulsos e brilhos.
-- Nenhuma mudança em `src/lib/stripe.ts`, edge functions, banco ou lógica de entitlements.
+- Novo componente `src/components/vademecum/NoteEditor.tsx`: editor `contentEditable` no mesmo padrão do `RichTextEditor` já existente (comentários de questões), usando `document.execCommand` para os comandos de formatação (`bold`, `italic`, `underline`, `strikeThrough`, `foreColor`, `hiliteColor`, `insertUnorderedList`, `insertOrderedList`, `removeFormat`). Sem imagens e sem upload — apenas formatação de texto.
+- Novo componente `src/components/vademecum/NoteContent.tsx`: renderiza o conteúdo salvo. Sanitiza o HTML com `dompurify` (já instalado) permitindo apenas tags/atributos de formatação (`b, strong, i, em, u, s, span, ul, ol, li, br, p, div` + `style` restrito a `color`/`background-color`). Se o conteúdo não contiver HTML (notas antigas), renderiza como texto com `whitespace-pre-wrap`.
+- `PrivateNoteCard.tsx`: substituir o `Textarea` pelo `NoteEditor` e o `<p>` pelo `NoteContent`.
+- `ProfessorNoteCard.tsx`: substituir o `<p>` pelo `NoteContent`.
+- `ArticleCard.tsx`: no formulário de "Adicionar nota do professor", trocar o `Textarea`/`profText` pelo `NoteEditor` (mantendo a mesma função de envio).
+- Estilos das listas dentro das notas via classes utilitárias (`[&_ul]:list-disc`, `[&_ol]:list-decimal`, `[&_ul]:pl-5`) para as bolinhas aparecerem, já que o reset do Tailwind remove os marcadores.
+- Sem mudanças no banco de dados: as colunas `conteudo` de `vm_notas_professor` e `vm_notas_privadas` são texto e passam a guardar HTML sanitizado.
