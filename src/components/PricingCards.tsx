@@ -8,6 +8,7 @@ import { STRIPE_PLANS_LIST } from "@/lib/stripe";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { ContentPlanCards } from "@/components/ContentPlanCards";
 
 interface PricingCardsProps {
   currentPriceId?: string | null;
