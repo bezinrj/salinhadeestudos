@@ -6,9 +6,10 @@ import { Plus, Download, FileText, Trash2, FolderPlus, Edit2 } from "lucide-reac
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { CadernoModal } from "@/components/cadernos/CadernoModal";
+import { UnlockPremiumCard } from "@/components/vademecum/UnlockPremiumCard";
 
 export default function CadernosPage() {
-  const { profile } = useAuth();
+  const { profile, entitlements } = useAuth();
   const userName = profile?.name || profile?.username || "Deltinha";
 
   const { pastas, create: createPasta, remove: removePasta } = useCadernoPastas();
