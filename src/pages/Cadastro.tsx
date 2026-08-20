@@ -212,7 +212,7 @@ export default function Cadastro() {
               <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs text-primary w-fit">
                 <Crown className="h-3 w-3" />
                 Plano selecionado:&nbsp;
-                <strong>{isPaid ? selectedPlanObj?.name ?? "Premium" : "Grátis"}</strong>
+                <strong>{isPaid ? selectedPlanName ?? "Premium" : "Grátis"}</strong>
               </div>
             </CardHeader>
             <CardContent>
