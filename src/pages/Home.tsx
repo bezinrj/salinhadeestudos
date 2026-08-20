@@ -3,8 +3,7 @@ const heroVideo = "/hero-video.mp4";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Scale, Target, TrendingUp, Users, ChevronRight } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Scale, Target, TrendingUp, Users, ChevronRight, Sparkles, ShieldCheck, Zap } from "lucide-react";
 import { PricingCards } from "@/components/PricingCards";
 import { HomeFeedbacksCarousel } from "@/components/HomeFeedbacksCarousel";
 import { FeatureShowcase } from "@/components/home/FeatureShowcase";
@@ -152,20 +151,55 @@ export default function Home() {
       </section>
       {/* CTA */}
       <section className="container mx-auto px-4 py-16 md:py-24">
-        <Card className="gradient-electric border-0 text-center">
-          <CardContent className="p-10 md:p-16">
-            <h2 className="text-3xl md:text-4xl font-display font-bold text-white mb-4">Pronto para começar?</h2>
-            <p className="text-white/80 mb-8 max-w-lg mx-auto">Junte-se a centenas de concurseiros e comece a evoluir suas discursivas hoje.</p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Button size="lg" onClick={() => navigate("/cadastro")} className="bg-white text-primary hover:bg-white/90 font-semibold px-8">
-                Criar minha conta
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.3 }}
+          transition={{ duration: 0.6 }}
+          className="relative overflow-hidden rounded-3xl border border-gold/25 bg-card/60 backdrop-blur-sm px-6 py-14 md:px-16 md:py-20 text-center shadow-[0_30px_90px_-40px_hsl(var(--gold)/0.4)]"
+        >
+          <div className="pointer-events-none absolute -top-32 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-gold/15 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-32 right-0 h-72 w-72 rounded-full bg-primary/20 blur-3xl" />
+          <div className="pointer-events-none absolute inset-0 opacity-[0.06] bg-[radial-gradient(hsl(var(--gold))_1px,transparent_1px)] [background-size:22px_22px]" />
+
+          <div className="relative">
+            <span className="inline-flex items-center gap-2 rounded-full border border-gold/40 bg-gold/10 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-gold">
+              <Sparkles className="h-3.5 w-3.5" />
+              Comece hoje
+            </span>
+
+            <h2 className="mt-5 text-3xl md:text-5xl font-display font-bold leading-tight">
+              Pronto para <span className="text-gold">começar</span>?
+            </h2>
+            <p className="mt-4 text-muted-foreground max-w-xl mx-auto">
+              Junte-se a centenas de concurseiros e comece a evoluir suas discursivas hoje.
+            </p>
+
+            <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
+              <Button
+                size="lg"
+                onClick={() => navigate("/cadastro")}
+                className="gradient-electric text-white font-semibold px-8 shadow-[0_0_40px_-8px_hsl(var(--primary)/0.7)] transition-transform hover:scale-[1.03]"
+              >
+                Criar minha conta <ChevronRight className="ml-1 h-4 w-4" />
               </Button>
-              <Button size="lg" variant="outline" onClick={() => navigate("/login")} className="border-white/40 text-white hover:bg-white/10 font-semibold px-8">
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={() => navigate("/login")}
+                className="border-gold/40 text-gold hover:bg-gold/10 font-semibold px-8"
+              >
                 Já tenho conta
               </Button>
             </div>
-          </CardContent>
-        </Card>
+
+            <div className="mt-7 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1.5"><ShieldCheck className="h-3.5 w-3.5 text-gold" /> Acesso imediato</span>
+              <span className="flex items-center gap-1.5"><Zap className="h-3.5 w-3.5 text-primary" /> Correção detalhada</span>
+              <span className="flex items-center gap-1.5"><Users className="h-3.5 w-3.5 text-gold" /> Comunidade ativa</span>
+            </div>
+          </div>
+        </motion.div>
       </section>
 
       {/* Footer */}
