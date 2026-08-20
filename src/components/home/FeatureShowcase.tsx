@@ -135,7 +135,8 @@ export function FeatureShowcase() {
                   "relative rounded-2xl border p-2 bg-card/60 backdrop-blur-sm",
                   b.accent === "gold"
                     ? "border-gold/25 shadow-[0_20px_60px_-25px_hsl(var(--gold)/0.45)]"
-                    : "border-primary/25 shadow-[0_20px_60px_-25px_hsl(var(--primary)/0.5)]"
+                    : "border-primary/25 shadow-[0_20px_60px_-25px_hsl(var(--primary)/0.5)]",
+                  b.id === "discursivas" && "max-h-[380px] md:max-h-[460px] overflow-hidden"
                 )}
               >
                 <div className="flex items-center gap-1.5 px-3 py-2">
@@ -150,7 +151,10 @@ export function FeatureShowcase() {
                   src={b.image}
                   alt={b.alt}
                   loading="lazy"
-                  className="w-full rounded-xl border border-border/60"
+                  className={cn(
+                    "w-full rounded-xl border border-border/60",
+                    b.id === "discursivas" && "object-contain max-h-[320px] md:max-h-[400px]"
+                  )}
                 />
               </div>
             </motion.div>
