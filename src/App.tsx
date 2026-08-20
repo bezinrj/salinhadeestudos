@@ -30,6 +30,7 @@ import JurisDetail from "./pages/JurisDetail";
 import JurisAdmin from "./pages/JurisAdmin";
 import Vademecum from "./pages/Vademecum";
 import VademecumAdmin from "./pages/VademecumAdmin";
+import VademecumSumulas from "./pages/VademecumSumulas";
 import CadernosPage from "./pages/Cadernos";
 
 const queryClient = new QueryClient();
