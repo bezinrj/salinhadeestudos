@@ -1,13 +1,31 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Scale, Trophy, Check, Sparkles, ChevronRight } from "lucide-react";
+import { BookOpen, Scale, Trophy, FileText, Check, Sparkles, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import showcaseVade from "@/assets/showcase-vade.jpg";
 import showcaseJuris from "@/assets/showcase-juris.jpg";
 import showcaseRanking from "@/assets/showcase-ranking.jpg";
+import showcaseDiscursivas from "@/assets/showcase-discursivas.jpg";
 
 const blocks = [
+  {
+    id: "discursivas",
+    icon: FileText,
+    seal: "Discursivas",
+    title: "Discursivas corrigidas para todos os cargos",
+    description:
+      "Envie sua resposta e receba uma correção detalhada com espelho, erros, acertos e nota simulada.",
+    bullets: [
+      "Questões para Delegado, Magistratura, Ministério Público, Defensoria, OAB e mais",
+      "Correção com espelho, omissões e nota simulada",
+      "Banco crescente de questões inéditas",
+      "Questões gratuitas e premium para todos os perfis",
+    ],
+    image: showcaseDiscursivas,
+    alt: "Lista de questões discursivas para cargos jurídicos mistos na Salinha de Estudos",
+    accent: "primary" as const,
+  },
   {
     id: "vade",
     icon: BookOpen,
@@ -46,7 +64,7 @@ const blocks = [
     id: "ranking",
     icon: Trophy,
     seal: "Questões da Semana",
-    title: "Discursiva semanal, correção por IA e pódio",
+    title: "Discursiva semanal, correção e pódio",
     description:
       "Toda semana uma questão inédita. Você responde, recebe correção detalhada e disputa posição no ranking com os outros alunos.",
     bullets: [
@@ -167,13 +185,12 @@ export function FeatureShowcase() {
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 1 }}
         viewport={{ once: true }}
-        className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-4"
+        className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-4"
       >
         {[
           { v: "30+", l: "Leis completas" },
           { v: "1.400+", l: "Súmulas organizadas" },
           { v: "Semanal", l: "Novos julgados e questões" },
-          { v: "IA", l: "Correção e assistente jurídico" },
         ].map((s) => (
           <div
             key={s.l}
