@@ -2813,6 +2813,42 @@ export type Database = {
           },
         ]
       }
+      vm_sumulas: {
+        Row: {
+          assunto: string
+          created_at: string
+          id: string
+          materia: string
+          numero: number
+          ordem: number
+          texto: string
+          tribunal: string
+          updated_at: string
+        }
+        Insert: {
+          assunto: string
+          created_at?: string
+          id?: string
+          materia: string
+          numero: number
+          ordem?: number
+          texto: string
+          tribunal: string
+          updated_at?: string
+        }
+        Update: {
+          assunto?: string
+          created_at?: string
+          id?: string
+          materia?: string
+          numero?: number
+          ordem?: number
+          texto?: string
+          tribunal?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       weekly_answers: {
         Row: {
           answer_text: string

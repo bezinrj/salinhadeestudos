@@ -135,6 +135,21 @@ export function LeiSidebar({ leis, activeLeiId, countByLei, canReorder = false, 
           />
         </div>
       </div>
+      <div className="border-b border-border px-2 py-2">
+        <NavLink
+          to="/vademecum/sumulas"
+          className={({ isActive }) =>
+            cn(
+              "flex items-center gap-2 rounded-md px-2 py-2 text-sm font-medium transition-colors hover:bg-secondary",
+              isActive && "bg-primary/15 text-primary",
+            )
+          }
+        >
+          <Scale className="h-4 w-4" />
+          <span>Súmulas</span>
+          <span className="ml-auto text-[10px] text-muted-foreground">STJ · STF · SV</span>
+        </NavLink>
+      </div>
       <nav className="flex-1 overflow-y-auto px-2 py-3">
         {reorderActive ? (
           /* ── Modo Reordenação: lista plana sem categorias ── */
