@@ -130,25 +130,6 @@ export function FeatureShowcase() {
                     </li>
                   ))}
                 </ul>
-                <div className="mt-6 flex flex-wrap gap-3">
-                  <Button
-                    onClick={() => navigate("/cadastro")}
-                    className="gradient-electric text-white font-semibold"
-                  >
-                    Criar conta <ChevronRight className="ml-1 h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() =>
-                      document
-                        .getElementById("planos")
-                        ?.scrollIntoView({ behavior: "smooth", block: "start" })
-                    }
-                    className="border-border"
-                  >
-                    Ver planos
-                  </Button>
-                </div>
               </div>
 
               {/* Image window */}
