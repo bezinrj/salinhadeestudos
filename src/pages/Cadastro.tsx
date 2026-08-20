@@ -32,7 +32,7 @@ export default function Cadastro() {
   const navigate = useNavigate();
 
   const isPaid = selectedPlan && selectedPlan !== FREE_REF;
-  const selectedPlanObj = isPaid ? getPlanByPriceId(selectedPlan) : null;
+  const selectedPlanName = isPaid ? getAnyPlanName(selectedPlan) : null;
 
   const formatPhone = (raw: string) => {
     const digits = raw.replace(/\D/g, "").slice(0, 11);
