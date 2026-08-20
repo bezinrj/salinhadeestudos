@@ -1,10 +1,48 @@
 import { motion } from "framer-motion";
-import { BookOpen, Scale, Trophy, FileText, Check, Sparkles } from "lucide-react";
+import { BookOpen, Scale, Trophy, FileText, Check, Sparkles, ArrowRight, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import showcaseVade from "@/assets/showcase-vade.jpg";
 import showcaseJuris from "@/assets/showcase-juris.jpg";
 import showcaseRanking from "@/assets/showcase-ranking.jpg";
-import showcaseDiscursivas from "@/assets/showcase-discursivas.jpg";
+
+const discursivasCards = [
+  {
+    cargo: "Delegado",
+    materia: "Direito Penal",
+    code: "Q-142",
+    title: "Dolo eventual e culpa consciente na condução de veículo",
+    meta: "2026 · PC-SP · Discursiva",
+    excerpt:
+      "Diferencie dolo eventual de culpa consciente e aponte os reflexos práticos na tipificação da conduta do agente.",
+  },
+  {
+    cargo: "Magistratura",
+    materia: "Direito Constitucional",
+    code: "Q-118",
+    title: "Controle difuso e a mutação do papel do Senado Federal",
+    meta: "2026 · TJ-MG · Discursiva",
+    excerpt:
+      "Explique a tese da abstrativização do controle difuso e o alcance do art. 52, X, da Constituição Federal.",
+  },
+  {
+    cargo: "Ministério Público",
+    materia: "Direito Processual Penal",
+    code: "Q-097",
+    title: "Cadeia de custódia e consequências da sua quebra",
+    meta: "2026 · MP-PR · Discursiva",
+    excerpt:
+      "Analise os efeitos probatórios da quebra da cadeia de custódia e o posicionamento atual dos tribunais superiores.",
+  },
+  {
+    cargo: "Defensoria",
+    materia: "Direitos Humanos",
+    code: "Q-085",
+    title: "Estado de coisas inconstitucional no sistema carcerário",
+    meta: "2026 · DPE-RJ · Discursiva",
+    excerpt:
+      "Discorra sobre a origem da tese, seus requisitos e a atuação da Defensoria Pública na tutela coletiva.",
+  },
+];
 
 const blocks = [
   {
