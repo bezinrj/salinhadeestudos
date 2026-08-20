@@ -77,6 +77,7 @@ const App = () => (
               <Route path="/juris/:id" element={<JurisDetail />} />
               <Route path="/vademecum" element={<Vademecum />} />
               <Route path="/vademecum/admin" element={<VademecumAdmin />} />
+              <Route path="/vademecum/sumulas" element={<VademecumSumulas />} />
               <Route path="/vademecum/:leiId" element={<Vademecum />} />
               <Route path="/cadernos" element={<CadernosPage />} />
               <Route path="/admin" element={<Admin />} />
