@@ -70,8 +70,9 @@ export default function Cadastro() {
       const { data: signIn } = await supabase.auth.signInWithPassword({ email, password });
       if (signIn?.session) {
         try {
+          const contentPlan = CONTENT_PLANS.find((p) => p.priceId === selectedPlan);
           const { data, error: ckErr } = await supabase.functions.invoke("create-checkout", {
-            body: { priceId: selectedPlan },
+            body: { priceId: selectedPlan, planKey: contentPlan?.planKey },
           });
           if (ckErr) throw ckErr;
           if (data?.url) {
