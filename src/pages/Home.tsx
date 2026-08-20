@@ -3,19 +3,13 @@ const heroVideo = "/hero-video.mp4";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Scale, FileText, Trophy, Timer, Target, TrendingUp, Users, ChevronRight } from "lucide-react";
+import { Scale, Target, TrendingUp, Users, ChevronRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { PricingCards } from "@/components/PricingCards";
 import { HomeFeedbacksCarousel } from "@/components/HomeFeedbacksCarousel";
 import { FeatureShowcase } from "@/components/home/FeatureShowcase";
 import { demoRanking } from "@/data/mockData";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-
-const features = [
-  { icon: FileText, title: "Discursivas Corrigidas", description: "Envie suas respostas e receba correção detalhada com espelho, erros, acertos e nota simulada." },
-  { icon: Trophy, title: "Ranking Gamificado", description: "Compete com outros estudantes. Ganhe badges, suba no ranking e destaque-se semanalmente." },
-  { icon: Timer, title: "Cronômetro de Estudos", description: "Registre suas horas, acompanhe seu progresso e mantenha sua sequência de dias estudados." },
-];
 
 const benefits = [
   { icon: Scale, title: "Foco Jurídico", description: "Questões para Delegado, Magistratura e Ministério Público" },
@@ -86,27 +80,10 @@ export default function Home() {
       </section>
 
       {/* Features */}
-      <section className="container mx-auto px-4 py-16 md:py-24">
+      <section className="container mx-auto px-4 pt-16 md:pt-24 pb-4 md:pb-8">
         <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">Tudo que você precisa para <span className="text-primary">evoluir</span></h2>
-          <p className="text-muted-foreground max-w-xl mx-auto">Ferramentas projetadas para maximizar seu desempenho em concursos de Delegado, Magistratura e Ministério Público.</p>
         </motion.div>
-
-        <div className="grid md:grid-cols-3 gap-6">
-          {features.map((f, i) => (
-            <motion.div key={f.title} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.15 }}>
-              <Card className="gradient-card border-border hover:border-primary/30 transition-all h-full group">
-                <CardContent className="p-6">
-                  <div className="rounded-lg bg-primary/10 p-3 w-fit mb-4 group-hover:bg-primary/20 transition-colors">
-                    <f.icon className="h-6 w-6 text-primary" />
-                  </div>
-                  <h3 className="font-display font-semibold text-lg mb-2">{f.title}</h3>
-                  <p className="text-sm text-muted-foreground">{f.description}</p>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
-        </div>
       </section>
 
       {/* Showcase com telas reais do produto */}
