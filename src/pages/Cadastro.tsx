@@ -197,6 +197,64 @@ export default function Cadastro() {
                   </button>
                 );
               })}
+
+              {/* Planos de Conteúdo */}
+              <div className="pt-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-display text-sm font-semibold">Planos de Conteúdo</span>
+                  <span className="h-px flex-1 bg-border" />
+                </div>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Vade Mecum digital, julgados comentados e assistente de IA.
+                </p>
+                <div className="space-y-3">
+                  {CONTENT_PLANS.map((plan) => {
+                    const active = selectedPlan === plan.priceId;
+                    return (
+                      <button
+                        type="button"
+                        key={plan.id}
+                        onClick={() => setSelectedPlan(plan.priceId)}
+                        className={cn(
+                          "w-full text-left rounded-xl border p-4 transition-all relative",
+                          active
+                            ? "border-gold bg-gold/10 ring-2 ring-gold/40"
+                            : "border-border hover:border-gold/40 bg-secondary/40"
+                        )}
+                      >
+                        {plan.highlight && (
+                          <span className="absolute -top-2 right-3 inline-flex items-center gap-1 rounded-full gradient-gold text-accent-foreground text-[10px] px-2 py-0.5 font-semibold">
+                            <Star className="h-3 w-3" /> Completo
+                          </span>
+                        )}
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <div className="font-display font-semibold">{plan.name}</div>
+                            <p className="text-[11px] text-muted-foreground mt-0.5">{plan.tagline}</p>
+                            <ul className="mt-2 space-y-1">
+                              {plan.features.slice(0, 2).map((f) => (
+                                <li
+                                  key={f}
+                                  className="flex items-start gap-1.5 text-xs text-muted-foreground"
+                                >
+                                  <Check className="h-3 w-3 text-gold mt-0.5 shrink-0" />
+                                  <span>{f}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <div className="font-display font-bold">
+                              R$ {plan.priceMonthly.toFixed(2).replace(".", ",")}
+                            </div>
+                            <span className="text-[10px] text-muted-foreground">/mês</span>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             </CardContent>
           </Card>
 
