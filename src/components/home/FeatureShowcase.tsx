@@ -58,7 +58,7 @@ const blocks = [
       "Banco crescente de questões inéditas",
       "Questões gratuitas e premium para todos os perfis",
     ],
-    image: showcaseDiscursivas,
+    image: null,
     alt: "Lista de questões discursivas para cargos jurídicos mistos na Salinha de Estudos",
     accent: "primary" as const,
   },
