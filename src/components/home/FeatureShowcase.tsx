@@ -1,7 +1,5 @@
 import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { BookOpen, Scale, Trophy, FileText, Check, Sparkles, ChevronRight } from "lucide-react";
+import { BookOpen, Scale, Trophy, FileText, Check, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import showcaseVade from "@/assets/showcase-vade.jpg";
 import showcaseJuris from "@/assets/showcase-juris.jpg";
@@ -80,7 +78,6 @@ const blocks = [
 ];
 
 export function FeatureShowcase() {
-  const navigate = useNavigate();
 
   return (
     <section className="container mx-auto px-4 pb-4 md:pb-8">
