@@ -7,6 +7,7 @@ import { Scale, FileText, Trophy, Timer, Target, TrendingUp, Users, ChevronRight
 import { Card, CardContent } from "@/components/ui/card";
 import { PricingCards } from "@/components/PricingCards";
 import { HomeFeedbacksCarousel } from "@/components/HomeFeedbacksCarousel";
+import { FeatureShowcase } from "@/components/home/FeatureShowcase";
 import { demoRanking } from "@/data/mockData";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
@@ -108,6 +109,10 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Showcase com telas reais do produto */}
+      <FeatureShowcase />
+
+
       {/* Benefits */}
       <section className="border-y border-border bg-card/30">
         <div className="container mx-auto px-4 py-16 md:py-24">
@@ -151,7 +156,7 @@ export default function Home() {
       <HomeFeedbacksCarousel />
 
       {/* Pricing */}
-      <section className="container mx-auto px-4 py-16 md:py-24">
+      <section id="planos" className="container mx-auto px-4 py-16 md:py-24 scroll-mt-16">
         <div className="text-center mb-10">
           <h2 className="text-3xl md:text-4xl font-display font-bold mb-3">
             Escolha seu <span className="text-primary">plano</span>

@@ -7,7 +7,7 @@ import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Scale, Check, Crown, Star } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { STRIPE_PLANS_LIST, getPlanByPriceId } from "@/lib/stripe";
+import { STRIPE_PLANS_LIST, CONTENT_PLANS, getAnyPlanName } from "@/lib/stripe";
 import { cn } from "@/lib/utils";
 import loginBg from "@/assets/login-bg.png";
 
