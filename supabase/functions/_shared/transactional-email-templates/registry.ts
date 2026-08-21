@@ -2,6 +2,7 @@
 
 import type * as React from 'npm:react@18.3.1'
 import { template as friendInvite } from './friend-invite.tsx'
+import { template as supportTicket } from './support-ticket.tsx'
 
 export interface TemplateEntry {
   // deno-lint-ignore no-explicit-any
