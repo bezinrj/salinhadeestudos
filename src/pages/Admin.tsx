@@ -760,6 +760,24 @@ function UsersTab() {
     },
   });
 
+  const { data: boosterMap } = useQuery({
+    queryKey: ["admin-booster-map"],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("coupon_redemptions")
+        .select("user_id, percent_off, coupons(percent_off)");
+      const map = new Map<string, "booster" | "double">();
+      ((data as any[]) || []).forEach((r: any) => {
+        const pct = r.percent_off ?? r.coupons?.percent_off ?? 0;
+        const kind: "booster" | "double" = pct >= 100 ? "double" : "booster";
+        if (map.get(r.user_id) !== "double") map.set(r.user_id, kind);
+      });
+      return map;
+    },
+  });
+
+
+
   const { data: users } = useQuery({
     queryKey: ["admin-users"],
     queryFn: async () => {
