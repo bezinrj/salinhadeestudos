@@ -639,7 +639,7 @@ function OverviewTab() {
 /* ─── Users Tab ─── */
 function UsersTab() {
   const [search, setSearch] = useState("");
-  const [subTab, setSubTab] = useState<"all" | "new" | "active">("all");
+  const [subTab, setSubTab] = useState<"all" | "new" | "active" | "booster" | "double">("all");
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
