@@ -999,6 +999,8 @@ function UsersTab() {
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <p className="text-sm font-semibold truncate">{u.name || u.username}</p>
                       {accessBadge(accessType, u.id)}
+                      {boosterBadge(u.id)}
+
                       {roleBadges(userRolesList)}
                     </div>
                     <p className="text-xs text-muted-foreground">@{u.username}</p>
