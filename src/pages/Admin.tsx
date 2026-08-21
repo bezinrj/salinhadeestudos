@@ -35,6 +35,7 @@ import TurmasAdminTab from "@/components/TurmasAdminTab";
 import FeedbacksAdminTab from "@/components/admin/FeedbacksAdminTab";
 import SiteConfigTab from "@/components/admin/SiteConfigTab";
 import { CouponsTab } from "@/components/admin/CouponsTab";
+import ReferralsAdminTab from "@/components/admin/ReferralsAdminTab";
 import CronoCatalogoTab from "@/components/cronometro/CronoCatalogoTab";
 
 
@@ -110,6 +111,7 @@ export default function Admin() {
             <TabsContent value="crono"><CronoCatalogoTab /></TabsContent>
             <TabsContent value="feedbacks"><FeedbacksAdminTab /></TabsContent>
             <TabsContent value="coupons"><CouponsTab /></TabsContent>
+            <TabsContent value="referrals"><ReferralsAdminTab /></TabsContent>
             <TabsContent value="config"><SiteConfigTab /></TabsContent>
           </div>
         </Tabs>
@@ -245,6 +247,7 @@ function MobileAdminNav({ isAdmin, pendingAlerts, pendingRequests }: AdminNavPro
     { value: "materias", label: "Matérias", icon: GraduationCap },
     { value: "crono", label: "Cronômetro", icon: Clock },
     { value: "feedbacks", label: "Feedbacks", icon: Mail },
+    { value: "referrals", label: "Indicações", icon: Gift },
     { value: "config", label: "Config", icon: Settings },
   ];
 
