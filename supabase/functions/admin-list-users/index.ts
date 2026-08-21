@@ -39,12 +39,19 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const { data: authUsers, error: authError } = await adminClient.auth.admin.listUsers();
-    if (authError) {
-      return new Response(JSON.stringify({ error: authError.message }), { status: 500, headers: corsHeaders });
+    const all: any[] = [];
+    const perPage = 1000;
+    for (let page = 1; page <= 50; page++) {
+      const { data: pageData, error: authError } = await adminClient.auth.admin.listUsers({ page, perPage });
+      if (authError) {
+        return new Response(JSON.stringify({ error: authError.message }), { status: 500, headers: corsHeaders });
+      }
+      const batch = pageData?.users ?? [];
+      all.push(...batch);
+      if (batch.length < perPage) break;
     }
 
-    const usersWithEmail = authUsers.users.map((u: any) => ({
+    const usersWithEmail = all.map((u: any) => ({
       id: u.id,
       email: u.email,
       email_confirmed_at: u.email_confirmed_at,

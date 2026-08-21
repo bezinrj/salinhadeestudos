@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Shield, Users, MessageSquare, Bell, Trash2, Plus, Activity, Crown, GraduationCap, KeyRound, X, UserCheck, UserX, CreditCard, Ban, Eye, Gift, Clock, CalendarDays, Trophy, Pencil, Check, ArrowUp, ArrowDown, Mail, UserPlus, Phone, Download, FileText, Calendar, Megaphone, BookOpen, List, Settings, Ticket } from "lucide-react";
+import { Shield, Users, MessageSquare, Bell, Trash2, Plus, Activity, Crown, GraduationCap, KeyRound, X, UserCheck, UserX, CreditCard, Ban, Eye, Gift, Clock, CalendarDays, Trophy, Pencil, Check, ArrowUp, ArrowDown, Mail, UserPlus, Phone, Download, FileText, Calendar, Megaphone, BookOpen, List, Settings, Ticket, LifeBuoy } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { getPlanByPriceId } from "@/lib/stripe";
@@ -36,6 +36,7 @@ import FeedbacksAdminTab from "@/components/admin/FeedbacksAdminTab";
 import SiteConfigTab from "@/components/admin/SiteConfigTab";
 import { CouponsTab } from "@/components/admin/CouponsTab";
 import ReferralsAdminTab from "@/components/admin/ReferralsAdminTab";
+import SupportTicketsTab from "@/components/admin/SupportTicketsTab";
 import CronoCatalogoTab from "@/components/cronometro/CronoCatalogoTab";
 
 
@@ -112,6 +113,7 @@ export default function Admin() {
             <TabsContent value="feedbacks"><FeedbacksAdminTab /></TabsContent>
             <TabsContent value="coupons"><CouponsTab /></TabsContent>
             <TabsContent value="referrals"><ReferralsAdminTab /></TabsContent>
+            <TabsContent value="support"><SupportTicketsTab /></TabsContent>
             <TabsContent value="config"><SiteConfigTab /></TabsContent>
           </div>
         </Tabs>
@@ -179,6 +181,7 @@ function DesktopAdminNav({ isAdmin, pendingAlerts, pendingRequests }: AdminNavPr
         { value: "feedbacks", label: "Feedbacks", icon: Mail },
         { value: "coupons", label: "Cupons", icon: Ticket },
         { value: "referrals", label: "Indicações", icon: Gift },
+        { value: "support", label: "Fale Conosco", icon: LifeBuoy },
         { value: "config", label: "Configurações", icon: Settings },
       ],
     },
@@ -248,6 +251,7 @@ function MobileAdminNav({ isAdmin, pendingAlerts, pendingRequests }: AdminNavPro
     { value: "crono", label: "Cronômetro", icon: Clock },
     { value: "feedbacks", label: "Feedbacks", icon: Mail },
     { value: "referrals", label: "Indicações", icon: Gift },
+    { value: "support", label: "Fale Conosco", icon: LifeBuoy },
     { value: "config", label: "Config", icon: Settings },
   ];
 
@@ -288,16 +292,27 @@ function OverviewTab() {
   const [cortesiaSearch, setCortesiaSearch] = useState("");
   const [cortesiaFilter, setCortesiaFilter] = useState<"all" | "active" | "expired">("active");
 
+  const [showTrials, setShowTrials] = useState(false);
+
   const { data: stats } = useQuery({
     queryKey: ["admin-stats"],
     queryFn: async () => {
-      const [profiles, sessions, manualSubs] = await Promise.all([
+      const nowIso = new Date().toISOString();
+      const [profiles, sessions, manualSubs, paidSubs, bancoGeral, trials] = await Promise.all([
         supabase.from("profiles").select("id, created_at", { count: "exact" }),
         supabase.from("user_sessions").select("user_id, last_seen_at").limit(500),
-        supabase.from("manual_subscriptions").select("id", { count: "exact", head: true }).eq("is_active", true).gte("expires_at", new Date().toISOString()),
+        supabase.from("manual_subscriptions").select("id", { count: "exact", head: true }).eq("is_active", true).gte("expires_at", nowIso),
+        supabase.from("profiles").select("id").gt("subscription_end", nowIso),
+        (supabase as any).from("profiles").select("id").gt("banco_geral_expires_at", nowIso),
+        (supabase as any).from("content_access").select("user_id").eq("source", "trial").gt("expires_at", nowIso),
       ]);
       const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
       const onlineUsers = (sessions.data || []).filter((s: any) => s.last_seen_at > fiveMinAgo);
+      const paidIds = new Set([
+        ...((paidSubs.data as any[]) || []).map((p: any) => p.id),
+        ...((bancoGeral.data as any[]) || []).map((p: any) => p.id),
+      ]);
+      const trialIds = new Set(((trials.data as any[]) || []).map((t: any) => t.user_id));
 
       return {
         totalUsers: profiles.count || 0,
@@ -305,11 +320,30 @@ function OverviewTab() {
         manualPlans: manualSubs.count || 0,
         activeUsers: (sessions.data || []).filter((s: any) => s.last_seen_at > new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()).length,
         blockedUsers: 0,
-        activeSubscriptions: 0,
+        activeSubscriptions: paidIds.size,
+        activeTrials: trialIds.size,
         onlineList: onlineUsers,
       };
     },
     refetchInterval: 300_000,
+  });
+
+  const { data: trialUsers } = useQuery({
+    queryKey: ["admin-active-trials"],
+    enabled: showTrials,
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("content_access")
+        .select("user_id, expires_at")
+        .eq("source", "trial")
+        .gt("expires_at", new Date().toISOString())
+        .order("expires_at", { ascending: false });
+      const byUser = new Map<string, string>();
+      (data || []).forEach((r: any) => { if (!byUser.has(r.user_id)) byUser.set(r.user_id, r.expires_at); });
+      if (!byUser.size) return [];
+      const { data: profs } = await supabase.from("profiles").select("id, name, username, avatar_url").in("id", [...byUser.keys()]);
+      return (profs || []).map((p: any) => ({ ...p, expires_at: byUser.get(p.id) }));
+    },
   });
 
   const { data: allCortesias } = useQuery({
@@ -374,7 +408,7 @@ function OverviewTab() {
     { title: "Online Agora", value: stats?.onlineNow ?? 0, icon: Activity, color: "text-green-400", bg: "bg-green-500/10", onClick: undefined },
     { title: "Cortesias Ativas", value: stats?.manualPlans ?? 0, icon: Gift, color: "text-orange-400", bg: "bg-orange-500/10", onClick: () => setShowCortesias(true) },
     { title: "Ativos (24h)", value: stats?.activeUsers ?? 0, icon: UserCheck, color: "text-sky-400", bg: "bg-sky-500/10", onClick: undefined },
-    { title: "Bloqueados", value: stats?.blockedUsers ?? 0, icon: Ban, color: "text-red-400", bg: "bg-red-500/10", onClick: undefined },
+    { title: "Degustações Ativas", value: stats?.activeTrials ?? 0, icon: Clock, color: "text-purple-400", bg: "bg-purple-500/10", onClick: () => setShowTrials(true) },
     { title: "Assinaturas Ativas", value: stats?.activeSubscriptions ?? 0, icon: CreditCard, color: "text-primary", bg: "bg-primary/10", onClick: undefined },
   ];
 
@@ -456,6 +490,41 @@ function OverviewTab() {
           </div>
         </DrawerContent>
       </Drawer>
+
+      {/* Degustações Drawer */}
+      <Drawer open={showTrials} onOpenChange={setShowTrials}>
+        <DrawerContent className="max-h-[90vh]">
+          <DrawerHeader className="text-left">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Clock className="h-5 w-5 text-purple-400" />
+                <DrawerTitle>Degustações ativas</DrawerTitle>
+              </div>
+              <DrawerClose asChild><Button variant="ghost" size="icon"><X className="h-4 w-4" /></Button></DrawerClose>
+            </div>
+            <DrawerDescription>Usuários com acesso temporário de 3 dias obtido por indicação.</DrawerDescription>
+          </DrawerHeader>
+          <div className="px-4 pb-6 space-y-2 overflow-y-auto">
+            {trialUsers?.length ? trialUsers.map((p: any) => (
+              <div key={p.id} className="flex items-center gap-3 p-3 rounded-lg bg-secondary/50">
+                <Avatar className="h-9 w-9">
+                  <AvatarImage src={p.avatar_url} />
+                  <AvatarFallback className="bg-primary/20 text-primary text-xs">{(p.name || p.username || "?")[0].toUpperCase()}</AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{p.name || p.username}</p>
+                  <p className="text-xs text-muted-foreground">@{p.username}</p>
+                </div>
+                <p className="text-[10px] text-muted-foreground">Expira {new Date(p.expires_at).toLocaleString("pt-BR")}</p>
+              </div>
+            )) : (
+              <p className="text-sm text-muted-foreground text-center py-8">Nenhuma degustação ativa no momento.</p>
+            )}
+          </div>
+        </DrawerContent>
+      </Drawer>
+
+
 
       <Card className="gradient-card border-border">
         <CardHeader>
@@ -585,12 +654,46 @@ function UsersTab() {
     },
   });
 
-  const { data: users } = useQuery({
-    queryKey: ["admin-users", search],
+  const { data: trials } = useQuery({
+    queryKey: ["admin-active-trials-map"],
     queryFn: async () => {
-      let query = supabase.from("profiles").select("id, name, username, avatar_url, subscription_tier, active_badge_id, total_score, created_at, streak").order("created_at", { ascending: false }).limit(200);
-      if (search) query = query.or(`username.ilike.%${search}%,name.ilike.%${search}%`);
-      const { data } = await query;
+      const { data } = await (supabase as any)
+        .from("content_access")
+        .select("user_id, expires_at")
+        .eq("source", "trial")
+        .gt("expires_at", new Date().toISOString());
+      const map = new Map<string, string>();
+      (data || []).forEach((r: any) => {
+        const cur = map.get(r.user_id);
+        if (!cur || r.expires_at > cur) map.set(r.user_id, r.expires_at);
+      });
+      return map;
+    },
+  });
+
+  const { data: paidIds } = useQuery({
+    queryKey: ["admin-paid-subscribers"],
+    queryFn: async () => {
+      const nowIso = new Date().toISOString();
+      const [sub, banco] = await Promise.all([
+        supabase.from("profiles").select("id").gt("subscription_end", nowIso),
+        (supabase as any).from("profiles").select("id").gt("banco_geral_expires_at", nowIso),
+      ]);
+      return new Set([
+        ...(((sub.data as any[]) || []).map((p: any) => p.id)),
+        ...(((banco.data as any[]) || []).map((p: any) => p.id)),
+      ]);
+    },
+  });
+
+  const { data: users } = useQuery({
+    queryKey: ["admin-users"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, name, username, avatar_url, subscription_tier, active_badge_id, total_score, created_at, streak")
+        .order("created_at", { ascending: false })
+        .limit(1000);
       return data || [];
     },
   });
@@ -599,10 +702,17 @@ function UsersTab() {
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
   const onlineIds = new Set((sessions || []).filter((s: any) => s.last_seen_at > fiveMinAgo).map((s: any) => s.user_id));
 
+  const q = search.trim().toLowerCase();
   const filteredUsers = (users || []).filter((u: any) => {
-    if (subTab === "new") return u.created_at && u.created_at > sevenDaysAgo;
-    if (subTab === "active") return onlineIds.has(u.id);
-    return true;
+    if (subTab === "new" && !(u.created_at && u.created_at > sevenDaysAgo)) return false;
+    if (subTab === "active" && !onlineIds.has(u.id)) return false;
+    if (!q) return true;
+    const email = ((userEmails?.get(u.id) as string) || "").toLowerCase();
+    return (
+      (u.name || "").toLowerCase().includes(q) ||
+      (u.username || "").toLowerCase().includes(q) ||
+      email.includes(q)
+    );
   });
 
   const getUserRoles = (userId: string) => {
@@ -613,10 +723,20 @@ function UsersTab() {
     return (manualSubs || []).some((s: any) => s.user_id === userId);
   };
 
-  const getAccessType = (userId: string, profile: any): "cortesia" | "premium" | "gratuito" => {
+  type AccessType = "premium" | "cortesia" | "degustacao" | "gratuito";
+
+  const getAccessType = (userId: string, profile: any): AccessType => {
+    if (paidIds?.has(userId)) return "premium";
     if (hasCortesia(userId)) return "cortesia";
+    if (trials?.has(userId)) return "degustacao";
     if (profile.subscription_tier) return "premium";
     return "gratuito";
+  };
+
+  const trialDaysLeft = (userId: string) => {
+    const exp = trials?.get(userId);
+    if (!exp) return 0;
+    return Math.max(0, Math.ceil((new Date(exp).getTime() - Date.now()) / 86_400_000));
   };
 
   const getLastSeen = (userId: string) => {
@@ -635,9 +755,10 @@ function UsersTab() {
     return `${Math.floor(hours / 24)}d atrás`;
   };
 
-  const accessBadge = (type: "cortesia" | "premium" | "gratuito") => {
+  const accessBadge = (type: AccessType, userId?: string) => {
     if (type === "cortesia") return <Badge className="bg-orange-500/20 text-orange-400 border-orange-400/30 text-[10px]"><Gift className="h-3 w-3 mr-1" />Cortesia</Badge>;
     if (type === "premium") return <Badge className="bg-green-500/20 text-green-400 border-green-400/30 text-[10px]"><Crown className="h-3 w-3 mr-1" />Premium</Badge>;
+    if (type === "degustacao") return <Badge className="bg-purple-500/20 text-purple-300 border-purple-400/30 text-[10px]"><Clock className="h-3 w-3 mr-1" />Degustação{userId ? ` · ${trialDaysLeft(userId)}d` : ""}</Badge>;
     return <Badge variant="outline" className="text-[10px] text-muted-foreground">Gratuito</Badge>;
   };
 
@@ -765,7 +886,7 @@ function UsersTab() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <p className="text-sm font-semibold truncate">{u.name || u.username}</p>
-                      {accessBadge(accessType)}
+                      {accessBadge(accessType, u.id)}
                       {roleBadges(userRolesList)}
                     </div>
                     <p className="text-xs text-muted-foreground">@{u.username}</p>

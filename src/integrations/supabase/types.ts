@@ -1658,6 +1658,51 @@ export type Database = {
           },
         ]
       }
+      support_tickets: {
+        Row: {
+          cancel_reason: string | null
+          created_at: string
+          email: string | null
+          id: string
+          internal_note: string | null
+          message: string
+          plan_label: string | null
+          status: string
+          subject: string
+          updated_at: string
+          user_id: string
+          whatsapp: string | null
+        }
+        Insert: {
+          cancel_reason?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          internal_note?: string | null
+          message: string
+          plan_label?: string | null
+          status?: string
+          subject: string
+          updated_at?: string
+          user_id: string
+          whatsapp?: string | null
+        }
+        Update: {
+          cancel_reason?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          internal_note?: string | null
+          message?: string
+          plan_label?: string | null
+          status?: string
+          subject?: string
+          updated_at?: string
+          user_id?: string
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
       suppressed_emails: {
         Row: {
           created_at: string
