@@ -879,11 +879,20 @@ function UsersTab() {
         <div className="flex flex-col sm:flex-row gap-3 flex-1">
           <Input placeholder="Buscar por nome ou username..." value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-sm" />
           <div className="flex gap-1">
-            {(["all", "new", "active"] as const).map((t) => (
+            {(["all", "new", "active", "booster", "double"] as const).map((t) => (
               <Button key={t} variant={subTab === t ? "default" : "outline"} size="sm" onClick={() => setSubTab(t)}>
-                {t === "all" ? `Todos (${users?.length || 0})` : t === "new" ? `Novos (${(users || []).filter((u: any) => u.created_at > sevenDaysAgo).length})` : `Ativos (${onlineIds.size})`}
+                {t === "all"
+                  ? `Todos (${users?.length || 0})`
+                  : t === "new"
+                  ? `Novos (${(users || []).filter((u: any) => u.created_at > sevenDaysAgo).length})`
+                  : t === "active"
+                  ? `Ativos (${onlineIds.size})`
+                  : t === "booster"
+                  ? `Boosters (${[...(boosterMap?.values() || [])].filter((k) => k === "booster").length})`
+                  : `Double (${[...(boosterMap?.values() || [])].filter((k) => k === "double").length})`}
               </Button>
             ))}
+
           </div>
         </div>
         <div className="flex gap-2">
