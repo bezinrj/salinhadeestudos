@@ -474,6 +474,42 @@ function OverviewTab() {
         ))}
       </div>
 
+      {/* Boosters Drawer */}
+      <Drawer open={!!boosterDrawer} onOpenChange={(v) => !v && setBoosterDrawer(null)}>
+        <DrawerContent className="max-h-[90vh]">
+          <DrawerHeader className="text-left">
+            <DrawerTitle className="flex items-center gap-2">
+              <Sparkles className={cn("h-5 w-5", boosterDrawer === "double" ? "text-gold" : "text-indigo-400")} />
+              {boosterDrawer === "double" ? "Double Boosters" : "Boosters"}
+            </DrawerTitle>
+            <DrawerDescription>
+              {boosterDrawer === "double"
+                ? "Usuários que resgataram cupom de 100% de desconto."
+                : "Usuários que usaram cupom com desconto parcial."}
+            </DrawerDescription>
+          </DrawerHeader>
+          <div className="px-4 pb-6 space-y-2 overflow-y-auto">
+            {(boosters?.list || []).filter((b) => b.kind === (boosterDrawer === "double" ? "double" : "booster")).map((b) => (
+              <div key={b.userId} className="flex items-center gap-3 rounded-lg border border-border p-3">
+                <Avatar className="h-9 w-9">
+                  <AvatarImage src={b.profile?.avatar_url} />
+                  <AvatarFallback className="bg-primary/20 text-primary text-xs">{(b.profile?.name || b.profile?.username || "?")[0].toUpperCase()}</AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium truncate">{b.profile?.name || b.profile?.username || b.userId}</p>
+                  <p className="text-xs text-muted-foreground">Cupom {b.code} · {new Date(b.created_at).toLocaleDateString("pt-BR")}</p>
+                </div>
+              </div>
+            ))}
+            {!(boosters?.list || []).some((b) => b.kind === (boosterDrawer === "double" ? "double" : "booster")) && (
+              <p className="text-sm text-muted-foreground py-6 text-center">Nenhum usuário nesta categoria.</p>
+            )}
+          </div>
+        </DrawerContent>
+      </Drawer>
+
+
+
       {/* Cortesias Drawer */}
       <Drawer open={showCortesias} onOpenChange={setShowCortesias}>
         <DrawerContent className="max-h-[90vh]">
