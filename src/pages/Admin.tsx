@@ -293,6 +293,41 @@ function OverviewTab() {
   const [cortesiaFilter, setCortesiaFilter] = useState<"all" | "active" | "expired">("active");
 
   const [showTrials, setShowTrials] = useState(false);
+  const [boosterDrawer, setBoosterDrawer] = useState<null | "booster" | "double">(null);
+
+  const { data: boosters } = useQuery({
+    queryKey: ["admin-boosters"],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("coupon_redemptions")
+        .select("user_id, percent_off, created_at, coupons(code, percent_off)")
+        .order("created_at", { ascending: false });
+      const rows = (data as any[]) || [];
+      const byUser = new Map<string, { userId: string; kind: "booster" | "double"; code: string; created_at: string }>();
+      rows.forEach((r: any) => {
+        const pct = r.percent_off ?? r.coupons?.percent_off ?? 0;
+        const kind: "booster" | "double" = pct >= 100 ? "double" : "booster";
+        const cur = byUser.get(r.user_id);
+        if (!cur || (kind === "double" && cur.kind !== "double")) {
+          byUser.set(r.user_id, { userId: r.user_id, kind, code: r.coupons?.code ?? "—", created_at: r.created_at });
+        }
+      });
+      const list = [...byUser.values()];
+      const ids = list.map((l) => l.userId);
+      let profMap = new Map<string, any>();
+      if (ids.length) {
+        const { data: profs } = await supabase.from("profiles").select("id, name, username, avatar_url").in("id", ids);
+        profMap = new Map(((profs as any[]) || []).map((p: any) => [p.id, p]));
+      }
+      const withProfile = list.map((l) => ({ ...l, profile: profMap.get(l.userId) || null }));
+      return {
+        list: withProfile,
+        boosterCount: withProfile.filter((l) => l.kind === "booster").length,
+        doubleCount: withProfile.filter((l) => l.kind === "double").length,
+      };
+    },
+  });
+
 
   const { data: stats } = useQuery({
     queryKey: ["admin-stats"],
