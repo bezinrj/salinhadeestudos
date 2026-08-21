@@ -88,6 +88,25 @@ serve(async (req) => {
       }
     }
 
+    // Registra o uso do cupom parcial (Booster) antes de seguir ao checkout
+    if (couponCode && percentOff > 0 && percentOff < 100) {
+      const { data: reg, error: regErr } = await supabaseClient.rpc("register_coupon_use", {
+        _code: couponCode,
+        _plan_key: planKey ?? "combo",
+      });
+      if (regErr) throw new Error(regErr.message);
+      const regRow = reg as { success?: boolean; message?: string };
+      if (!regRow?.success) {
+        return new Response(
+          JSON.stringify({ error: regRow?.message ?? "Cupom inválido." }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+        );
+      }
+      logStep("Partial coupon registered", { percentOff });
+    }
+
+
+
     // Check if customer already exists
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     let customerId: string | undefined;
