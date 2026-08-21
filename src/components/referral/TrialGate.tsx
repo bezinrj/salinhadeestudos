@@ -61,17 +61,17 @@ export function TrialGate() {
   return (
     <>
       <Dialog open={offerOpen} onOpenChange={(v) => (v ? setOfferOpen(true) : snooze())}>
-        <div className="relative z-50">
-          {/* Halo dourado pulsante atrás da janela */}
-          <div aria-hidden className="pointer-events-none absolute -inset-16 -z-10 overflow-visible">
-            <div className="absolute inset-0 rounded-[3rem] bg-gold/30 blur-3xl animate-gold-pulse" />
-            <div
-              className="absolute inset-8 rounded-[3rem] bg-gold/40 blur-2xl animate-gold-pulse"
-              style={{ animationDelay: "1.2s" }}
-            />
-          </div>
+        <DialogContent className="max-w-md overflow-visible border-gold/40 bg-card p-0">
+          <div className="relative overflow-visible rounded-[inherit] p-6">
+            {/* Halo dourado pulsante atrás do conteúdo */}
+            <div aria-hidden className="pointer-events-none absolute -inset-16 -z-10 overflow-visible">
+              <div className="absolute inset-0 rounded-[3rem] bg-gold/30 blur-3xl animate-gold-pulse" />
+              <div
+                className="absolute inset-8 rounded-[3rem] bg-gold/40 blur-2xl animate-gold-pulse"
+                style={{ animationDelay: "1.2s" }}
+              />
+            </div>
 
-          <DialogContent className="relative z-10 max-w-md overflow-visible border-gold/40 bg-card">
             <DialogHeader className="text-center sm:text-center">
               <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full border border-gold/40 bg-gold/10">
                 <Crown className="h-6 w-6 text-gold" />
@@ -110,8 +110,8 @@ export function TrialGate() {
                 O conteúdo de Minhas Turmas não faz parte da degustação.
               </p>
             </div>
-          </DialogContent>
-        </div>
+          </div>
+        </DialogContent>
       </Dialog>
 
       <ReferralTrialDialog open={formOpen} onOpenChange={setFormOpen} onClaimed={() => refetch()} />
