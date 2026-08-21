@@ -288,16 +288,27 @@ function OverviewTab() {
   const [cortesiaSearch, setCortesiaSearch] = useState("");
   const [cortesiaFilter, setCortesiaFilter] = useState<"all" | "active" | "expired">("active");
 
+  const [showTrials, setShowTrials] = useState(false);
+
   const { data: stats } = useQuery({
     queryKey: ["admin-stats"],
     queryFn: async () => {
-      const [profiles, sessions, manualSubs] = await Promise.all([
+      const nowIso = new Date().toISOString();
+      const [profiles, sessions, manualSubs, paidSubs, bancoGeral, trials] = await Promise.all([
         supabase.from("profiles").select("id, created_at", { count: "exact" }),
         supabase.from("user_sessions").select("user_id, last_seen_at").limit(500),
-        supabase.from("manual_subscriptions").select("id", { count: "exact", head: true }).eq("is_active", true).gte("expires_at", new Date().toISOString()),
+        supabase.from("manual_subscriptions").select("id", { count: "exact", head: true }).eq("is_active", true).gte("expires_at", nowIso),
+        supabase.from("profiles").select("id").gt("subscription_end", nowIso),
+        (supabase as any).from("profiles").select("id").gt("banco_geral_expires_at", nowIso),
+        (supabase as any).from("content_access").select("user_id").eq("source", "trial").gt("expires_at", nowIso),
       ]);
       const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
       const onlineUsers = (sessions.data || []).filter((s: any) => s.last_seen_at > fiveMinAgo);
+      const paidIds = new Set([
+        ...((paidSubs.data as any[]) || []).map((p: any) => p.id),
+        ...((bancoGeral.data as any[]) || []).map((p: any) => p.id),
+      ]);
+      const trialIds = new Set(((trials.data as any[]) || []).map((t: any) => t.user_id));
 
       return {
         totalUsers: profiles.count || 0,
@@ -305,11 +316,30 @@ function OverviewTab() {
         manualPlans: manualSubs.count || 0,
         activeUsers: (sessions.data || []).filter((s: any) => s.last_seen_at > new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()).length,
         blockedUsers: 0,
-        activeSubscriptions: 0,
+        activeSubscriptions: paidIds.size,
+        activeTrials: trialIds.size,
         onlineList: onlineUsers,
       };
     },
     refetchInterval: 300_000,
+  });
+
+  const { data: trialUsers } = useQuery({
+    queryKey: ["admin-active-trials"],
+    enabled: showTrials,
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("content_access")
+        .select("user_id, expires_at")
+        .eq("source", "trial")
+        .gt("expires_at", new Date().toISOString())
+        .order("expires_at", { ascending: false });
+      const byUser = new Map<string, string>();
+      (data || []).forEach((r: any) => { if (!byUser.has(r.user_id)) byUser.set(r.user_id, r.expires_at); });
+      if (!byUser.size) return [];
+      const { data: profs } = await supabase.from("profiles").select("id, name, username, avatar_url").in("id", [...byUser.keys()]);
+      return (profs || []).map((p: any) => ({ ...p, expires_at: byUser.get(p.id) }));
+    },
   });
 
   const { data: allCortesias } = useQuery({
