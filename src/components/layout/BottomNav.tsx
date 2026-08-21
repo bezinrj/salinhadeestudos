@@ -15,6 +15,7 @@ import {
   GraduationCap,
   Gavel,
   Library,
+  LifeBuoy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -37,6 +38,7 @@ const extraNavItems = [
   { path: "/vademecum", icon: Library, label: "Vade Mecum" },
   { path: "/cronograma", icon: CalendarRange, label: "Cronograma" },
   { path: "/meu-plano", icon: CreditCard, label: "Meu Plano" },
+  { path: "/fale-conosco", icon: LifeBuoy, label: "Fale Conosco" },
 ];
 
 export function BottomNav() {

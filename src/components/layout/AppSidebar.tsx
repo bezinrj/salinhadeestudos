@@ -1,4 +1,4 @@
-import { Scale, FileText, Timer, Trophy, User, Calendar, LayoutDashboard, LogOut, CreditCard, Shield, CalendarRange, BookOpen, MessageCircle, Gavel, Library } from "lucide-react";
+import { Scale, FileText, Timer, Trophy, User, Calendar, LayoutDashboard, LogOut, CreditCard, Shield, CalendarRange, BookOpen, MessageCircle, Gavel, Library, LifeBuoy } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { NavLink } from "@/components/NavLink";
@@ -44,6 +44,7 @@ const groups = [
       { title: "Ranking", url: "/ranking", icon: Trophy },
       { title: "Cronômetro", url: "/cronometro", icon: Timer },
       { title: "Meu Plano", url: "/meu-plano", icon: CreditCard },
+      { title: "Fale Conosco", url: "/fale-conosco", icon: LifeBuoy },
     ]
   }
 ];
