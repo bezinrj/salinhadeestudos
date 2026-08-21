@@ -104,3 +104,10 @@
     object-position: center 30%;
   }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-gold-pulse {
+    animation: none;
+    opacity: 0.5;
+  }
+}

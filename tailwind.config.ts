@@ -89,11 +89,16 @@ export default {
           "0%, 100%": { opacity: "1" },
           "50%": { opacity: "0.6" },
         },
+        "gold-pulse": {
+          "0%, 100%": { opacity: "0.35", transform: "scale(0.94)" },
+          "50%": { opacity: "0.8", transform: "scale(1.06)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "pulse-glow": "pulse-glow 2s ease-in-out infinite",
+        "gold-pulse": "gold-pulse 2.5s ease-in-out infinite",
       },
     },
   },
