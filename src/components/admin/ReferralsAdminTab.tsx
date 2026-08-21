@@ -25,7 +25,7 @@ export default function ReferralsAdminTab() {
     queryKey: ["admin-referrers", referrals.length],
     enabled: referrals.length > 0,
     queryFn: async () => {
-      const ids = [...new Set(referrals.map((r: any) => r.referrer_id))];
+      const ids = [...new Set(referrals.map((r: any) => r.referrer_id as string))] as string[];
       const { data } = await supabase.from("profiles").select("id, name, username").in("id", ids);
       const map = new Map<string, string>();
       (data || []).forEach((p: any) => map.set(p.id, p.name || p.username));
