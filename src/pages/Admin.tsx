@@ -798,6 +798,9 @@ function UsersTab() {
   const filteredUsers = (users || []).filter((u: any) => {
     if (subTab === "new" && !(u.created_at && u.created_at > sevenDaysAgo)) return false;
     if (subTab === "active" && !onlineIds.has(u.id)) return false;
+    if (subTab === "booster" && boosterMap?.get(u.id) !== "booster") return false;
+    if (subTab === "double" && boosterMap?.get(u.id) !== "double") return false;
+
     if (!q) return true;
     const email = ((userEmails?.get(u.id) as string) || "").toLowerCase();
     return (
