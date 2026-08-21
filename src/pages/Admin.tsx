@@ -751,9 +751,10 @@ function UsersTab() {
     return `${Math.floor(hours / 24)}d atrás`;
   };
 
-  const accessBadge = (type: "cortesia" | "premium" | "gratuito") => {
+  const accessBadge = (type: AccessType, userId?: string) => {
     if (type === "cortesia") return <Badge className="bg-orange-500/20 text-orange-400 border-orange-400/30 text-[10px]"><Gift className="h-3 w-3 mr-1" />Cortesia</Badge>;
     if (type === "premium") return <Badge className="bg-green-500/20 text-green-400 border-green-400/30 text-[10px]"><Crown className="h-3 w-3 mr-1" />Premium</Badge>;
+    if (type === "degustacao") return <Badge className="bg-purple-500/20 text-purple-300 border-purple-400/30 text-[10px]"><Clock className="h-3 w-3 mr-1" />Degustação{userId ? ` · ${trialDaysLeft(userId)}d` : ""}</Badge>;
     return <Badge variant="outline" className="text-[10px] text-muted-foreground">Gratuito</Badge>;
   };
 
