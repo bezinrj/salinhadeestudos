@@ -650,12 +650,46 @@ function UsersTab() {
     },
   });
 
-  const { data: users } = useQuery({
-    queryKey: ["admin-users", search],
+  const { data: trials } = useQuery({
+    queryKey: ["admin-active-trials-map"],
     queryFn: async () => {
-      let query = supabase.from("profiles").select("id, name, username, avatar_url, subscription_tier, active_badge_id, total_score, created_at, streak").order("created_at", { ascending: false }).limit(200);
-      if (search) query = query.or(`username.ilike.%${search}%,name.ilike.%${search}%`);
-      const { data } = await query;
+      const { data } = await (supabase as any)
+        .from("content_access")
+        .select("user_id, expires_at")
+        .eq("source", "trial")
+        .gt("expires_at", new Date().toISOString());
+      const map = new Map<string, string>();
+      (data || []).forEach((r: any) => {
+        const cur = map.get(r.user_id);
+        if (!cur || r.expires_at > cur) map.set(r.user_id, r.expires_at);
+      });
+      return map;
+    },
+  });
+
+  const { data: paidIds } = useQuery({
+    queryKey: ["admin-paid-subscribers"],
+    queryFn: async () => {
+      const nowIso = new Date().toISOString();
+      const [sub, banco] = await Promise.all([
+        supabase.from("profiles").select("id").gt("subscription_end", nowIso),
+        (supabase as any).from("profiles").select("id").gt("banco_geral_expires_at", nowIso),
+      ]);
+      return new Set([
+        ...(((sub.data as any[]) || []).map((p: any) => p.id)),
+        ...(((banco.data as any[]) || []).map((p: any) => p.id)),
+      ]);
+    },
+  });
+
+  const { data: users } = useQuery({
+    queryKey: ["admin-users"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, name, username, avatar_url, subscription_tier, active_badge_id, total_score, created_at, streak")
+        .order("created_at", { ascending: false })
+        .limit(1000);
       return data || [];
     },
   });
@@ -664,10 +698,17 @@ function UsersTab() {
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
   const onlineIds = new Set((sessions || []).filter((s: any) => s.last_seen_at > fiveMinAgo).map((s: any) => s.user_id));
 
+  const q = search.trim().toLowerCase();
   const filteredUsers = (users || []).filter((u: any) => {
-    if (subTab === "new") return u.created_at && u.created_at > sevenDaysAgo;
-    if (subTab === "active") return onlineIds.has(u.id);
-    return true;
+    if (subTab === "new" && !(u.created_at && u.created_at > sevenDaysAgo)) return false;
+    if (subTab === "active" && !onlineIds.has(u.id)) return false;
+    if (!q) return true;
+    const email = ((userEmails?.get(u.id) as string) || "").toLowerCase();
+    return (
+      (u.name || "").toLowerCase().includes(q) ||
+      (u.username || "").toLowerCase().includes(q) ||
+      email.includes(q)
+    );
   });
 
   const getUserRoles = (userId: string) => {
