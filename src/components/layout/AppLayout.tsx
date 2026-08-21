@@ -4,12 +4,14 @@ import { AppSidebar } from "./AppSidebar";
 import { BottomNav } from "./BottomNav";
 import { useOnlineTracker } from "@/hooks/useOnlineTracker";
 import { FeedbackButton } from "@/components/FeedbackButton";
+import { TrialGate } from "@/components/referral/TrialGate";
 
 export function AppLayout() {
   useOnlineTracker();
   return (
     <SidebarProvider>
       <FeedbackButton />
+      <TrialGate />
       <div className="min-h-screen flex w-full">
         <div className="hidden md:block">
           <AppSidebar />
