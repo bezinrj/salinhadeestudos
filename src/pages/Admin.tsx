@@ -719,10 +719,20 @@ function UsersTab() {
     return (manualSubs || []).some((s: any) => s.user_id === userId);
   };
 
-  const getAccessType = (userId: string, profile: any): "cortesia" | "premium" | "gratuito" => {
+  type AccessType = "premium" | "cortesia" | "degustacao" | "gratuito";
+
+  const getAccessType = (userId: string, profile: any): AccessType => {
+    if (paidIds?.has(userId)) return "premium";
     if (hasCortesia(userId)) return "cortesia";
+    if (trials?.has(userId)) return "degustacao";
     if (profile.subscription_tier) return "premium";
     return "gratuito";
+  };
+
+  const trialDaysLeft = (userId: string) => {
+    const exp = trials?.get(userId);
+    if (!exp) return 0;
+    return Math.max(0, Math.ceil((new Date(exp).getTime() - Date.now()) / 86_400_000));
   };
 
   const getLastSeen = (userId: string) => {
