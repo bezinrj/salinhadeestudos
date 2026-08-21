@@ -176,6 +176,7 @@ function DesktopAdminNav({ isAdmin, pendingAlerts, pendingRequests }: AdminNavPr
       items: [
         { value: "feedbacks", label: "Feedbacks", icon: Mail },
         { value: "coupons", label: "Cupons", icon: Ticket },
+        { value: "referrals", label: "Indicações", icon: Gift },
         { value: "config", label: "Configurações", icon: Settings },
       ],
     },
