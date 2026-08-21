@@ -487,6 +487,41 @@ function OverviewTab() {
         </DrawerContent>
       </Drawer>
 
+      {/* Degustações Drawer */}
+      <Drawer open={showTrials} onOpenChange={setShowTrials}>
+        <DrawerContent className="max-h-[90vh]">
+          <DrawerHeader className="text-left">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Clock className="h-5 w-5 text-purple-400" />
+                <DrawerTitle>Degustações ativas</DrawerTitle>
+              </div>
+              <DrawerClose asChild><Button variant="ghost" size="icon"><X className="h-4 w-4" /></Button></DrawerClose>
+            </div>
+            <DrawerDescription>Usuários com acesso temporário de 3 dias obtido por indicação.</DrawerDescription>
+          </DrawerHeader>
+          <div className="px-4 pb-6 space-y-2 overflow-y-auto">
+            {trialUsers?.length ? trialUsers.map((p: any) => (
+              <div key={p.id} className="flex items-center gap-3 p-3 rounded-lg bg-secondary/50">
+                <Avatar className="h-9 w-9">
+                  <AvatarImage src={p.avatar_url} />
+                  <AvatarFallback className="bg-primary/20 text-primary text-xs">{(p.name || p.username || "?")[0].toUpperCase()}</AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{p.name || p.username}</p>
+                  <p className="text-xs text-muted-foreground">@{p.username}</p>
+                </div>
+                <p className="text-[10px] text-muted-foreground">Expira {new Date(p.expires_at).toLocaleString("pt-BR")}</p>
+              </div>
+            )) : (
+              <p className="text-sm text-muted-foreground text-center py-8">Nenhuma degustação ativa no momento.</p>
+            )}
+          </div>
+        </DrawerContent>
+      </Drawer>
+
+
+
       <Card className="gradient-card border-border">
         <CardHeader>
           <CardTitle className="text-sm font-medium flex items-center gap-2">
