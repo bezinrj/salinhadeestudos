@@ -136,18 +136,24 @@ export type Database = {
           coupon_id: string
           created_at: string
           id: string
+          percent_off: number
+          status: string
           user_id: string
         }
         Insert: {
           coupon_id: string
           created_at?: string
           id?: string
+          percent_off?: number
+          status?: string
           user_id: string
         }
         Update: {
           coupon_id?: string
           created_at?: string
           id?: string
+          percent_off?: number
+          status?: string
           user_id?: string
         }
         Relationships: [
@@ -3274,6 +3280,10 @@ export type Database = {
         Returns: Json
       }
       refresh_my_total_essays: { Args: never; Returns: number }
+      register_coupon_use: {
+        Args: { _code: string; _plan_key: string }
+        Returns: Json
+      }
       sync_expired_subscriptions: { Args: never; Returns: undefined }
       validate_coupon: {
         Args: { _code: string; _plan_key: string }

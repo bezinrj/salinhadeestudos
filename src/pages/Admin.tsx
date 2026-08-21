@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Shield, Users, MessageSquare, Bell, Trash2, Plus, Activity, Crown, GraduationCap, KeyRound, X, UserCheck, UserX, CreditCard, Ban, Eye, Gift, Clock, CalendarDays, Trophy, Pencil, Check, ArrowUp, ArrowDown, Mail, UserPlus, Phone, Download, FileText, Calendar, Megaphone, BookOpen, List, Settings, Ticket, LifeBuoy } from "lucide-react";
+import { Shield, Users, MessageSquare, Bell, Trash2, Plus, Activity, Crown, GraduationCap, KeyRound, X, UserCheck, UserX, CreditCard, Ban, Eye, Gift, Clock, CalendarDays, Trophy, Pencil, Check, ArrowUp, ArrowDown, Mail, UserPlus, Phone, Download, FileText, Calendar, Megaphone, BookOpen, List, Settings, Ticket, LifeBuoy, Sparkles } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { getPlanByPriceId } from "@/lib/stripe";
@@ -293,6 +293,41 @@ function OverviewTab() {
   const [cortesiaFilter, setCortesiaFilter] = useState<"all" | "active" | "expired">("active");
 
   const [showTrials, setShowTrials] = useState(false);
+  const [boosterDrawer, setBoosterDrawer] = useState<null | "booster" | "double">(null);
+
+  const { data: boosters } = useQuery({
+    queryKey: ["admin-boosters"],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("coupon_redemptions")
+        .select("user_id, percent_off, created_at, coupons(code, percent_off)")
+        .order("created_at", { ascending: false });
+      const rows = (data as any[]) || [];
+      const byUser = new Map<string, { userId: string; kind: "booster" | "double"; code: string; created_at: string }>();
+      rows.forEach((r: any) => {
+        const pct = r.percent_off ?? r.coupons?.percent_off ?? 0;
+        const kind: "booster" | "double" = pct >= 100 ? "double" : "booster";
+        const cur = byUser.get(r.user_id);
+        if (!cur || (kind === "double" && cur.kind !== "double")) {
+          byUser.set(r.user_id, { userId: r.user_id, kind, code: r.coupons?.code ?? "—", created_at: r.created_at });
+        }
+      });
+      const list = [...byUser.values()];
+      const ids = list.map((l) => l.userId);
+      let profMap = new Map<string, any>();
+      if (ids.length) {
+        const { data: profs } = await supabase.from("profiles").select("id, name, username, avatar_url").in("id", ids);
+        profMap = new Map(((profs as any[]) || []).map((p: any) => [p.id, p]));
+      }
+      const withProfile = list.map((l) => ({ ...l, profile: profMap.get(l.userId) || null }));
+      return {
+        list: withProfile,
+        boosterCount: withProfile.filter((l) => l.kind === "booster").length,
+        doubleCount: withProfile.filter((l) => l.kind === "double").length,
+      };
+    },
+  });
+
 
   const { data: stats } = useQuery({
     queryKey: ["admin-stats"],
@@ -410,7 +445,10 @@ function OverviewTab() {
     { title: "Ativos (24h)", value: stats?.activeUsers ?? 0, icon: UserCheck, color: "text-sky-400", bg: "bg-sky-500/10", onClick: undefined },
     { title: "Degustações Ativas", value: stats?.activeTrials ?? 0, icon: Clock, color: "text-purple-400", bg: "bg-purple-500/10", onClick: () => setShowTrials(true) },
     { title: "Assinaturas Ativas", value: stats?.activeSubscriptions ?? 0, icon: CreditCard, color: "text-primary", bg: "bg-primary/10", onClick: undefined },
+    { title: "Boosters", value: boosters?.boosterCount ?? 0, icon: Sparkles, color: "text-indigo-400", bg: "bg-indigo-500/10", onClick: () => setBoosterDrawer("booster") },
+    { title: "Double Boosters", value: boosters?.doubleCount ?? 0, icon: Sparkles, color: "text-gold", bg: "bg-gold/10", onClick: () => setBoosterDrawer("double") },
   ];
+
 
   return (
     <div className="space-y-6">
@@ -435,6 +473,42 @@ function OverviewTab() {
           </Card>
         ))}
       </div>
+
+      {/* Boosters Drawer */}
+      <Drawer open={!!boosterDrawer} onOpenChange={(v) => !v && setBoosterDrawer(null)}>
+        <DrawerContent className="max-h-[90vh]">
+          <DrawerHeader className="text-left">
+            <DrawerTitle className="flex items-center gap-2">
+              <Sparkles className={cn("h-5 w-5", boosterDrawer === "double" ? "text-gold" : "text-indigo-400")} />
+              {boosterDrawer === "double" ? "Double Boosters" : "Boosters"}
+            </DrawerTitle>
+            <DrawerDescription>
+              {boosterDrawer === "double"
+                ? "Usuários que resgataram cupom de 100% de desconto."
+                : "Usuários que usaram cupom com desconto parcial."}
+            </DrawerDescription>
+          </DrawerHeader>
+          <div className="px-4 pb-6 space-y-2 overflow-y-auto">
+            {(boosters?.list || []).filter((b) => b.kind === (boosterDrawer === "double" ? "double" : "booster")).map((b) => (
+              <div key={b.userId} className="flex items-center gap-3 rounded-lg border border-border p-3">
+                <Avatar className="h-9 w-9">
+                  <AvatarImage src={b.profile?.avatar_url} />
+                  <AvatarFallback className="bg-primary/20 text-primary text-xs">{(b.profile?.name || b.profile?.username || "?")[0].toUpperCase()}</AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium truncate">{b.profile?.name || b.profile?.username || b.userId}</p>
+                  <p className="text-xs text-muted-foreground">Cupom {b.code} · {new Date(b.created_at).toLocaleDateString("pt-BR")}</p>
+                </div>
+              </div>
+            ))}
+            {!(boosters?.list || []).some((b) => b.kind === (boosterDrawer === "double" ? "double" : "booster")) && (
+              <p className="text-sm text-muted-foreground py-6 text-center">Nenhum usuário nesta categoria.</p>
+            )}
+          </div>
+        </DrawerContent>
+      </Drawer>
+
+
 
       {/* Cortesias Drawer */}
       <Drawer open={showCortesias} onOpenChange={setShowCortesias}>
@@ -565,7 +639,7 @@ function OverviewTab() {
 /* ─── Users Tab ─── */
 function UsersTab() {
   const [search, setSearch] = useState("");
-  const [subTab, setSubTab] = useState<"all" | "new" | "active">("all");
+  const [subTab, setSubTab] = useState<"all" | "new" | "active" | "booster" | "double">("all");
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
@@ -686,6 +760,24 @@ function UsersTab() {
     },
   });
 
+  const { data: boosterMap } = useQuery({
+    queryKey: ["admin-booster-map"],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("coupon_redemptions")
+        .select("user_id, percent_off, coupons(percent_off)");
+      const map = new Map<string, "booster" | "double">();
+      ((data as any[]) || []).forEach((r: any) => {
+        const pct = r.percent_off ?? r.coupons?.percent_off ?? 0;
+        const kind: "booster" | "double" = pct >= 100 ? "double" : "booster";
+        if (map.get(r.user_id) !== "double") map.set(r.user_id, kind);
+      });
+      return map;
+    },
+  });
+
+
+
   const { data: users } = useQuery({
     queryKey: ["admin-users"],
     queryFn: async () => {
@@ -706,6 +798,9 @@ function UsersTab() {
   const filteredUsers = (users || []).filter((u: any) => {
     if (subTab === "new" && !(u.created_at && u.created_at > sevenDaysAgo)) return false;
     if (subTab === "active" && !onlineIds.has(u.id)) return false;
+    if (subTab === "booster" && boosterMap?.get(u.id) !== "booster") return false;
+    if (subTab === "double" && boosterMap?.get(u.id) !== "double") return false;
+
     if (!q) return true;
     const email = ((userEmails?.get(u.id) as string) || "").toLowerCase();
     return (
@@ -762,6 +857,14 @@ function UsersTab() {
     return <Badge variant="outline" className="text-[10px] text-muted-foreground">Gratuito</Badge>;
   };
 
+  const boosterBadge = (userId: string) => {
+    const kind = boosterMap?.get(userId);
+    if (kind === "double") return <Badge className="bg-gold/20 text-gold border-gold/40 text-[10px]"><Sparkles className="h-3 w-3 mr-1" />Double Booster</Badge>;
+    if (kind === "booster") return <Badge className="bg-indigo-500/20 text-indigo-300 border-indigo-400/30 text-[10px]"><Sparkles className="h-3 w-3 mr-1" />Booster</Badge>;
+    return null;
+  };
+
+
   const roleBadges = (userRoles: string[]) => {
     return userRoles.map((role) => {
       if (role === "admin") return <Badge key={role} className="bg-red-500/20 text-red-400 border-red-400/30 text-[10px]"><Crown className="h-3 w-3 mr-1" />Admin</Badge>;
@@ -776,11 +879,20 @@ function UsersTab() {
         <div className="flex flex-col sm:flex-row gap-3 flex-1">
           <Input placeholder="Buscar por nome ou username..." value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-sm" />
           <div className="flex gap-1">
-            {(["all", "new", "active"] as const).map((t) => (
+            {(["all", "new", "active", "booster", "double"] as const).map((t) => (
               <Button key={t} variant={subTab === t ? "default" : "outline"} size="sm" onClick={() => setSubTab(t)}>
-                {t === "all" ? `Todos (${users?.length || 0})` : t === "new" ? `Novos (${(users || []).filter((u: any) => u.created_at > sevenDaysAgo).length})` : `Ativos (${onlineIds.size})`}
+                {t === "all"
+                  ? `Todos (${users?.length || 0})`
+                  : t === "new"
+                  ? `Novos (${(users || []).filter((u: any) => u.created_at > sevenDaysAgo).length})`
+                  : t === "active"
+                  ? `Ativos (${onlineIds.size})`
+                  : t === "booster"
+                  ? `Boosters (${[...(boosterMap?.values() || [])].filter((k) => k === "booster").length})`
+                  : `Double (${[...(boosterMap?.values() || [])].filter((k) => k === "double").length})`}
               </Button>
             ))}
+
           </div>
         </div>
         <div className="flex gap-2">
@@ -887,6 +999,8 @@ function UsersTab() {
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <p className="text-sm font-semibold truncate">{u.name || u.username}</p>
                       {accessBadge(accessType, u.id)}
+                      {boosterBadge(u.id)}
+
                       {roleBadges(userRolesList)}
                     </div>
                     <p className="text-xs text-muted-foreground">@{u.username}</p>
