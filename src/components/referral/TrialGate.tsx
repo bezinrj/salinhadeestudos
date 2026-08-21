@@ -24,13 +24,6 @@ export function TrialGate() {
   const { user, entitlements, loading } = useAuth();
   const { trial, loading: trialLoading, refetch } = useTrialStatus();
   const [offerOpen, setOfferOpen] = useState(false);
-  const [forceOpen, setForceOpen] = useState(false);
-
-  useEffect(() => {
-    if (window.location.search.includes("showTrial=true")) {
-      setForceOpen(true);
-    }
-  }, []);
   const [formOpen, setFormOpen] = useState(false);
 
   // Acesso ativo a qualquer turma também exclui o aviso
