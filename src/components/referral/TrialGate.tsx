@@ -61,7 +61,7 @@ export function TrialGate() {
   return (
     <>
       <Dialog open={offerOpen} onOpenChange={(v) => (v ? setOfferOpen(true) : snooze())}>
-        <DialogContent className="max-w-md overflow-visible border-gold/40 bg-card/95">
+        <div className="relative z-50">
           {/* Halo dourado pulsante atrás da janela */}
           <div aria-hidden className="pointer-events-none absolute -inset-16 -z-10 overflow-visible">
             <div className="absolute inset-0 rounded-[3rem] bg-gold/30 blur-3xl animate-gold-pulse" />
@@ -71,45 +71,47 @@ export function TrialGate() {
             />
           </div>
 
-          <DialogHeader className="text-center sm:text-center">
-            <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full border border-gold/40 bg-gold/10">
-              <Crown className="h-6 w-6 text-gold" />
+          <DialogContent className="relative z-10 max-w-md overflow-visible border-gold/40 bg-card">
+            <DialogHeader className="text-center sm:text-center">
+              <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full border border-gold/40 bg-gold/10">
+                <Crown className="h-6 w-6 text-gold" />
+              </div>
+              <DialogTitle className="font-display text-2xl tracking-tight">
+                Acesso <span className="text-gold">Premium</span> liberado por 3 dias
+              </DialogTitle>
+              <DialogDescription>Indique 2 amigos e comece agora.</DialogDescription>
+            </DialogHeader>
+
+            <ul className="space-y-2.5">
+              {TRIAL_BENEFITS.map((b) => (
+                <li key={b.label} className="flex items-start gap-3">
+                  <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-gold/30 bg-gold/10">
+                    <b.icon className="h-3.5 w-3.5 text-gold" />
+                  </span>
+                  <span className="text-sm leading-tight">
+                    <span className="font-medium text-foreground">{b.label}</span>
+                    <span className="block text-xs text-muted-foreground">{b.detail}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+
+            <div className="flex flex-col gap-2 pt-1">
+              <Button
+                className="w-full gradient-electric text-white"
+                onClick={() => { setOfferOpen(false); setFormOpen(true); }}
+              >
+                <Sparkles className="h-4 w-4 mr-1" /> Indicar amigos e liberar
+              </Button>
+              <Button variant="ghost" className="w-full text-muted-foreground" onClick={snooze}>
+                <X className="h-4 w-4 mr-1" /> Agora não
+              </Button>
+              <p className="text-center text-[11px] text-muted-foreground">
+                O conteúdo de Minhas Turmas não faz parte da degustação.
+              </p>
             </div>
-            <DialogTitle className="font-display text-2xl tracking-tight">
-              Acesso <span className="text-gold">Premium</span> liberado por 3 dias
-            </DialogTitle>
-            <DialogDescription>Indique 2 amigos e comece agora.</DialogDescription>
-          </DialogHeader>
-
-          <ul className="space-y-2.5">
-            {TRIAL_BENEFITS.map((b) => (
-              <li key={b.label} className="flex items-start gap-3">
-                <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-gold/30 bg-gold/10">
-                  <b.icon className="h-3.5 w-3.5 text-gold" />
-                </span>
-                <span className="text-sm leading-tight">
-                  <span className="font-medium text-foreground">{b.label}</span>
-                  <span className="block text-xs text-muted-foreground">{b.detail}</span>
-                </span>
-              </li>
-            ))}
-          </ul>
-
-          <div className="flex flex-col gap-2 pt-1">
-            <Button
-              className="w-full gradient-electric text-white"
-              onClick={() => { setOfferOpen(false); setFormOpen(true); }}
-            >
-              <Sparkles className="h-4 w-4 mr-1" /> Indicar amigos e liberar
-            </Button>
-            <Button variant="ghost" className="w-full text-muted-foreground" onClick={snooze}>
-              <X className="h-4 w-4 mr-1" /> Agora não
-            </Button>
-            <p className="text-center text-[11px] text-muted-foreground">
-              O conteúdo de Minhas Turmas não faz parte da degustação.
-            </p>
-          </div>
-        </DialogContent>
+          </DialogContent>
+        </div>
       </Dialog>
 
       <ReferralTrialDialog open={formOpen} onOpenChange={setFormOpen} onClaimed={() => refetch()} />
