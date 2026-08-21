@@ -61,7 +61,7 @@ export function TrialGate() {
   return (
     <>
       <Dialog open={offerOpen} onOpenChange={(v) => (v ? setOfferOpen(true) : snooze())}>
-        <DialogContent className="max-w-md overflow-visible border-gold/40 bg-card">
+        <DialogContent className="max-w-md overflow-visible border-gold/40 bg-card/95">
           {/* Halo dourado pulsante atrás da janela */}
           <div aria-hidden className="pointer-events-none absolute -inset-16 -z-10 overflow-visible">
             <div className="absolute inset-0 rounded-[3rem] bg-gold/30 blur-3xl animate-gold-pulse" />
