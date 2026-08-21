@@ -67,7 +67,7 @@ export function TrialGate() {
 
   return (
     <>
-      <Dialog open={offerOpen} onOpenChange={(v) => (v ? setOfferOpen(true) : snooze())}>
+      <Dialog open={offerOpen || forceOpen} onOpenChange={(v) => (v ? setOfferOpen(true) : snooze())}>
         <DialogContent className="max-w-md overflow-visible border-gold/40 bg-card p-0">
           <div className="relative overflow-visible rounded-[inherit] p-6">
             {/* Halo dourado pulsante atrás do conteúdo */}
