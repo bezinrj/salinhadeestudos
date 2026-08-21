@@ -445,7 +445,10 @@ function OverviewTab() {
     { title: "Ativos (24h)", value: stats?.activeUsers ?? 0, icon: UserCheck, color: "text-sky-400", bg: "bg-sky-500/10", onClick: undefined },
     { title: "Degustações Ativas", value: stats?.activeTrials ?? 0, icon: Clock, color: "text-purple-400", bg: "bg-purple-500/10", onClick: () => setShowTrials(true) },
     { title: "Assinaturas Ativas", value: stats?.activeSubscriptions ?? 0, icon: CreditCard, color: "text-primary", bg: "bg-primary/10", onClick: undefined },
+    { title: "Boosters", value: boosters?.boosterCount ?? 0, icon: Sparkles, color: "text-indigo-400", bg: "bg-indigo-500/10", onClick: () => setBoosterDrawer("booster") },
+    { title: "Double Boosters", value: boosters?.doubleCount ?? 0, icon: Sparkles, color: "text-gold", bg: "bg-gold/10", onClick: () => setBoosterDrawer("double") },
   ];
+
 
   return (
     <div className="space-y-6">
