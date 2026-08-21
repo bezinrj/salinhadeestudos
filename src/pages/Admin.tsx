@@ -251,6 +251,7 @@ function MobileAdminNav({ isAdmin, pendingAlerts, pendingRequests }: AdminNavPro
     { value: "crono", label: "Cronômetro", icon: Clock },
     { value: "feedbacks", label: "Feedbacks", icon: Mail },
     { value: "referrals", label: "Indicações", icon: Gift },
+    { value: "support", label: "Fale Conosco", icon: LifeBuoy },
     { value: "config", label: "Config", icon: Settings },
   ];
 
