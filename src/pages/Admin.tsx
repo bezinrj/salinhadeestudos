@@ -857,6 +857,14 @@ function UsersTab() {
     return <Badge variant="outline" className="text-[10px] text-muted-foreground">Gratuito</Badge>;
   };
 
+  const boosterBadge = (userId: string) => {
+    const kind = boosterMap?.get(userId);
+    if (kind === "double") return <Badge className="bg-gold/20 text-gold border-gold/40 text-[10px]"><Sparkles className="h-3 w-3 mr-1" />Double Booster</Badge>;
+    if (kind === "booster") return <Badge className="bg-indigo-500/20 text-indigo-300 border-indigo-400/30 text-[10px]"><Sparkles className="h-3 w-3 mr-1" />Booster</Badge>;
+    return null;
+  };
+
+
   const roleBadges = (userRoles: string[]) => {
     return userRoles.map((role) => {
       if (role === "admin") return <Badge key={role} className="bg-red-500/20 text-red-400 border-red-400/30 text-[10px]"><Crown className="h-3 w-3 mr-1" />Admin</Badge>;
