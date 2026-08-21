@@ -1115,6 +1115,7 @@ export type Database = {
           target_career: string | null
           total_essays: number | null
           total_score: number | null
+          trial_claimed_at: string | null
           username: string
           weekly_hours: number | null
         }
@@ -1138,6 +1139,7 @@ export type Database = {
           target_career?: string | null
           total_essays?: number | null
           total_score?: number | null
+          trial_claimed_at?: string | null
           username: string
           weekly_hours?: number | null
         }
@@ -1161,6 +1163,7 @@ export type Database = {
           target_career?: string | null
           total_essays?: number | null
           total_score?: number | null
+          trial_claimed_at?: string | null
           username?: string
           weekly_hours?: number | null
         }
@@ -1262,6 +1265,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      referrals: {
+        Row: {
+          created_at: string
+          email_sent_at: string | null
+          friend_email: string
+          friend_name: string
+          friend_whatsapp: string | null
+          id: string
+          invite_token: string
+          referrer_id: string
+          signed_up_user_id: string | null
+          whatsapp_opened_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          email_sent_at?: string | null
+          friend_email: string
+          friend_name: string
+          friend_whatsapp?: string | null
+          id?: string
+          invite_token?: string
+          referrer_id: string
+          signed_up_user_id?: string | null
+          whatsapp_opened_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          email_sent_at?: string | null
+          friend_email?: string
+          friend_name?: string
+          friend_whatsapp?: string | null
+          id?: string
+          invite_token?: string
+          referrer_id?: string
+          signed_up_user_id?: string | null
+          whatsapp_opened_at?: string | null
+        }
+        Relationships: []
       }
       schedule_access: {
         Row: {
@@ -3036,6 +3078,7 @@ export type Database = {
         }[]
       }
       claim_badge: { Args: { _badge_id: string }; Returns: boolean }
+      claim_referral_trial: { Args: { _indicacoes: Json }; Returns: Json }
       crono_match_assunto: {
         Args: { _materia_canon_id: string; _texto: string }
         Returns: string
