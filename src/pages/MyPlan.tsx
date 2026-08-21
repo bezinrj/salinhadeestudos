@@ -4,6 +4,7 @@ import { PricingCards } from "@/components/PricingCards";
 import { getPlanByPriceId } from "@/lib/stripe";
 import { CalendarDays, CreditCard, Clock, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { TrialCard } from "@/components/referral/TrialCard";
 
 export default function MyPlan() {
   const { profile, subscribed, loading } = useAuth();
@@ -42,6 +43,7 @@ export default function MyPlan() {
           <h1 className="text-2xl font-display font-bold mb-2">Meu Plano</h1>
           <p className="text-muted-foreground">Você ainda não possui um plano ativo.</p>
         </div>
+        <TrialCard />
         <PricingCards isAuthenticated />
       </div>
     );
