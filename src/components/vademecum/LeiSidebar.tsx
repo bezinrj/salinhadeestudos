@@ -207,7 +207,9 @@ export function LeiSidebar({ leis, activeLeiId, countByLei, canReorder = false, 
               <p className="px-3 py-6 text-center text-xs text-muted-foreground">Nenhuma lei encontrada</p>
             )}
           </>
+        )}
       </nav>
+
     </div>
   );
 }
