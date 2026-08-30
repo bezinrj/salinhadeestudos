@@ -1,4 +1,4 @@
-import { Scale, FileText, Timer, Trophy, User, Calendar, LayoutDashboard, LogOut, CreditCard, Shield, CalendarRange, BookOpen, MessageCircle, Gavel, Library, LifeBuoy } from "lucide-react";
+import { Scale, LogOut, MessageCircle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { NavLink } from "@/components/NavLink";
@@ -6,6 +6,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useIsModerator } from "@/hooks/useIsModerator";
+import { navGroups as groups, adminNavGroup } from "@/config/navigation";
 import {
   Sidebar,
   SidebarContent,
@@ -19,35 +20,6 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 
-const groups = [
-  {
-    label: "Geral",
-    items: [
-      { title: "Perfil", url: "/perfil", icon: User },
-      { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-      { title: "Cadernos", url: "/cadernos", icon: Library },
-    ]
-  },
-  {
-    label: "Estudos",
-    items: [
-      { title: "Discursivas", url: "/discursivas", icon: FileText },
-      { title: "Questões da Semana", url: "/semanal", icon: Calendar },
-      { title: "Minhas Turmas", url: "/turmas", icon: BookOpen },
-      { title: "Vade Mecum", url: "/vademecum", icon: Library },
-      { title: "Salinha Juris", url: "/juris", icon: Gavel },
-    ]
-  },
-  {
-    label: "Desempenho",
-    items: [
-      { title: "Ranking", url: "/ranking", icon: Trophy },
-      { title: "Cronômetro", url: "/cronometro", icon: Timer },
-      { title: "Meu Plano", url: "/meu-plano", icon: CreditCard },
-      { title: "Fale Conosco", url: "/fale-conosco", icon: LifeBuoy },
-    ]
-  }
-];
 
 export function AppSidebar() {
   const { state } = useSidebar();
