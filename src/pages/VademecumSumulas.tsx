@@ -25,6 +25,8 @@ export default function VademecumSumulas() {
 
   const { data: leis = [] } = useVmLeis();
   const { data: sumulas = [], isLoading } = useVmSumulas();
+  const [leisOpen, setLeisOpen] = useState(false);
+
 
   const [q, setQ] = usePersistedState<string>("sumulas:q", "");
   const [tribunal, setTribunal] = usePersistedState<string>("sumulas:tribunal", "todos");
