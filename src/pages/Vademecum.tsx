@@ -15,7 +15,9 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useIsModerator } from "@/hooks/useIsModerator";
-import { LeiSidebar } from "@/components/vademecum/LeiSidebar";
+import { LeiSidebar, LeiListContent } from "@/components/vademecum/LeiSidebar";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+
 import { ArticleCard } from "@/components/vademecum/ArticleCard";
 import { ArticleFilters } from "@/components/vademecum/ArticleFilters";
 import { MarkedArticlesDrawer } from "@/components/vademecum/MarkedArticlesDrawer";
