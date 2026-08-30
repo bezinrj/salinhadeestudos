@@ -207,8 +207,17 @@ export function LeiSidebar({ leis, activeLeiId, countByLei, canReorder = false, 
               <p className="px-3 py-6 text-center text-xs text-muted-foreground">Nenhuma lei encontrada</p>
             )}
           </>
-        )}
       </nav>
+    </div>
+  );
+}
+
+/** Wrapper desktop: barra lateral fixa (a partir de lg) */
+export function LeiSidebar(props: Props) {
+  return (
+    <aside className="hidden h-full w-[240px] shrink-0 flex-col border-r border-border bg-card/40 lg:flex">
+      <LeiListContent {...props} />
     </aside>
   );
 }
+
