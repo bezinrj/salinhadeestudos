@@ -51,7 +51,7 @@ export function AppSidebar() {
           )}
         </div>
 
-        {groups.map((group) => (
+        {[...groups, ...(isAdmin || isModerator ? [adminNavGroup] : [])].map((group) => (
           <SidebarGroup key={group.label}>
             <SidebarGroupLabel className="text-muted-foreground text-xs uppercase tracking-wider">
               {!collapsed && group.label}
@@ -60,10 +60,10 @@ export function AppSidebar() {
               <SidebarMenu>
                 {group.items.map((item) => (
                   <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild isActive={isActive(item.url)}>
+                    <SidebarMenuButton asChild isActive={item.end ? location.pathname === item.url : isActive(item.url)}>
                       <NavLink
                         to={item.url}
-                        end={item.url === "/dashboard"}
+                        end={item.end}
                         className="hover:bg-secondary/50"
                         activeClassName="bg-secondary text-primary font-medium"
                       >
@@ -78,41 +78,6 @@ export function AppSidebar() {
           </SidebarGroup>
         ))}
 
-        {(isAdmin || isModerator) && (
-          <SidebarGroup>
-            <SidebarGroupLabel className="text-muted-foreground text-xs uppercase tracking-wider">
-              {!collapsed && "Administração"}
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={isActive("/cronograma")}>
-                    <NavLink to="/cronograma" className="hover:bg-secondary/50" activeClassName="bg-secondary text-primary font-medium">
-                      <CalendarRange className="mr-2 h-4 w-4" />
-                      {!collapsed && <span>Cronograma</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={location.pathname.startsWith("/juris/admin")}>
-                    <NavLink to="/juris/admin" className="hover:bg-secondary/50" activeClassName="bg-secondary text-primary font-medium">
-                      <Gavel className="mr-2 h-4 w-4" />
-                      {!collapsed && <span>Juris Admin</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={isActive("/admin")}>
-                    <NavLink to="/admin" className="hover:bg-secondary/50" activeClassName="bg-secondary text-primary font-medium">
-                      <Shield className="mr-2 h-4 w-4" />
-                      {!collapsed && <span>Admin</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
       </SidebarContent>
 
       <SidebarFooter className="border-t border-border p-3">
