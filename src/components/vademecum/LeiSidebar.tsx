@@ -59,7 +59,7 @@ function SortableLeiItem({ lei, active, countByLei }: {
   );
 }
 
-export function LeiSidebar({ leis, activeLeiId, countByLei, canReorder = false, onReordered }: Props) {
+export function LeiListContent({ leis, activeLeiId, countByLei, canReorder = false, onReordered }: Props) {
   const [q, setQ] = useState("");
   const isSearching = !!q.trim();
   const reorderActive = canReorder && !isSearching;
