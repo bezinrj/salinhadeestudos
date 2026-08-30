@@ -129,14 +129,14 @@ export function BottomNav() {
       </aside>
 
       {/* Barra inferior mobile — 4 itens + botão menu */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/95 backdrop-blur-lg md:hidden">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-lg md:hidden">
         <div className="flex items-center justify-around py-2">
-          {mainNavItems.map((item) => {
-            const active = isActive(item.path);
+          {bottomNavItems.map((item) => {
+            const active = isActive(item.url, item.end);
             return (
               <Link
-                key={item.path}
-                to={item.path}
+                key={item.url}
+                to={item.url}
                 className={cn(
                   "flex min-w-[56px] flex-col items-center gap-1 rounded-lg px-3 py-1.5 text-xs transition-colors",
                   active ? "text-primary" : "text-muted-foreground",
@@ -148,10 +148,11 @@ export function BottomNav() {
                     active && "drop-shadow-[0_0_6px_hsl(217,91%,60%)]",
                   )}
                 />
-                <span className="font-medium">{item.label}</span>
+                <span className="font-medium">{item.title}</span>
               </Link>
             );
           })}
+
           <button
             onClick={() => setDrawerOpen(true)}
             className="flex min-w-[56px] flex-col items-center gap-1 rounded-lg px-3 py-1.5 text-xs text-muted-foreground transition-colors"
