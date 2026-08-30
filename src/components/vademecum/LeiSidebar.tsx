@@ -119,8 +119,9 @@ export function LeiSidebar({ leis, activeLeiId, countByLei, canReorder = false, 
   };
 
   return (
-    <aside className="hidden h-full w-[240px] shrink-0 flex-col border-r border-border bg-card/40 lg:flex">
+    <div className="flex h-full min-h-0 flex-col">
       <div className="border-b border-border p-4">
+
         <div className="mb-3 flex items-center gap-2">
           <Scale className="h-5 w-5 text-primary" />
           <span className="font-display text-base font-bold">Vade Mecum</span>
