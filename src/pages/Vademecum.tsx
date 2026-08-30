@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { toast } from "sonner";
-import { Settings, ArrowLeft } from "lucide-react";
+import { Settings, ArrowLeft, ListTree, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useVmLei, useVmLeis, useVmProgresso } from "@/hooks/useVademecum";
