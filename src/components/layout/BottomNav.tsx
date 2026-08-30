@@ -1,45 +1,11 @@
 import { useLocation, Link, useNavigate } from "react-router-dom";
-import {
-  FileText,
-  Timer,
-  Trophy,
-  User,
-  LogOut,
-  CreditCard,
-  Shield,
-  CalendarRange,
-  Calendar,
-  LayoutDashboard,
-  Menu,
-  X,
-  GraduationCap,
-  Gavel,
-  Library,
-  LifeBuoy,
-} from "lucide-react";
+import { LogOut, Menu, X, GraduationCap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useIsModerator } from "@/hooks/useIsModerator";
+import { navGroups, adminNavGroup, bottomNavItems } from "@/config/navigation";
 import { useState, useEffect, useRef } from "react";
-
-const mainNavItems = [
-  { path: "/dashboard", icon: LayoutDashboard, label: "Home" },
-  { path: "/discursivas", icon: FileText, label: "Discursivas" },
-  { path: "/semanal", icon: Calendar, label: "Semanal" },
-  { path: "/ranking", icon: Trophy, label: "Ranking" },
-];
-
-const extraNavItems = [
-  { path: "/perfil", icon: User, label: "Perfil" },
-  { path: "/cronometro", icon: Timer, label: "Cronômetro" },
-  { path: "/turmas", icon: GraduationCap, label: "Minhas Turmas" },
-  { path: "/juris", icon: Gavel, label: "Salinha Juris" },
-  { path: "/vademecum", icon: Library, label: "Vade Mecum" },
-  { path: "/cronograma", icon: CalendarRange, label: "Cronograma" },
-  { path: "/meu-plano", icon: CreditCard, label: "Meu Plano" },
-  { path: "/fale-conosco", icon: LifeBuoy, label: "Fale Conosco" },
-];
 
 export function BottomNav() {
   const location = useLocation();
@@ -80,17 +46,11 @@ export function BottomNav() {
     navigate("/");
   };
 
-  const isActive = (path: string) => location.pathname.startsWith(path);
+  const isActive = (path: string, end?: boolean) =>
+    end ? location.pathname === path : location.pathname.startsWith(path);
 
-  const adminItems =
-    isAdmin || isModerator
-      ? [
-          { path: "/juris/admin", icon: Gavel, label: "Juris Admin" },
-          { path: "/admin", icon: Shield, label: "Admin" },
-        ]
-      : [];
+  const menuGroups = [...navGroups, ...(isAdmin || isModerator ? [adminNavGroup] : [])];
 
-  const allExtraItems = [...extraNavItems, ...adminItems];
 
   return (
     <>
@@ -126,52 +86,35 @@ export function BottomNav() {
           </button>
         </div>
 
-        {/* Itens de navegação */}
-        <div className="flex-1 overflow-y-auto p-3">
-          <p className="px-2 pb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Menu
-          </p>
-          {mainNavItems.map((item) => {
-            const active = isActive(item.path);
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-                  active
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:bg-accent hover:text-foreground",
-                )}
-              >
-                <item.icon className="h-5 w-5" />
-                {item.label}
-              </Link>
-            );
-          })}
-
-          <p className="mt-4 px-2 pb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Outros
-          </p>
-          {allExtraItems.map((item) => {
-            const active = isActive(item.path);
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-                  active
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:bg-accent hover:text-foreground",
-                )}
-              >
-                <item.icon className="h-5 w-5" />
-                {item.label}
-              </Link>
-            );
-          })}
+        {/* Itens de navegação agrupados (espelha a sidebar desktop) */}
+        <div className="flex-1 overflow-y-auto p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+          {menuGroups.map((group) => (
+            <div key={group.label} className="mb-4">
+              <p className="px-2 pb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                {group.label}
+              </p>
+              {group.items.map((item) => {
+                const active = isActive(item.url, item.end);
+                return (
+                  <Link
+                    key={item.url}
+                    to={item.url}
+                    className={cn(
+                      "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                      active
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                    )}
+                  >
+                    <item.icon className="h-5 w-5" />
+                    {item.title}
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
         </div>
+
 
         {/* Botão de sair */}
         <div className="border-t border-border p-3">
@@ -186,14 +129,14 @@ export function BottomNav() {
       </aside>
 
       {/* Barra inferior mobile — 4 itens + botão menu */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/95 backdrop-blur-lg md:hidden">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-lg md:hidden">
         <div className="flex items-center justify-around py-2">
-          {mainNavItems.map((item) => {
-            const active = isActive(item.path);
+          {bottomNavItems.map((item) => {
+            const active = isActive(item.url, item.end);
             return (
               <Link
-                key={item.path}
-                to={item.path}
+                key={item.url}
+                to={item.url}
                 className={cn(
                   "flex min-w-[56px] flex-col items-center gap-1 rounded-lg px-3 py-1.5 text-xs transition-colors",
                   active ? "text-primary" : "text-muted-foreground",
@@ -205,10 +148,11 @@ export function BottomNav() {
                     active && "drop-shadow-[0_0_6px_hsl(217,91%,60%)]",
                   )}
                 />
-                <span className="font-medium">{item.label}</span>
+                <span className="font-medium">{item.title}</span>
               </Link>
             );
           })}
+
           <button
             onClick={() => setDrawerOpen(true)}
             className="flex min-w-[56px] flex-col items-center gap-1 rounded-lg px-3 py-1.5 text-xs text-muted-foreground transition-colors"

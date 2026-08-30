@@ -1,9 +1,11 @@
-import { useMemo } from "react";
-import { Search, Scale } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Search, Scale, ListTree } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { LeiSidebar } from "@/components/vademecum/LeiSidebar";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { LeiSidebar, LeiListContent } from "@/components/vademecum/LeiSidebar";
+
 import { SumulaCard } from "@/components/vademecum/SumulaCard";
 import { UnlockPremiumCard } from "@/components/vademecum/UnlockPremiumCard";
 import { useVmLeis } from "@/hooks/useVademecum";
@@ -23,6 +25,8 @@ export default function VademecumSumulas() {
 
   const { data: leis = [] } = useVmLeis();
   const { data: sumulas = [], isLoading } = useVmSumulas();
+  const [leisOpen, setLeisOpen] = useState(false);
+
 
   const [q, setQ] = usePersistedState<string>("sumulas:q", "");
   const [tribunal, setTribunal] = usePersistedState<string>("sumulas:tribunal", "todos");
@@ -82,11 +86,29 @@ export default function VademecumSumulas() {
   };
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] overflow-hidden">
+    <div className="flex min-h-0 flex-col lg:h-[calc(100vh-8rem)] lg:flex-row lg:overflow-hidden">
       <LeiSidebar leis={leis} />
 
-      <main className="flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-3xl px-4 py-6 lg:px-8">
+      {/* Navegação interna — mobile/tablet */}
+      <div className="sticky top-0 z-30 -mx-4 mb-3 flex items-center gap-2 border-b border-border bg-background/95 px-4 py-2 backdrop-blur lg:hidden">
+        <Sheet open={leisOpen} onOpenChange={setLeisOpen}>
+          <SheetTrigger asChild>
+            <Button size="sm" variant="outline" className="shrink-0">
+              <ListTree className="mr-1 h-4 w-4" /> Leis
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="w-[85vw] max-w-[320px] p-0">
+            <div className="h-full pt-2">
+              <LeiListContent leis={leis} />
+            </div>
+          </SheetContent>
+        </Sheet>
+        <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">Súmulas</span>
+      </div>
+
+      <main className="min-w-0 flex-1 lg:overflow-y-auto">
+        <div className="mx-auto max-w-3xl py-2 lg:px-8 lg:py-6">
+
           <header className="mb-4">
             <h1 className="flex items-center gap-2 font-display text-2xl font-bold text-foreground">
               <Scale className="h-6 w-6 text-primary" /> Súmulas
