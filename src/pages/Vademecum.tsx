@@ -134,6 +134,13 @@ export default function Vademecum() {
     }
   };
 
+  const [leisOpen, setLeisOpen] = useState(false);
+  useEffect(() => {
+    setLeisOpen(false);
+  }, [leiId]);
+
+
+
   return (
     <div className="flex min-h-0 flex-col lg:h-[calc(100vh-8rem)] lg:flex-row lg:overflow-hidden">
       <LeiSidebar
