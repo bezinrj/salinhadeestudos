@@ -1,9 +1,11 @@
-import { useMemo } from "react";
-import { Search, Scale } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Search, Scale, ListTree } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { LeiSidebar } from "@/components/vademecum/LeiSidebar";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { LeiSidebar, LeiListContent } from "@/components/vademecum/LeiSidebar";
+
 import { SumulaCard } from "@/components/vademecum/SumulaCard";
 import { UnlockPremiumCard } from "@/components/vademecum/UnlockPremiumCard";
 import { useVmLeis } from "@/hooks/useVademecum";
