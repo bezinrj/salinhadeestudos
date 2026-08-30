@@ -1,45 +1,11 @@
 import { useLocation, Link, useNavigate } from "react-router-dom";
-import {
-  FileText,
-  Timer,
-  Trophy,
-  User,
-  LogOut,
-  CreditCard,
-  Shield,
-  CalendarRange,
-  Calendar,
-  LayoutDashboard,
-  Menu,
-  X,
-  GraduationCap,
-  Gavel,
-  Library,
-  LifeBuoy,
-} from "lucide-react";
+import { LogOut, Menu, X, GraduationCap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useIsModerator } from "@/hooks/useIsModerator";
+import { navGroups, adminNavGroup, bottomNavItems } from "@/config/navigation";
 import { useState, useEffect, useRef } from "react";
-
-const mainNavItems = [
-  { path: "/dashboard", icon: LayoutDashboard, label: "Home" },
-  { path: "/discursivas", icon: FileText, label: "Discursivas" },
-  { path: "/semanal", icon: Calendar, label: "Semanal" },
-  { path: "/ranking", icon: Trophy, label: "Ranking" },
-];
-
-const extraNavItems = [
-  { path: "/perfil", icon: User, label: "Perfil" },
-  { path: "/cronometro", icon: Timer, label: "Cronômetro" },
-  { path: "/turmas", icon: GraduationCap, label: "Minhas Turmas" },
-  { path: "/juris", icon: Gavel, label: "Salinha Juris" },
-  { path: "/vademecum", icon: Library, label: "Vade Mecum" },
-  { path: "/cronograma", icon: CalendarRange, label: "Cronograma" },
-  { path: "/meu-plano", icon: CreditCard, label: "Meu Plano" },
-  { path: "/fale-conosco", icon: LifeBuoy, label: "Fale Conosco" },
-];
 
 export function BottomNav() {
   const location = useLocation();
@@ -80,17 +46,11 @@ export function BottomNav() {
     navigate("/");
   };
 
-  const isActive = (path: string) => location.pathname.startsWith(path);
+  const isActive = (path: string, end?: boolean) =>
+    end ? location.pathname === path : location.pathname.startsWith(path);
 
-  const adminItems =
-    isAdmin || isModerator
-      ? [
-          { path: "/juris/admin", icon: Gavel, label: "Juris Admin" },
-          { path: "/admin", icon: Shield, label: "Admin" },
-        ]
-      : [];
+  const menuGroups = [...navGroups, ...(isAdmin || isModerator ? [adminNavGroup] : [])];
 
-  const allExtraItems = [...extraNavItems, ...adminItems];
 
   return (
     <>
