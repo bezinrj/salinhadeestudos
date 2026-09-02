@@ -100,76 +100,66 @@ Deno.serve(async (req) => {
       `Acesse o link abaixo para criar sua conta:\n${confirmationUrl}\n\n` +
       `Se você não esperava este convite, pode ignorar este e-mail com segurança.`;
 
-    // Enfileira no pgmq (mesma infra do auth-email-hook)
-    const messageId = crypto.randomUUID();
-    // 32 bytes of CSPRNG entropy, hex-encoded (64 chars). Stronger than UUIDv4.
-    const unsubscribeTokenBytes = new Uint8Array(32);
-    crypto.getRandomValues(unsubscribeTokenBytes);
-    const unsubscribeToken = Array.from(unsubscribeTokenBytes)
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("");
-
-    const { error: unsubscribeTokenError } = await adminClient
-      .from("email_unsubscribe_tokens")
-      .upsert(
-        {
-          email: cleanEmail,
-          token: unsubscribeToken,
-          used_at: null,
-        },
-        { onConflict: "email" }
-      );
-
-    if (unsubscribeTokenError) {
+    // Envia diretamente pela API de e-mail gerenciada da Lovable.
+    const apiKey = Deno.env.get("LOVABLE_API_KEY");
+    if (!apiKey) {
       return new Response(
         JSON.stringify({ error: "Falha ao preparar o envio do convite." }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    await adminClient.from("email_send_log").insert({
-      message_id: messageId,
-      template_name: "admin_invite",
-      recipient_email: cleanEmail,
-      status: "pending",
-    });
-
-    const { error: enqueueError } = await adminClient.rpc("enqueue_email", {
-      queue_name: "transactional_emails",
-      payload: {
-        message_id: messageId,
-        to: cleanEmail,
-        from: `${SITE_NAME} <noreply@${FROM_DOMAIN}>`,
-        sender_domain: SENDER_DOMAIN,
-        subject: `Você foi convidado(a) para a ${SITE_NAME}`,
-        html,
-        text,
-        purpose: "transactional",
-        label: "admin_invite",
-        idempotency_key: `admin-invite-${messageId}`,
-        unsubscribe_token: unsubscribeToken,
-        queued_at: new Date().toISOString(),
-      },
-    });
-
-    if (enqueueError) {
-      await adminClient.from("email_send_log").insert({
-        message_id: messageId,
+    const logSend = async (status: string, errorMessage?: string) => {
+      const { error } = await adminClient.from("email_send_log").insert({
+        message_id: null,
         template_name: "admin_invite",
         recipient_email: cleanEmail,
-        status: "failed",
-        error_message: enqueueError.message || "Failed to enqueue invite email",
+        status,
+        error_message: errorMessage ?? null,
       });
+      if (error) {
+        console.error("Failed to write email_send_log", { code: error.code, message: error.message });
+      }
+    };
+
+    try {
+      await sendLovableEmail(
+        {
+          to: cleanEmail,
+          from: `${SITE_NAME} <noreply@${FROM_DOMAIN}>`,
+          sender_domain: SENDER_DOMAIN,
+          subject: `Você foi convidado(a) para a ${SITE_NAME}`,
+          html,
+          text,
+          purpose: "transactional",
+          label: "admin_invite",
+          idempotency_key: `admin-invite-${cleanEmail}-${Date.now()}`,
+        },
+        { apiKey, sendUrl: Deno.env.get("LOVABLE_SEND_URL") }
+      );
+    } catch (sendError) {
+      if (sendError instanceof EmailAPIError && sendError.code === "recipient_suppressed") {
+        await logSend("suppressed");
+        return new Response(
+          JSON.stringify({ success: false, reason: "recipient_suppressed", email: cleanEmail }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      const message = sendError instanceof Error ? sendError.message : "Failed to send invite email";
+      await logSend("failed", message);
       return new Response(
-        JSON.stringify({ error: "Falha ao enfileirar e-mail de convite." }),
+        JSON.stringify({ error: "Falha ao enviar o e-mail de convite." }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
+    await logSend("sent");
+
     return new Response(
-      JSON.stringify({ success: true, queued: true, email: cleanEmail }),
+      JSON.stringify({ success: true, email: cleanEmail }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
+
   } catch (e) {
     return new Response(JSON.stringify({ error: (e as Error).message }), {
       status: 200,
