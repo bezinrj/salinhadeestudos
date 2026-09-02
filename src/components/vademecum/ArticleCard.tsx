@@ -228,24 +228,35 @@ export function ArticleCard(props: Props) {
           </h3>
         )}
         {lido && <Check className="h-4 w-4 text-emerald-500" aria-label="Lido" />}
-        <div className="ml-auto flex flex-wrap gap-1.5">
-          {artigo.incidencias
-            .filter((i) => i.quantidade > 0)
-            .sort((a, b) => b.quantidade - a.quantidade)
-            .map((i) => (
-              <IncidenciaBadge key={i.id} cargo={i.cargo} quantidade={i.quantidade} />
+        <div className="ml-auto flex flex-wrap items-center gap-1.5">
+          {[...totaisPorCargo.entries()]
+            .filter(([, qtd]) => qtd > 0)
+            .sort((a, b) => b[1] - a[1])
+            .map(([cargo, qtd]) => (
+              <IncidenciaBadge key={cargo} cargo={cargo} quantidade={qtd} />
             ))}
+          {canTag && (
+            <CargoTagPicker
+              active={cargosArtigo}
+              label="Marcar cargos"
+              onToggle={(cargo, next) => onToggleTag?.(artigo.id, null, cargo, next)}
+            />
+          )}
         </div>
       </header>
 
       <ArticleText
         artigo={artigo}
         marcacoesByBlock={marcacoesByBlock}
+        incidenciasByParagrafo={incidenciasByParagrafo}
+        canTag={canTag}
+        onToggleTag={(paragrafoId, cargo, next) => onToggleTag?.(artigo.id, paragrafoId, cargo, next)}
         onCreateMarcacao={onCreateMarcacao}
         onUpdateMarcacao={onUpdateMarcacao}
         onRemoveMarcacao={onRemoveMarcacao}
         onRemissaoClick={onRemissaoClick}
       />
+
 
       <div className="mt-4 space-y-2">
         {notasProf.map((n) => (
