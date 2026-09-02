@@ -10,9 +10,11 @@ import { NoteEditor, isNoteEmpty } from "./NoteEditor";
 import { CadernoModal } from "@/components/cadernos/CadernoModal";
 import { UnlockPremiumCard } from "./UnlockPremiumCard";
 import { supabase } from "@/integrations/supabase/client";
+import { CargoTagPicker } from "./CargoTagPicker";
 import type {
   VmLei,
   VmArtigo,
+  VmCargo,
   VmFiltroCargo,
   VmProgresso,
   VmRemissao,
@@ -56,6 +58,8 @@ interface Props {
   onSavePrivNote: (artigoId: string, conteudo: string) => Promise<void> | void;
   onRemovePrivNote: (id: string) => Promise<void> | void;
   leis?: VmLei[];
+  canTag?: boolean;
+  onToggleTag?: (artigoId: string, paragrafoId: string | null, cargo: VmCargo, next: boolean) => void;
   onAddRemissao?: (artigoId: string, destArtigoId: string, textoExibido: string) => Promise<void> | void;
   onDeleteRemissao?: (remissaoId: string) => Promise<void> | void;
 }
@@ -85,6 +89,8 @@ export function ArticleCard(props: Props) {
     onSavePrivNote,
     onRemovePrivNote,
     leis = [],
+    canTag = false,
+    onToggleTag,
     onAddRemissao,
     onDeleteRemissao,
   } = props;
@@ -152,11 +158,27 @@ export function ArticleCard(props: Props) {
     }
   };
 
+  // Marcações de cargo: do artigo inteiro e de cada inciso/parágrafo
+  const incidenciasArtigo = artigo.incidencias.filter((i) => !i.paragrafo_id);
+  const incidenciasByParagrafo = new Map<string, typeof artigo.incidencias>();
+  artigo.incidencias.forEach((i) => {
+    if (!i.paragrafo_id) return;
+    if (!incidenciasByParagrafo.has(i.paragrafo_id)) incidenciasByParagrafo.set(i.paragrafo_id, []);
+    incidenciasByParagrafo.get(i.paragrafo_id)!.push(i);
+  });
+
+  const totaisPorCargo = new Map<VmCargo, number>();
+  artigo.incidencias.forEach((i) => {
+    const qtd = i.paragrafo_id ? 1 : Math.max(i.quantidade ?? 1, 1);
+    totaisPorCargo.set(i.cargo, (totaisPorCargo.get(i.cargo) ?? 0) + qtd);
+  });
+  const cargosArtigo = incidenciasArtigo.map((i) => i.cargo);
+
   let borderClass = "";
-  if (filtroCargo !== "todos") {
-    const inc = artigo.incidencias.find((i) => i.cargo === filtroCargo);
-    if (inc && inc.quantidade >= 5) borderClass = `border-l-4 ${CARGO_BORDER[filtroCargo]}`;
+  if (filtroCargo !== "todos" && (totaisPorCargo.get(filtroCargo) ?? 0) > 0) {
+    borderClass = `border-l-4 ${CARGO_BORDER[filtroCargo]}`;
   }
+
 
   const submitProfNote = async () => {
     if (isNoteEmpty(profText) || !autorId || !autorNome) return;
@@ -206,24 +228,35 @@ export function ArticleCard(props: Props) {
           </h3>
         )}
         {lido && <Check className="h-4 w-4 text-emerald-500" aria-label="Lido" />}
-        <div className="ml-auto flex flex-wrap gap-1.5">
-          {artigo.incidencias
-            .filter((i) => i.quantidade > 0)
-            .sort((a, b) => b.quantidade - a.quantidade)
-            .map((i) => (
-              <IncidenciaBadge key={i.id} cargo={i.cargo} quantidade={i.quantidade} />
+        <div className="ml-auto flex flex-wrap items-center gap-1.5">
+          {[...totaisPorCargo.entries()]
+            .filter(([, qtd]) => qtd > 0)
+            .sort((a, b) => b[1] - a[1])
+            .map(([cargo, qtd]) => (
+              <IncidenciaBadge key={cargo} cargo={cargo} quantidade={qtd} />
             ))}
+          {canTag && (
+            <CargoTagPicker
+              active={cargosArtigo}
+              label="Marcar cargos"
+              onToggle={(cargo, next) => onToggleTag?.(artigo.id, null, cargo, next)}
+            />
+          )}
         </div>
       </header>
 
       <ArticleText
         artigo={artigo}
         marcacoesByBlock={marcacoesByBlock}
+        incidenciasByParagrafo={incidenciasByParagrafo}
+        canTag={canTag}
+        onToggleTag={(paragrafoId, cargo, next) => onToggleTag?.(artigo.id, paragrafoId, cargo, next)}
         onCreateMarcacao={onCreateMarcacao}
         onUpdateMarcacao={onUpdateMarcacao}
         onRemoveMarcacao={onRemoveMarcacao}
         onRemissaoClick={onRemissaoClick}
       />
+
 
       <div className="mt-4 space-y-2">
         {notasProf.map((n) => (

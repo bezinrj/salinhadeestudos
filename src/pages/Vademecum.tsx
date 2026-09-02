@@ -23,7 +23,8 @@ import { ArticleFilters } from "@/components/vademecum/ArticleFilters";
 import { MarkedArticlesDrawer } from "@/components/vademecum/MarkedArticlesDrawer";
 import { RemissaoDrawer } from "@/components/vademecum/RemissaoDrawer";
 import { UnlockPremiumCard } from "@/components/vademecum/UnlockPremiumCard";
-import type { VmFiltroCargo, VmFiltroStatus } from "@/types/vademecum";
+import { useVmIncidencias } from "@/hooks/useVmIncidencias";
+import type { VmCargo, VmFiltroCargo, VmFiltroStatus } from "@/types/vademecum";
 
 export default function Vademecum() {
   const { leiId } = useParams<{ leiId?: string }>();
@@ -59,6 +60,21 @@ export default function Vademecum() {
   const [pendingOrigem, setPendingOrigem] = useState<any | null>(null);
   const [retornoOrigem, setRetornoOrigem] = useState<any | null>(null);
 
+  const { addTag, removeTag } = useVmIncidencias(leiId);
+
+  const handleToggleTag = (artigoId: string, paragrafoId: string | null, cargoTag: VmCargo, next: boolean) => {
+    const artigo = artigos.find((a) => a.id === artigoId);
+    const existing = artigo?.incidencias.find(
+      (i) => i.cargo === cargoTag && (i.paragrafo_id ?? null) === paragrafoId,
+    );
+    if (next) {
+      if (existing) return;
+      addTag.mutate({ artigo_id: artigoId, paragrafo_id: paragrafoId, cargo: cargoTag });
+    } else if (existing) {
+      removeTag.mutate(existing.id);
+    }
+  };
+
   const filtered = useMemo(() => {
     return artigos.filter((a) => {
       const p = progressoMap.get(a.id);
@@ -66,8 +82,8 @@ export default function Vademecum() {
       if (status === "nao_lidos" && p?.lido) return false;
       if (status === "marcados" && !p?.marcado) return false;
       if (cargo !== "todos") {
-        const inc = a.incidencias.find((i) => i.cargo === cargo);
-        if (!inc || inc.quantidade === 0) return false;
+        const inc = a.incidencias.find((i) => i.cargo === cargo && (i.quantidade ?? 1) > 0);
+        if (!inc) return false;
       }
       return true;
     });
@@ -230,6 +246,8 @@ export default function Vademecum() {
                       notasProf={notasProf.byArtigo.get(a.id) ?? []}
                       notaPriv={notasPriv.byArtigo.get(a.id)}
                       canAddProfNote={canEdit}
+                      canTag={canEdit}
+                      onToggleTag={handleToggleTag}
                       subscribed={hasVade}
                       autorId={user?.id}
                       autorNome={profile?.name || profile?.username || "Professor"}

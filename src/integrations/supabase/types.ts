@@ -2562,22 +2562,25 @@ export type Database = {
         Row: {
           artigo_id: string
           cargo: string
-          concursos: string[]
+          concursos: string[] | null
           id: string
+          paragrafo_id: string | null
           quantidade: number
         }
         Insert: {
           artigo_id: string
           cargo: string
-          concursos?: string[]
+          concursos?: string[] | null
           id?: string
+          paragrafo_id?: string | null
           quantidade?: number
         }
         Update: {
           artigo_id?: string
           cargo?: string
-          concursos?: string[]
+          concursos?: string[] | null
           id?: string
+          paragrafo_id?: string | null
           quantidade?: number
         }
         Relationships: [
@@ -2586,6 +2589,13 @@ export type Database = {
             columns: ["artigo_id"]
             isOneToOne: false
             referencedRelation: "vm_artigos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vm_incidencias_paragrafo_id_fkey"
+            columns: ["paragrafo_id"]
+            isOneToOne: false
+            referencedRelation: "vm_paragrafos"
             referencedColumns: ["id"]
           },
         ]

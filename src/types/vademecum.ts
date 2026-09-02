@@ -27,6 +27,7 @@ export interface VmParagrafo {
 export interface VmIncidencia {
   id: string;
   artigo_id: string;
+  paragrafo_id: string | null;
   cargo: VmCargo;
   quantidade: number;
   concursos: string[] | null;
