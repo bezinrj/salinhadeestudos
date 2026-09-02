@@ -10,9 +10,11 @@ import { NoteEditor, isNoteEmpty } from "./NoteEditor";
 import { CadernoModal } from "@/components/cadernos/CadernoModal";
 import { UnlockPremiumCard } from "./UnlockPremiumCard";
 import { supabase } from "@/integrations/supabase/client";
+import { CargoTagPicker } from "./CargoTagPicker";
 import type {
   VmLei,
   VmArtigo,
+  VmCargo,
   VmFiltroCargo,
   VmProgresso,
   VmRemissao,
@@ -56,6 +58,8 @@ interface Props {
   onSavePrivNote: (artigoId: string, conteudo: string) => Promise<void> | void;
   onRemovePrivNote: (id: string) => Promise<void> | void;
   leis?: VmLei[];
+  canTag?: boolean;
+  onToggleTag?: (artigoId: string, paragrafoId: string | null, cargo: VmCargo, next: boolean) => void;
   onAddRemissao?: (artigoId: string, destArtigoId: string, textoExibido: string) => Promise<void> | void;
   onDeleteRemissao?: (remissaoId: string) => Promise<void> | void;
 }
