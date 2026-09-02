@@ -1,0 +1,1 @@
+ALTER TABLE public.vm_incidencias DROP CONSTRAINT IF EXISTS vm_incidencias_artigo_id_cargo_key;
