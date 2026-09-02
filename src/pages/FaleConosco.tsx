@@ -113,20 +113,11 @@ export default function FaleConosco() {
     setSentProtocol(protocol);
 
     if (email) {
-      supabase.functions.invoke("send-transactional-email", {
-        body: {
-          templateName: "support-ticket",
-          recipientEmail: email,
-          idempotencyKey: `support-ticket-${data.id}`,
-          templateData: {
-            userName: profile?.name || profile?.username || "",
-            subject,
-            message: message.trim(),
-            protocol,
-          },
-        },
+      supabase.functions.invoke("send-support-ticket-email", {
+        body: { ticketId: data.id },
       });
     }
+
   };
 
   if (sentProtocol) {
