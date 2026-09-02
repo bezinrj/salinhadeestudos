@@ -158,11 +158,27 @@ export function ArticleCard(props: Props) {
     }
   };
 
+  // Marcações de cargo: do artigo inteiro e de cada inciso/parágrafo
+  const incidenciasArtigo = artigo.incidencias.filter((i) => !i.paragrafo_id);
+  const incidenciasByParagrafo = new Map<string, typeof artigo.incidencias>();
+  artigo.incidencias.forEach((i) => {
+    if (!i.paragrafo_id) return;
+    if (!incidenciasByParagrafo.has(i.paragrafo_id)) incidenciasByParagrafo.set(i.paragrafo_id, []);
+    incidenciasByParagrafo.get(i.paragrafo_id)!.push(i);
+  });
+
+  const totaisPorCargo = new Map<VmCargo, number>();
+  artigo.incidencias.forEach((i) => {
+    const qtd = i.paragrafo_id ? 1 : Math.max(i.quantidade ?? 1, 1);
+    totaisPorCargo.set(i.cargo, (totaisPorCargo.get(i.cargo) ?? 0) + qtd);
+  });
+  const cargosArtigo = incidenciasArtigo.map((i) => i.cargo);
+
   let borderClass = "";
-  if (filtroCargo !== "todos") {
-    const inc = artigo.incidencias.find((i) => i.cargo === filtroCargo);
-    if (inc && inc.quantidade >= 5) borderClass = `border-l-4 ${CARGO_BORDER[filtroCargo]}`;
+  if (filtroCargo !== "todos" && (totaisPorCargo.get(filtroCargo) ?? 0) > 0) {
+    borderClass = `border-l-4 ${CARGO_BORDER[filtroCargo]}`;
   }
+
 
   const submitProfNote = async () => {
     if (isNoteEmpty(profText) || !autorId || !autorNome) return;
