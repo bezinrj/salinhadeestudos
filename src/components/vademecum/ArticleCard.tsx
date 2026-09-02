@@ -89,6 +89,8 @@ export function ArticleCard(props: Props) {
     onSavePrivNote,
     onRemovePrivNote,
     leis = [],
+    canTag = false,
+    onToggleTag,
     onAddRemissao,
     onDeleteRemissao,
   } = props;
