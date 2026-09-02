@@ -23,7 +23,8 @@ import { ArticleFilters } from "@/components/vademecum/ArticleFilters";
 import { MarkedArticlesDrawer } from "@/components/vademecum/MarkedArticlesDrawer";
 import { RemissaoDrawer } from "@/components/vademecum/RemissaoDrawer";
 import { UnlockPremiumCard } from "@/components/vademecum/UnlockPremiumCard";
-import type { VmFiltroCargo, VmFiltroStatus } from "@/types/vademecum";
+import { useVmIncidencias } from "@/hooks/useVmIncidencias";
+import type { VmCargo, VmFiltroCargo, VmFiltroStatus } from "@/types/vademecum";
 
 export default function Vademecum() {
   const { leiId } = useParams<{ leiId?: string }>();
@@ -245,6 +246,8 @@ export default function Vademecum() {
                       notasProf={notasProf.byArtigo.get(a.id) ?? []}
                       notaPriv={notasPriv.byArtigo.get(a.id)}
                       canAddProfNote={canEdit}
+                      canTag={canEdit}
+                      onToggleTag={handleToggleTag}
                       subscribed={hasVade}
                       autorId={user?.id}
                       autorNome={profile?.name || profile?.username || "Professor"}
