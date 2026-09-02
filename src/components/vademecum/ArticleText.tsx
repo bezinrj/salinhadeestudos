@@ -1,11 +1,15 @@
-import { useMemo } from "react";
-import type { VmArtigo, VmMarcacao, VmHighlightCor } from "@/types/vademecum";
+import type { VmArtigo, VmMarcacao, VmHighlightCor, VmCargo, VmIncidencia } from "@/types/vademecum";
+import { CARGO_ICON, CARGO_LABEL } from "@/types/vademecum";
 import { cn } from "@/lib/utils";
 import { HighlightableText } from "./HighlightableText";
+import { CargoTagPicker } from "./CargoTagPicker";
 
 interface Props {
   artigo: VmArtigo;
   marcacoesByBlock: Map<string, VmMarcacao[]>;
+  incidenciasByParagrafo?: Map<string, VmIncidencia[]>;
+  canTag?: boolean;
+  onToggleTag?: (paragrafoId: string | null, cargo: VmCargo, next: boolean) => void;
   onCreateMarcacao: (payload: {
     artigo_id: string;
     paragrafo_id: string | null;
@@ -27,7 +31,17 @@ const TIPO_INDENT: Record<string, string> = {
   alinea: "pl-12",
 };
 
-export function ArticleText({ artigo, marcacoesByBlock, onCreateMarcacao, onUpdateMarcacao, onRemoveMarcacao, onRemissaoClick }: Props) {
+export function ArticleText({
+  artigo,
+  marcacoesByBlock,
+  incidenciasByParagrafo,
+  canTag = false,
+  onToggleTag,
+  onCreateMarcacao,
+  onUpdateMarcacao,
+  onRemoveMarcacao,
+  onRemissaoClick,
+}: Props) {
   const artigoMarc = marcacoesByBlock.get(artigo.id) ?? [];
 
   return (
@@ -53,6 +67,8 @@ export function ArticleText({ artigo, marcacoesByBlock, onCreateMarcacao, onUpda
       </p>
       {artigo.paragrafos.map((p) => {
         const marc = marcacoesByBlock.get(p.id) ?? [];
+        const incs = incidenciasByParagrafo?.get(p.id) ?? [];
+        const cargos = incs.map((i) => i.cargo);
         return (
           <p key={p.id} className={cn("mt-3", TIPO_INDENT[p.tipo] ?? "pl-4")}>
             <HighlightableText
@@ -73,6 +89,27 @@ export function ArticleText({ artigo, marcacoesByBlock, onCreateMarcacao, onUpda
               onUpdate={onUpdateMarcacao}
               onRemove={onRemoveMarcacao}
             />
+            {(cargos.length > 0 || canTag) && (
+              <span className="ml-2 inline-flex items-center gap-1 align-middle">
+                {cargos.map((c) => (
+                  <span
+                    key={c}
+                    title={`Costuma ser cobrado em ${CARGO_LABEL[c]}`}
+                    className="inline-flex h-5 items-center rounded border border-border bg-muted/50 px-1 text-[11px] leading-none"
+                  >
+                    {CARGO_ICON[c]}
+                  </span>
+                ))}
+                {canTag && (
+                  <CargoTagPicker
+                    compact
+                    active={cargos}
+                    label="Marcar cargos neste item"
+                    onToggle={(cargo, next) => onToggleTag?.(p.id, cargo, next)}
+                  />
+                )}
+              </span>
+            )}
           </p>
         );
       })}
