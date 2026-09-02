@@ -70,7 +70,11 @@ export function ArticleText({
         const incs = incidenciasByParagrafo?.get(p.id) ?? [];
         const cargos = incs.map((i) => i.cargo);
         return (
-          <p key={p.id} className={cn("mt-3", TIPO_INDENT[p.tipo] ?? "pl-4")}>
+          <p
+            key={p.id}
+            id={`vm-par-${p.id}`}
+            className={cn("mt-3 scroll-mt-24 rounded-sm transition-colors", TIPO_INDENT[p.tipo] ?? "pl-4")}
+          >
             <HighlightableText
               text={p.texto}
               marcacoes={marc}
