@@ -265,7 +265,13 @@ export function ArticleCard(props: Props) {
             .filter(([, qtd]) => qtd > 0)
             .sort((a, b) => b[1] - a[1])
             .map(([cargo, qtd]) => (
-              <IncidenciaBadge key={cargo} cargo={cargo} quantidade={qtd} />
+              <IncidenciaBadge
+                key={cargo}
+                cargo={cargo}
+                quantidade={qtd}
+                ocorrencias={ocorrenciasPorCargo.get(cargo)}
+                onNavigate={scrollToMarcacao}
+              />
             ))}
           {canTag && (
             <CargoTagPicker
