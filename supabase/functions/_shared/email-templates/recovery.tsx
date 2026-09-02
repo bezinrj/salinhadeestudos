@@ -37,8 +37,8 @@ export const RecoveryEmail = ({
           Redefinir senha
         </Button>
         <Text style={footer}>
-          If you didn't request a password reset, you can safely ignore this
-          email. Your password will not be changed.
+          Se você não solicitou a redefinição de senha, pode ignorar este
+          e-mail com segurança. Sua senha não será alterada.
         </Text>
       </Container>
     </Body>
