@@ -174,6 +174,38 @@ export function ArticleCard(props: Props) {
   });
   const cargosArtigo = incidenciasArtigo.map((i) => i.cargo);
 
+  // Lista de onde cada cargo está marcado (para o menu de navegação nas tags do topo)
+  const ocorrenciasPorCargo = new Map<VmCargo, { paragrafoId: string | null; label: string; trecho?: string }[]>();
+  const pushOcorrencia = (cargo: VmCargo, item: { paragrafoId: string | null; label: string; trecho?: string }) => {
+    if (!ocorrenciasPorCargo.has(cargo)) ocorrenciasPorCargo.set(cargo, []);
+    ocorrenciasPorCargo.get(cargo)!.push(item);
+  };
+  incidenciasArtigo.forEach((i) =>
+    pushOcorrencia(i.cargo, {
+      paragrafoId: null,
+      label: "Artigo inteiro",
+      trecho: artigo.texto?.slice(0, 90),
+    }),
+  );
+  artigo.paragrafos.forEach((p) => {
+    (incidenciasByParagrafo.get(p.id) ?? []).forEach((i) =>
+      pushOcorrencia(i.cargo, {
+        paragrafoId: p.id,
+        label: p.rotulo || "Trecho do artigo",
+        trecho: p.texto?.slice(0, 90),
+      }),
+    );
+  });
+
+  const scrollToMarcacao = (paragrafoId: string | null) => {
+    const el = document.getElementById(paragrafoId ? `vm-par-${paragrafoId}` : `vm-art-${artigo.id}`);
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    el.classList.add("ring-2", "ring-primary/60", "bg-primary/5");
+    window.setTimeout(() => el.classList.remove("ring-2", "ring-primary/60", "bg-primary/5"), 2200);
+  };
+
+
   let borderClass = "";
   if (filtroCargo !== "todos" && (totaisPorCargo.get(filtroCargo) ?? 0) > 0) {
     borderClass = `border-l-4 ${CARGO_BORDER[filtroCargo]}`;
