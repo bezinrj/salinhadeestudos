@@ -82,20 +82,12 @@ export function ReferralTrialDialog({
       // Dispara os convites por e-mail (sem bloquear a liberação do acesso)
       await Promise.allSettled(
         invites.map((inv) =>
-          supabase.functions.invoke("send-transactional-email", {
-            body: {
-              templateName: "friend-invite",
-              recipientEmail: inv.email,
-              idempotencyKey: `friend-invite-${inv.id}`,
-              templateData: {
-                friendName: inv.name,
-                referrerName: profile?.name || profile?.username || "Um amigo",
-                signupUrl: `${window.location.origin}/cadastro`,
-              },
-            },
+          supabase.functions.invoke("send-friend-invite-email", {
+            body: { referralId: inv.id },
           })
         )
       );
+
 
       await checkSubscription();
       onClaimed?.();
