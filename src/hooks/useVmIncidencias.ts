@@ -42,21 +42,17 @@ export function useVmIncidencias(leiId: string | undefined) {
 
   const addTag = useMutation({
     mutationFn: async (payload: AddPayload) => {
-      const { error } = await sb
-        .from("vm_incidencias")
-        .upsert(
-          {
-            artigo_id: payload.artigo_id,
-            paragrafo_id: payload.paragrafo_id,
-            cargo: payload.cargo,
-            quantidade: 1,
-          },
-          {
-            onConflict: payload.paragrafo_id ? "paragrafo_id,cargo" : "artigo_id,cargo",
-            ignoreDuplicates: true,
-          },
-        );
-      if (error) throw error;
+      const { error } = await sb.from("vm_incidencias").insert({
+        artigo_id: payload.artigo_id,
+        paragrafo_id: payload.paragrafo_id,
+        cargo: payload.cargo,
+        quantidade: 1,
+      });
+      // Duplicidade: o item já está marcado — ignora silenciosamente.
+      if (error) {
+        if (error.code === "23505" || error.message?.includes("duplicate key")) return;
+        throw error;
+      }
     },
     onMutate: async (payload: AddPayload) => {
       await queryClient.cancelQueries({ queryKey: key });
