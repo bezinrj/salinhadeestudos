@@ -183,7 +183,7 @@ export function ArticleCard(props: Props) {
   incidenciasArtigo.forEach((i) =>
     pushOcorrencia(i.cargo, {
       paragrafoId: null,
-      label: "Artigo inteiro",
+      label: "Caput",
       trecho: artigo.texto?.slice(0, 90),
     }),
   );
