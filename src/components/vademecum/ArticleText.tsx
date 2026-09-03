@@ -8,6 +8,7 @@ interface Props {
   artigo: VmArtigo;
   marcacoesByBlock: Map<string, VmMarcacao[]>;
   incidenciasByParagrafo?: Map<string, VmIncidencia[]>;
+  incidenciasArtigo?: VmIncidencia[];
   canTag?: boolean;
   onToggleTag?: (paragrafoId: string | null, cargo: VmCargo, next: boolean) => void;
   onCreateMarcacao: (payload: {
