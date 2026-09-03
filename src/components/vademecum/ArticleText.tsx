@@ -36,6 +36,7 @@ export function ArticleText({
   artigo,
   marcacoesByBlock,
   incidenciasByParagrafo,
+  incidenciasArtigo,
   canTag = false,
   onToggleTag,
   onCreateMarcacao,
@@ -44,10 +45,11 @@ export function ArticleText({
   onRemissaoClick,
 }: Props) {
   const artigoMarc = marcacoesByBlock.get(artigo.id) ?? [];
+  const cargosCaput = (incidenciasArtigo ?? []).map((i) => i.cargo);
 
   return (
     <div className="font-serif text-[16px] leading-[1.85] text-foreground/90">
-      <p>
+      <p id={`vm-caput-${artigo.id}`} className="scroll-mt-24 rounded-sm transition-colors">
         <HighlightableText
           text={artigo.texto}
           marcacoes={artigoMarc}
@@ -65,6 +67,27 @@ export function ArticleText({
           onUpdate={onUpdateMarcacao}
           onRemove={onRemoveMarcacao}
         />
+        {(cargosCaput.length > 0 || canTag) && (
+          <span className="ml-2 inline-flex items-center gap-1 align-middle">
+            {cargosCaput.map((c) => (
+              <span
+                key={c}
+                title={`Costuma ser cobrado em ${CARGO_LABEL[c]}`}
+                className="inline-flex h-5 items-center rounded border border-border bg-muted/50 px-1 text-[11px] leading-none"
+              >
+                {CARGO_ICON[c]}
+              </span>
+            ))}
+            {canTag && (
+              <CargoTagPicker
+                compact
+                active={cargosCaput}
+                label="Marcar cargos no caput"
+                onToggle={(cargo, next) => onToggleTag?.(null, cargo, next)}
+              />
+            )}
+          </span>
+        )}
       </p>
       {artigo.paragrafos.map((p) => {
         const marc = marcacoesByBlock.get(p.id) ?? [];
