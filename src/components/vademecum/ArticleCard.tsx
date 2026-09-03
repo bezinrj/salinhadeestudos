@@ -198,7 +198,9 @@ export function ArticleCard(props: Props) {
   });
 
   const scrollToMarcacao = (paragrafoId: string | null) => {
-    const el = document.getElementById(paragrafoId ? `vm-par-${paragrafoId}` : `vm-art-${artigo.id}`);
+    const el = paragrafoId
+      ? document.getElementById(`vm-par-${paragrafoId}`)
+      : document.getElementById(`vm-caput-${artigo.id}`) ?? document.getElementById(`vm-art-${artigo.id}`);
     if (!el) return;
     el.scrollIntoView({ behavior: "smooth", block: "center" });
     el.classList.add("ring-2", "ring-primary/60", "bg-primary/5");
