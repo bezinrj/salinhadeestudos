@@ -289,6 +289,7 @@ export function ArticleCard(props: Props) {
         artigo={artigo}
         marcacoesByBlock={marcacoesByBlock}
         incidenciasByParagrafo={incidenciasByParagrafo}
+        incidenciasArtigo={incidenciasArtigo}
         canTag={canTag}
         onToggleTag={(paragrafoId, cargo, next) => onToggleTag?.(artigo.id, paragrafoId, cargo, next)}
         onCreateMarcacao={onCreateMarcacao}
