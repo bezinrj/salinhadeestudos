@@ -42,3 +42,17 @@ export function parseJurisStructuredLine(line: string): JurisStructuredLine {
     description: "",
   };
 }
+
+export function parseJurisStructuredText(value: string): JurisStructuredLine[] | null {
+  const items = value
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map(parseJurisStructuredLine);
+
+  if (items.length === 0 || !items.every((item) => item.title && item.description)) {
+    return null;
+  }
+
+  return items;
+}
