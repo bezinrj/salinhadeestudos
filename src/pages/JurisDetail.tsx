@@ -16,7 +16,7 @@ import { useIsModerator } from "@/hooks/useIsModerator";
 import { IntegraBox } from "@/components/juris/IntegraBox";
 import { JurisPremiumLock } from "@/components/juris/JurisPremiumLock";
 import { JurisChatPanel } from "@/components/juris/JurisChatPanel";
-import { parseJurisStructuredLine } from "@/lib/jurisFormatting";
+import { parseJurisStructuredLine, parseJurisStructuredText } from "@/lib/jurisFormatting";
 import type { JurisJulgado } from "@/types/juris";
 
 const TABS = [
@@ -57,6 +57,7 @@ export default function JurisDetail() {
 
   const canSeeFull = entitlements.juris || canManage;
   const linesOf = (s: string) => (s || "").split("\n").map((x) => x.trim()).filter(Boolean);
+  const conceptualItems = parseJurisStructuredText(j.conceitual || "");
 
   return (
     <div className="container mx-auto max-w-5xl px-4 py-6 pb-24 md:pb-12">
@@ -159,8 +160,19 @@ export default function JurisDetail() {
               <>
                 <TabsContent value="conceitual" className="m-0 space-y-4">
                   <Card><CardContent className="p-5">
-                    <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-primary">📖 Parte conceitual</div>
-                    <p className="whitespace-pre-wrap text-sm leading-relaxed">{j.conceitual || "—"}</p>
+                    <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-primary">📖 Parte conceitual</div>
+                    {conceptualItems ? (
+                      <div className="space-y-4">
+                        {conceptualItems.map(({ title, description }, index) => (
+                          <div key={`${title}-${index}`}>
+                            <div className="text-sm font-semibold text-foreground">{title}</div>
+                            <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{description}</p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="whitespace-pre-wrap text-sm leading-relaxed">{j.conceitual || "—"}</p>
+                    )}
                   </CardContent></Card>
                   <IntegraBox texto={j.integra_texto} refText={j.integra_ref} />
                 </TabsContent>
