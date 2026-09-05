@@ -16,6 +16,7 @@ import { useIsModerator } from "@/hooks/useIsModerator";
 import { IntegraBox } from "@/components/juris/IntegraBox";
 import { JurisPremiumLock } from "@/components/juris/JurisPremiumLock";
 import { JurisChatPanel } from "@/components/juris/JurisChatPanel";
+import { parseJurisStructuredLine } from "@/lib/jurisFormatting";
 import type { JurisJulgado } from "@/types/juris";
 
 const TABS = [
@@ -245,11 +246,11 @@ export default function JurisDetail() {
                       <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-primary">⚖️ Princípios jurídicos</div>
                       <div className="space-y-3">
                         {linesOf(j.principios).map((l, i) => {
-                          const [nome, ...rest] = l.split("—");
+                          const { title, description } = parseJurisStructuredLine(l);
                           return (
                             <div key={i} className="rounded-lg border border-border bg-secondary/30 p-3">
-                              <div className="font-semibold text-foreground">{nome.trim()}</div>
-                              {rest.length > 0 && <div className="mt-1 text-sm text-muted-foreground">{rest.join("—").trim()}</div>}
+                              <div className="font-semibold text-foreground">{title}</div>
+                              {description && <div className="mt-1 text-sm text-muted-foreground">{description}</div>}
                             </div>
                           );
                         })}
@@ -261,11 +262,11 @@ export default function JurisDetail() {
                       <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-primary">📚 Doutrinadores</div>
                       <div className="space-y-3">
                         {linesOf(j.doutrina).map((l, i) => {
-                          const [autor, ...rest] = l.split("—");
+                          const { title, description } = parseJurisStructuredLine(l);
                           return (
                             <div key={i} className="border-l-2 border-primary/40 pl-3">
-                              <div className="text-sm font-semibold">{autor.trim()}</div>
-                              {rest.length > 0 && <div className="text-sm text-muted-foreground">{rest.join("—").trim()}</div>}
+                              <div className="text-sm font-semibold">{title}</div>
+                              {description && <div className="text-sm text-muted-foreground">{description}</div>}
                             </div>
                           );
                         })}
@@ -277,11 +278,11 @@ export default function JurisDetail() {
                       <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-gold">⭐ Jurisprudência</div>
                       <div className="space-y-3">
                         {linesOf(j.jurisprudencia).map((l, i) => {
-                          const [ref, ...rest] = l.split("—");
+                          const { title, description } = parseJurisStructuredLine(l);
                           return (
                             <div key={i} className="rounded-lg border border-gold/20 bg-gold/5 p-3">
-                              <div className="text-sm font-semibold text-gold">{ref.trim()}</div>
-                              {rest.length > 0 && <div className="mt-1 text-sm text-foreground/90">{rest.join("—").trim()}</div>}
+                              <div className="text-sm font-semibold text-gold">{title}</div>
+                              {description && <div className="mt-1 text-sm text-foreground/90">{description}</div>}
                             </div>
                           );
                         })}
