@@ -3,7 +3,7 @@ export interface JurisStructuredLine {
   description: string;
 }
 
-const LEADING_MARKER = /^\s*(?:(?:[-*•]+|\d+[.)])\s*)+/;
+const LEADING_MARKER = /^\s*(?:(?:[-*•]\s+|\d+[.)]\s+))+/;
 const MARKDOWN_TITLE = /^\*\*(.+?)\*\*\s*(?::|—|–|-)?\s*(.*)$/;
 
 function cleanTitle(value: string): string {
